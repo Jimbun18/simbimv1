@@ -1,5 +1,28 @@
 <template>
   <div class="space-y-5 sm:space-y-6">
+    <!-- Alert Error Banner with Retry -->
+    <div 
+      v-if="errorMessage" 
+      class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-xs transition-all"
+    >
+      <div class="flex items-center gap-2.5">
+        <svg class="w-5 h-5 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span class="text-xs sm:text-sm font-medium">{{ errorMessage }}</span>
+      </div>
+      <button 
+        @click="fetchDashboard" 
+        :disabled="loading"
+        class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shrink-0"
+      >
+        <svg :class="{ 'animate-spin': loading }" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        <span>{{ loading ? 'Memuat...' : 'Coba Lagi' }}</span>
+      </button>
+    </div>
+
     <!-- Header Greeting Banner -->
     <div class="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 rounded-2xl p-4 sm:p-6 text-white shadow-xl relative overflow-hidden">
       <div class="relative z-10 max-w-2xl">
@@ -14,11 +37,20 @@
         </p>
         <div class="mt-4 flex flex-wrap gap-2 sm:gap-3 text-[11px] sm:text-xs font-medium text-emerald-100">
           <span class="flex items-center gap-1.5 bg-black/20 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-white/10">
-            {{ data?.hari }}, {{ formatDate(data?.tanggal) }}
+            {{ data?.hari || 'Hari Ini' }}, {{ formatDate(data?.tanggal) || 'Memuat tanggal...' }}
           </span>
-          <span class="flex items-center gap-1.5 bg-black/20 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-white/10">
-            Update: {{ lastUpdated }}
-          </span>
+          <button 
+            type="button"
+            @click="fetchDashboard"
+            :disabled="loading"
+            class="flex items-center gap-1.5 bg-black/20 hover:bg-black/35 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-white/10 transition cursor-pointer"
+            title="Klik untuk memuat ulang data terbaru"
+          >
+            <svg :class="{ 'animate-spin': loading }" class="w-3.5 h-3.5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Update: {{ lastUpdated || 'Klik untuk Muat' }}</span>
+          </button>
         </div>
       </div>
       <div class="absolute -right-8 -bottom-10 opacity-10 pointer-events-none hidden sm:block">
@@ -227,6 +259,7 @@ const auth = useAuthStore();
 const data = ref<any>(null);
 const loading = ref(true);
 const lastUpdated = ref('');
+const errorMessage = ref<string | null>(null);
 
 const formatRupiah = (val: number | undefined) => {
   if (val === undefined || val === null) return '0';
@@ -241,14 +274,20 @@ const formatDate = (dateStr: string | undefined) => {
 
 const fetchDashboard = async () => {
   loading.value = true;
+  errorMessage.value = null;
   try {
     const res = await api.get('/dashboard/summary');
     if (res.data.success) {
       data.value = res.data.data;
       lastUpdated.value = new Date().toLocaleTimeString('id-ID');
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('Gagal mengambil data dashboard', err);
+    if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+      errorMessage.value = 'Koneksi ke backend timeout (server sedang sibuk). Silakan klik "Coba Lagi".';
+    } else {
+      errorMessage.value = err.response?.data?.message || 'Gagal mengambil data dashboard. Pastikan backend aktif.';
+    }
   } finally {
     loading.value = false;
   }

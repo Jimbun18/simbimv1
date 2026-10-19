@@ -81,33 +81,37 @@ class DashboardController extends Controller
             ->count('schedule_id');
         $persenKepatuhanMengajar = $totalSesiHariIni > 0 ? round(($buktiMengajarHariIni / $totalSesiHariIni) * 100, 1) : 0;
 
-        // 3. KEUANGAN BULAN INI
-        $invoicesMonth = Invoice::where('periode', $currentMonth)->get();
-        $totalTagihanBulanIni = (float) $invoicesMonth->sum('jumlah');
-        $totalTerbayarBulanIni = (float) $invoicesMonth->sum('jumlah_dibayar');
-        $sisaTagihanBulanIni = (float) $invoicesMonth->sum('sisa');
+        // 3. KEUANGAN BULAN INI (Agregasi langsung di DB)
+        $invoiceSummary = Invoice::where('periode', $currentMonth)
+            ->selectRaw('COALESCE(SUM(jumlah), 0) as total_tagihan, COALESCE(SUM(jumlah_dibayar), 0) as total_terbayar, COALESCE(SUM(sisa), 0) as sisa_tagihan')
+            ->first();
+        $totalTagihanBulanIni = (float) ($invoiceSummary->total_tagihan ?? 0);
+        $totalTerbayarBulanIni = (float) ($invoiceSummary->total_terbayar ?? 0);
+        $sisaTagihanBulanIni = (float) ($invoiceSummary->sisa_tagihan ?? 0);
         $persenPembayaranBulanIni = $totalTagihanBulanIni > 0 ? round(($totalTerbayarBulanIni / $totalTagihanBulanIni) * 100, 1) : 0;
 
-        // Arus Kas Bulan Ini
-        $kasMasukBulanIni = (float) FinanceTransaction::where('tipe', 'masuk')
-            ->where('is_pembalik', false)
-            ->whereDate('tanggal', '>=', $startOfMonth)
-            ->whereDate('tanggal', '<=', $endOfMonth)
-            ->sum('jumlah');
+        // Arus Kas Bulan Ini (Agregasi 1 query)
+        $cashFlow = FinanceTransaction::where('is_pembalik', false)
+            ->whereBetween('tanggal', [$startOfMonth, $endOfMonth])
+            ->selectRaw("COALESCE(SUM(CASE WHEN tipe = 'masuk' THEN jumlah ELSE 0 END), 0) as kas_masuk, COALESCE(SUM(CASE WHEN tipe = 'keluar' THEN jumlah ELSE 0 END), 0) as kas_keluar")
+            ->first();
 
-        $kasKeluarBulanIni = (float) FinanceTransaction::where('tipe', 'keluar')
-            ->where('is_pembalik', false)
-            ->whereDate('tanggal', '>=', $startOfMonth)
-            ->whereDate('tanggal', '<=', $endOfMonth)
-            ->sum('jumlah');
-
+        $kasMasukBulanIni = (float) ($cashFlow->kas_masuk ?? 0);
+        $kasKeluarBulanIni = (float) ($cashFlow->kas_keluar ?? 0);
         $saldoKasBulanIni = $kasMasukBulanIni - $kasKeluarBulanIni;
 
-        // 4. SARPRAS & INVENTARIS
-        $totalAset = Asset::count();
-        $totalNilaiAset = (float) Asset::sum('nilai');
-        $asetRusakRingan = Asset::where('kondisi', 'rusak_ringan')->count();
-        $asetRusakBerat = Asset::where('kondisi', 'rusak_berat')->count();
+        // 4. SARPRAS & INVENTARIS (Agregasi 1 query)
+        $assetSummary = Asset::selectRaw("
+            COUNT(*) as total_aset,
+            COALESCE(SUM(nilai), 0) as total_nilai,
+            SUM(CASE WHEN kondisi = 'rusak_ringan' THEN 1 ELSE 0 END) as rusak_ringan,
+            SUM(CASE WHEN kondisi = 'rusak_berat' THEN 1 ELSE 0 END) as rusak_berat
+        ")->first();
+
+        $totalAset = (int) ($assetSummary->total_aset ?? 0);
+        $totalNilaiAset = (float) ($assetSummary->total_nilai ?? 0);
+        $asetRusakRingan = (int) ($assetSummary->rusak_ringan ?? 0);
+        $asetRusakBerat = (int) ($assetSummary->rusak_berat ?? 0);
         $asetDipinjam = AssetLoan::where('status', 'dipinjam')->count();
 
         // 5. AUDIT LOG TERKINI (10 aktivitas terakhir)
