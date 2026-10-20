@@ -19,7 +19,9 @@ class ReportCard extends Model
         'class_id',
         'academic_year_id',
         'semester_id',
+        'jenis_rapor',
         'semester',
+        'periode',
         'fase',
         'tempat_tanggal',
         'tanggal_rapor',
@@ -38,6 +40,11 @@ class ReportCard extends Model
         'catatan_wali_kelas',
         'tanggapan_orang_tua',
         'status',
+        'submitted_at',
+        'submitted_by',
+        'validated_at',
+        'validated_by',
+        'validation_notes',
         'version',
         'revised_at',
         'revised_by',
@@ -50,6 +57,8 @@ class ReportCard extends Model
     {
         return [
             'tanggal_rapor' => 'date',
+            'submitted_at' => 'datetime',
+            'validated_at' => 'datetime',
             'sakit' => 'integer',
             'izin' => 'integer',
             'alpa' => 'integer',
@@ -106,6 +115,16 @@ class ReportCard extends Model
     public function revisedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'revised_by');
+    }
+
+    public function submitter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function validator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'validated_by');
     }
 
     /**

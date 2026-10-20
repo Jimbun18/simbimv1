@@ -322,6 +322,14 @@ const handleLogout = async () => {
                     <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="route.path === '/classes-schedules' && route.query.tab === 'rooms' ? 'bg-emerald-600' : 'bg-slate-300'"></span>
                     <span class="truncate">Ruang Kelas</span>
                   </router-link>
+                  <router-link
+                    to="/classes-schedules?tab=academic_years"
+                    class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] transition-all"
+                    :class="route.path === '/classes-schedules' && route.query.tab === 'academic_years' ? 'bg-emerald-100/70 text-emerald-900 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'"
+                  >
+                    <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="route.path === '/classes-schedules' && route.query.tab === 'academic_years' ? 'bg-emerald-600' : 'bg-slate-300'"></span>
+                    <span class="truncate">Tahun Ajaran & Kenaikan Kelas</span>
+                  </router-link>
                 </div>
               </div>
 
@@ -406,7 +414,7 @@ const handleLogout = async () => {
                     :class="route.path === '/attendance-management' && (route.query.tab === 'class_recap' || !route.query.tab) ? 'bg-emerald-100/70 text-emerald-900 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'"
                   >
                     <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="route.path === '/attendance-management' && (route.query.tab === 'class_recap' || !route.query.tab) ? 'bg-emerald-600' : 'bg-slate-300'"></span>
-                    <span class="truncate">Rekap Kelas & KBM</span>
+                    <span class="truncate">Rekap Kelas</span>
                   </router-link>
                   <router-link
                     to="/attendance-management?tab=student_recap"
@@ -518,11 +526,11 @@ const handleLogout = async () => {
               </div>
 
               <router-link
-                v-if="auth.isAdmin"
+                v-if="auth.isAdmin || auth.isWaliKelas"
                 to="/rapor"
                 class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-all"
                 :class="route.path === '/rapor' ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
-                title="Rapor Siswa Kurikulum Merdeka"
+                title="Rapor Siswa Multi-Format & Validasi"
               >
                 <span v-show="isSidebarOpen" class="truncate">Rapor Siswa</span>
               </router-link>
@@ -1029,6 +1037,15 @@ const handleLogout = async () => {
                           <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="route.path === '/classes-schedules' && route.query.tab === 'rooms' ? 'bg-emerald-600' : 'bg-slate-300'"></span>
                           <span>Ruang Kelas</span>
                         </router-link>
+                        <router-link
+                          to="/classes-schedules?tab=academic_years"
+                          class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px]"
+                          :class="route.path === '/classes-schedules' && route.query.tab === 'academic_years' ? 'bg-emerald-100/70 text-emerald-900 font-bold' : 'text-slate-600 hover:bg-slate-100'"
+                          @click="isMobileDrawerOpen = false"
+                        >
+                          <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="route.path === '/classes-schedules' && route.query.tab === 'academic_years' ? 'bg-emerald-600' : 'bg-slate-300'"></span>
+                          <span>Tahun Ajaran & Kenaikan Kelas</span>
+                        </router-link>
                       </div>
                     </div>
 
@@ -1103,7 +1120,7 @@ const handleLogout = async () => {
                           @click="isMobileDrawerOpen = false"
                         >
                           <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="route.path === '/attendance-management' && (route.query.tab === 'class_recap' || !route.query.tab) ? 'bg-emerald-600' : 'bg-slate-300'"></span>
-                          <span>Rekap Kelas & KBM</span>
+                          <span>Rekap Kelas</span>
                         </router-link>
                         <router-link
                           to="/attendance-management?tab=student_recap"
@@ -1215,7 +1232,7 @@ const handleLogout = async () => {
                     </div>
 
                     <router-link 
-                      v-if="auth.isAdmin"
+                      v-if="auth.isAdmin || auth.isWaliKelas"
                       to="/rapor" 
                       class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium"
                       :class="route.path === '/rapor' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-700 hover:bg-slate-100'"

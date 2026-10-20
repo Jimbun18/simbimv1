@@ -1,14 +1,21 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import api from '../services/api'
+import { useAuthStore } from '../stores/auth'
+
+const auth = useAuthStore()
 
 interface SubjectGrade {
   id?: number
   nama_mapel: string
-  kelompok: string
-  nilai_akhir: number | null | string
-  capaian_kompetensi: string | null
-  urutan: number
+  kelompok?: string
+  tema?: string | null
+  aspek?: string | null
+  sub_aspek?: string | null
+  nilai_akhir?: number | null | string
+  predikat?: string | null
+  capaian_kompetensi?: string | null
+  urutan?: number
 }
 
 interface Extracurricular {
@@ -16,7 +23,7 @@ interface Extracurricular {
   kegiatan: string
   predikat: string
   keterangan: string | null
-  urutan: number
+  urutan?: number
 }
 
 interface ReportCardDetail {
@@ -25,6 +32,8 @@ interface ReportCardDetail {
   class_id: number
   academic_year_id: number
   semester: string
+  jenis_rapor: 'kurikulum_merdeka' | 'triwulan_tematik' | 'karakter_lifeskill'
+  periode?: string | null
   fase: string
   tempat_tanggal: string
   tanggal_rapor?: string | null
@@ -42,7 +51,14 @@ interface ReportCardDetail {
   alpa: number
   catatan_wali_kelas?: string | null
   tanggapan_orang_tua?: string | null
-  status: 'draft' | 'final'
+  status: 'draft' | 'menunggu_validasi' | 'final' | 'perlu_revisi'
+  submitted_at?: string | null
+  submitted_by?: number | null
+  submitter?: { id: number; nama: string } | null
+  validated_at?: string | null
+  validated_by?: number | null
+  validator?: { id: number; nama: string } | null
+  validation_notes?: string | null
   student: {
     id: number
     nis: string
@@ -55,7 +71,6 @@ interface ReportCardDetail {
     desa_kelurahan?: string
     kecamatan?: string
     kab_kota?: string
-    agama?: any
     religion?: { nama: string }
     asal_sekolah_tk?: string
     tgl_masuk?: string
@@ -75,12 +90,14 @@ interface ReportCardDetail {
   extracurriculars: Extracurricular[]
 }
 
-// View Modes: 'list' | 'editor' | 'print_raport' | 'print_identitas'
-const currentView = ref<'list' | 'editor' | 'print_raport' | 'print_identitas'>('list')
+// View Modes: 'list' | 'editor' | 'print_raport' | 'print_tematik' | 'print_karakter' | 'print_identitas'
+const currentView = ref<'list' | 'editor' | 'print_raport' | 'print_tematik' | 'print_karakter' | 'print_identitas'>('list')
 
 const loading = ref(false)
 const saving = ref(false)
 const syncing = ref(false)
+const submittingValidation = ref(false)
+const validatingReport = ref(false)
 const message = ref<{ type: 'success' | 'error' | 'warning'; text: string } | null>(null)
 
 // Filters
@@ -89,20 +106,28 @@ const academicYears = ref<any[]>([])
 const selectedClassId = ref<string | number>('')
 const selectedSemester = ref<'Gasal' | 'Genap'>('Gasal')
 const selectedAcademicYearId = ref<string | number>('')
+const selectedJenisRapor = ref<'kurikulum_merdeka' | 'triwulan_tematik' | 'karakter_lifeskill'>('kurikulum_merdeka')
+const selectedPeriode = ref<string>('Semester Gasal')
+const statusFilter = ref<string>('all')
 const searchQuery = ref('')
 
 // Class Report Overview Data
 const classReportData = ref<any | null>(null)
 
 // Editor State
-const activeEditorTab = ref<'intra' | 'koku' | 'ekstra' | 'notes'>('intra')
+const activeEditorTab = ref<'grades' | 'koku' | 'ekstra' | 'notes'>('grades')
 const activeReportCard = ref<ReportCardDetail | null>(null)
 const schoolProfile = ref<any>({
-  nama_sekolah: 'SD Islam Bina Insan Mandiri',
+  nama_sekolah: 'SD Islam Bina Insan Mandiri Purwokerto',
   alamat: 'Jl. Wadas Kelir RT.04 RW.05 Kel. Karangklesem, Kec. Purwokerto Selatan, Kab. Banyumas 53144',
   npsn: '70036695',
   logo_path: null,
 })
+
+// Modal Revisi (Kepala Sekolah)
+const showRevisionModal = ref(false)
+const revisionNoteInput = ref('')
+const revisionTargetCardId = ref<number | null>(null)
 
 // File import ref
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -115,7 +140,40 @@ const showNotification = (text: string, type: 'success' | 'error' | 'warning' = 
   }, 4500)
 }
 
-// Profil Lulusan Dimensi Options
+// Periode options based on selected jenis rapor
+const periodeOptions = computed(() => {
+  if (selectedJenisRapor.value === 'kurikulum_merdeka') {
+    return [
+      { label: 'Semester Gasal', value: 'Semester Gasal' },
+      { label: 'Semester Genap', value: 'Semester Genap' },
+    ]
+  }
+  return [
+    { label: 'Triwulan I', value: 'Triwulan I' },
+    { label: 'Triwulan II', value: 'Triwulan II' },
+    { label: 'Triwulan III', value: 'Triwulan III' },
+    { label: 'Triwulan IV', value: 'Triwulan IV' },
+    { label: 'Semester Gasal', value: 'Semester Gasal' },
+    { label: 'Semester Genap', value: 'Semester Genap' },
+  ]
+})
+
+// Sync selectedPeriode when jenis rapor changes
+watch(selectedJenisRapor, (newVal) => {
+  if (newVal === 'kurikulum_merdeka') {
+    selectedPeriode.value = selectedSemester.value === 'Gasal' ? 'Semester Gasal' : 'Semester Genap'
+  } else {
+    selectedPeriode.value = 'Triwulan I'
+  }
+  loadClassReports()
+})
+
+// Sync semester when periode changes
+watch(selectedPeriode, () => {
+  loadClassReports()
+})
+
+// Dimensi Profil Lulusan (P5)
 const dimensiOptions = [
   'Keimanan dan Ketakwaan',
   'Kewargaan',
@@ -130,14 +188,34 @@ const dimensiOptions = [
 // Computed list of filtered students in class
 const filteredStudents = computed(() => {
   if (!classReportData.value?.students) return []
-  if (!searchQuery.value) return classReportData.value.students
+  let list = classReportData.value.students
 
-  const q = searchQuery.value.toLowerCase().trim()
-  return classReportData.value.students.filter((st: any) =>
-    st.nama_lengkap?.toLowerCase().includes(q) ||
-    st.nis?.toLowerCase().includes(q) ||
-    st.nisn?.toLowerCase().includes(q)
-  )
+  if (statusFilter.value !== 'all') {
+    list = list.filter((st: any) => st.status === statusFilter.value)
+  }
+
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase().trim()
+    list = list.filter((st: any) =>
+      st.nama_lengkap?.toLowerCase().includes(q) ||
+      st.nis?.toLowerCase().includes(q) ||
+      st.nisn?.toLowerCase().includes(q)
+    )
+  }
+
+  return list
+})
+
+// Count pending validations
+const pendingCount = computed(() => {
+  if (!classReportData.value?.students) return 0
+  return classReportData.value.students.filter((st: any) => st.status === 'menunggu_validasi').length
+})
+
+// Count draft or needs revision
+const draftOrRevisionCount = computed(() => {
+  if (!classReportData.value?.students) return 0
+  return classReportData.value.students.filter((st: any) => st.status === 'draft' || st.status === 'perlu_revisi').length
 })
 
 // Average score in editor
@@ -151,6 +229,18 @@ const averageScore = computed(() => {
   return Math.round((total / validGrades.length) * 10) / 10
 })
 
+// Group grades by Aspek for Karakter & Life Skill
+const groupedCharacterGrades = computed(() => {
+  if (!activeReportCard.value?.grades) return {}
+  const groups: Record<string, SubjectGrade[]> = {}
+  activeReportCard.value.grades.forEach((g) => {
+    const key = g.aspek || 'Penguatan Karakter'
+    if (!groups[key]) groups[key] = []
+    groups[key].push(g)
+  })
+  return groups
+})
+
 // Fetch initial dropdowns
 const fetchMasterData = async () => {
   try {
@@ -160,7 +250,18 @@ const fetchMasterData = async () => {
     ])
 
     if (classesRes.data.success) {
-      classes.value = classesRes.data.data
+      let list = classesRes.data.data
+
+      // If user is Wali Kelas (and not admin), restrict to their assigned classes if available
+      if (!auth.isAdmin && auth.isWaliKelas && auth.homeroomClasses.length > 0) {
+        const myClassIds = auth.homeroomClasses.map((c: any) => c.id)
+        const myClasses = list.filter((c: any) => myClassIds.includes(c.id))
+        if (myClasses.length > 0) {
+          list = myClasses
+        }
+      }
+
+      classes.value = list
       if (classes.value.length > 0 && !selectedClassId.value) {
         selectedClassId.value = classes.value[0].id
       }
@@ -194,6 +295,8 @@ const loadClassReports = async () => {
         class_id: selectedClassId.value,
         academic_year_id: selectedAcademicYearId.value || undefined,
         semester: selectedSemester.value,
+        jenis_rapor: selectedJenisRapor.value,
+        periode: selectedPeriode.value || undefined,
       },
     })
     if (res.data.success) {
@@ -209,9 +312,15 @@ const loadClassReports = async () => {
 // Batch Initialize Class
 const handleInitializeClass = async (overwrite = false) => {
   if (!selectedClassId.value) return
+  const labelJenis = selectedJenisRapor.value === 'triwulan_tematik'
+    ? 'Rapor Triwulan Tematik BIM (5 Tema Terpadu)'
+    : selectedJenisRapor.value === 'karakter_lifeskill'
+    ? 'Laporan Karakter & Life Skill (17 Butir Penilaian)'
+    : 'Rapor Kurikulum Merdeka (18 Mapel Standar)'
+
   if (!confirm(overwrite
-    ? 'Perbarui seluruh format rapor untuk semua siswa di kelas ini? Nilai yang sudah ada tidak akan hilang, informasi pengesahan dan mapel standar akan disinkronkan.'
-    : 'Inisialisasi draf rapor untuk seluruh siswa di kelas ini dengan 18 mata pelajaran standar SDI Bina Insan Mandiri?'
+    ? `Perbarui seluruh format ${labelJenis} untuk semua siswa di kelas ini? Nilai yang ada tidak akan terhapus.`
+    : `Inisialisasi draf ${labelJenis} untuk seluruh siswa di kelas ini periode ${selectedPeriode.value}?`
   )) {
     return
   }
@@ -222,6 +331,8 @@ const handleInitializeClass = async (overwrite = false) => {
       class_id: selectedClassId.value,
       academic_year_id: selectedAcademicYearId.value || undefined,
       semester: selectedSemester.value,
+      jenis_rapor: selectedJenisRapor.value,
+      periode: selectedPeriode.value,
       overwrite_existing: overwrite,
     })
     if (res.data.success) {
@@ -247,6 +358,8 @@ const openEditor = async (studentId: number, reportCardId?: number | null) => {
         student_id: studentId,
         academic_year_id: selectedAcademicYearId.value || undefined,
         semester: selectedSemester.value,
+        jenis_rapor: selectedJenisRapor.value,
+        periode: selectedPeriode.value,
       })
     }
 
@@ -256,19 +369,18 @@ const openEditor = async (studentId: number, reportCardId?: number | null) => {
       if (res.data.data.school_profile) {
         schoolProfile.value = res.data.data.school_profile
       }
-      activeEditorTab.value = 'intra'
+      activeEditorTab.value = 'grades'
       currentView.value = 'editor'
-      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   } catch (err: any) {
-    showNotification('Gagal membuka rapor siswa: ' + (err.response?.data?.message || err.message), 'error')
+    showNotification('Gagal memuat rapor siswa: ' + (err.response?.data?.message || err.message), 'error')
   } finally {
     loading.value = false
   }
 }
 
-// Save Active Report Card
-const saveReportCard = async (statusOverride?: 'draft' | 'final') => {
+// Save Report Card
+const saveReportCard = async (statusOverride?: 'draft' | 'menunggu_validasi' | 'final' | 'perlu_revisi') => {
   if (!activeReportCard.value) return
   saving.value = true
   try {
@@ -284,8 +396,8 @@ const saveReportCard = async (statusOverride?: 'draft' | 'final') => {
 
     const res = await api.put(`/report-cards/${activeReportCard.value.id}`, payload)
     if (res.data.success) {
-      showNotification(res.data.message, 'success')
       activeReportCard.value = JSON.parse(JSON.stringify(res.data.data))
+      showNotification(res.data.message || 'Rapor berhasil disimpan.', 'success')
       await loadClassReports()
     }
   } catch (err: any) {
@@ -295,7 +407,134 @@ const saveReportCard = async (statusOverride?: 'draft' | 'final') => {
   }
 }
 
-// Sync Attendance for Student
+// Submit single report card for validation (Wali Kelas -> KS)
+const submitSingleForValidation = async (id: number) => {
+  if (!confirm('Ajukan rapor ini ke Kepala Sekolah untuk validasi resmi?')) return
+  submittingValidation.value = true
+  try {
+    const res = await api.post(`/report-cards/${id}/submit`)
+    if (res.data.success) {
+      showNotification(res.data.message, 'success')
+      if (activeReportCard.value && activeReportCard.value.id === id) {
+        activeReportCard.value.status = 'menunggu_validasi'
+        activeReportCard.value.submitted_at = res.data.data.submitted_at
+      }
+      await loadClassReports()
+    }
+  } catch (err: any) {
+    showNotification('Gagal mengajukan rapor: ' + (err.response?.data?.message || err.message), 'error')
+  } finally {
+    submittingValidation.value = false
+  }
+}
+
+// Bulk submit class for validation (Wali Kelas -> KS)
+const handleBulkSubmitClass = async () => {
+  if (!selectedClassId.value) return
+  if (!confirm(`Ajukan seluruh rapor siswa kelas ini (${draftOrRevisionCount.value} draf) kepada Kepala Sekolah untuk validasi?`)) return
+
+  submittingValidation.value = true
+  try {
+    const res = await api.post('/report-cards/submit-class', {
+      class_id: selectedClassId.value,
+      academic_year_id: selectedAcademicYearId.value || undefined,
+      semester: selectedSemester.value,
+      jenis_rapor: selectedJenisRapor.value,
+      periode: selectedPeriode.value,
+    })
+    if (res.data.success) {
+      showNotification(res.data.message, 'success')
+      await loadClassReports()
+    }
+  } catch (err: any) {
+    showNotification('Gagal mengajukan rapor kelas: ' + (err.response?.data?.message || err.message), 'error')
+  } finally {
+    submittingValidation.value = false
+  }
+}
+
+// Validate & Approve single report card (KS)
+const handleValidateSingle = async (id: number) => {
+  if (!confirm('Validasi dan setujui rapor ini sebagai dokumen resmi (Final)?')) return
+  validatingReport.value = true
+  try {
+    const res = await api.post(`/report-cards/${id}/validate`)
+    if (res.data.success) {
+      showNotification(res.data.message, 'success')
+      if (activeReportCard.value && activeReportCard.value.id === id) {
+        activeReportCard.value.status = 'final'
+        activeReportCard.value.validated_at = res.data.data.validated_at
+      }
+      await loadClassReports()
+    }
+  } catch (err: any) {
+    showNotification('Gagal memvalidasi rapor: ' + (err.response?.data?.message || err.message), 'error')
+  } finally {
+    validatingReport.value = false
+  }
+}
+
+// Bulk validate class (KS)
+const handleBulkValidateClass = async () => {
+  if (!selectedClassId.value) return
+  if (!confirm(`Validasi dan setujui secara massal ${pendingCount.value} rapor siswa yang telah diajukan di kelas ini?`)) return
+
+  validatingReport.value = true
+  try {
+    const res = await api.post('/report-cards/validate-class', {
+      class_id: selectedClassId.value,
+      academic_year_id: selectedAcademicYearId.value || undefined,
+      semester: selectedSemester.value,
+      jenis_rapor: selectedJenisRapor.value,
+      periode: selectedPeriode.value,
+    })
+    if (res.data.success) {
+      showNotification(res.data.message, 'success')
+      await loadClassReports()
+    }
+  } catch (err: any) {
+    showNotification('Gagal memvalidasi rapor massal: ' + (err.response?.data?.message || err.message), 'error')
+  } finally {
+    validatingReport.value = false
+  }
+}
+
+// Open modal minta revisi (KS)
+const openRevisionModal = (reportCardId: number) => {
+  revisionTargetCardId.value = reportCardId
+  revisionNoteInput.value = ''
+  showRevisionModal.value = true
+}
+
+// Send revision request (KS -> Wali Kelas)
+const handleSendRevision = async () => {
+  if (!revisionTargetCardId.value || !revisionNoteInput.value.trim()) {
+    alert('Harap masukkan catatan revisi untuk Wali Kelas.')
+    return
+  }
+
+  validatingReport.value = true
+  try {
+    const res = await api.post(`/report-cards/${revisionTargetCardId.value}/request-revision`, {
+      notes: revisionNoteInput.value.trim(),
+    })
+    if (res.data.success) {
+      showNotification(res.data.message, 'success')
+      showRevisionModal.value = false
+      if (activeReportCard.value && activeReportCard.value.id === revisionTargetCardId.value) {
+        activeReportCard.value.status = 'perlu_revisi'
+        activeReportCard.value.validation_notes = revisionNoteInput.value.trim()
+      }
+      await loadClassReports()
+    }
+  } catch (err: any) {
+    showNotification('Gagal mengirim permintaan revisi: ' + (err.response?.data?.message || err.message), 'error')
+  } finally {
+    validatingReport.value = false
+  }
+}
+
+// Sync Attendance
 const syncAttendanceCurrent = async () => {
   if (!activeReportCard.value) return
   syncing.value = true
@@ -308,75 +547,43 @@ const syncAttendanceCurrent = async () => {
       showNotification(res.data.message, 'success')
     }
   } catch (err: any) {
-    showNotification('Gagal menyinkronkan presensi: ' + (err.response?.data?.message || err.message), 'error')
+    showNotification('Gagal sinkronisasi presensi: ' + (err.response?.data?.message || err.message), 'error')
   } finally {
     syncing.value = false
   }
 }
 
-// Smart Auto-Generators
-const generateCompetencyDescription = (grade: SubjectGrade) => {
-  const score = Number(grade.nilai_akhir)
-  const mapel = grade.nama_mapel
-  if (isNaN(score) || grade.nilai_akhir === null || grade.nilai_akhir === '') {
-    grade.capaian_kompetensi = `Menunjukkan partisipasi aktif dalam pembelajaran ${mapel}.`
-    return
-  }
-
-  if (score >= 90) {
-    grade.capaian_kompetensi = `Menunjukkan penguasaan materi ${mapel} yang sangat unggul dan istimewa dalam penerapan konsep serta pemecahan masalah.`
-  } else if (score >= 80) {
-    grade.capaian_kompetensi = `Menguasai materi ${mapel} dengan kemampuan baik dalam pemahaman konsep dan penerapannya.`
-  } else if (score >= 70) {
-    grade.capaian_kompetensi = `Cukup menguasai materi ${mapel}, perlu peningkatan konsistensi dan latihan berkelanjutan.`
-  } else {
-    grade.capaian_kompetensi = `Perlu bimbingan dan pendampingan intensif untuk mencapai ketuntasan materi ${mapel}.`
-  }
+// Auto predicate calculation from score
+const calculatePredicate = (score: number | null | string): string => {
+  if (score === null || score === '' || isNaN(Number(score))) return '-'
+  const num = Number(score)
+  if (num > 92) return 'A'
+  if (num > 83) return 'B'
+  if (num >= 75) return 'C'
+  return 'D'
 }
 
-const generateAllCompetencies = () => {
-  if (!activeReportCard.value?.grades) return
-  activeReportCard.value.grades.forEach((g) => {
-    if (!g.capaian_kompetensi || g.capaian_kompetensi.trim() === '' || g.capaian_kompetensi.startsWith('INI DIISI')) {
-      generateCompetencyDescription(g)
-    }
-  })
-  showNotification('Deskripsi capaian kompetensi berhasil digenerate otomatis berdasarkan nilai.', 'success')
-}
-
-const generateKokurikulerNarrative = () => {
-  if (!activeReportCard.value) return
-  const nama = activeReportCard.value.student?.nama_lengkap || 'Ananda'
-  const tema = activeReportCard.value.kokurikuler_tema || 'Sampahku bersih lingkunganku sehat'
-  const dimensi = activeReportCard.value.kokurikuler_dimensi || 'Kolaborasi dan Kemandirian'
-  const target = activeReportCard.value.kokurikuler_target || 'Peserta didik mampu mengolah sampah dan peduli lingkungan'
-  const capaian = activeReportCard.value.kokurikuler_capaian || 'Berkembang Sesuai Harapan'
-
-  activeReportCard.value.kokurikuler_deskripsi = `${nama} telah menunjukkan sikap aktif dan antusias dalam tema "${tema}". Berdasarkan asesmen asesmen kokurikuler, ananda menunjukkan capaian ${capaian} terutama dalam dimensi ${dimensi}. Kegiatan ini mendukung target berupa: ${target}.`
-  showNotification('Narasi kokurikuler berhasil disusun otomatis.', 'success')
-}
-
-// Add/Remove Grade Row
-const addSubjectRow = () => {
+// Add/Remove Grade or Ekstra Row
+const addGradeRow = () => {
   if (!activeReportCard.value) return
   const nextUrutan = (activeReportCard.value.grades.length || 0) + 1
   activeReportCard.value.grades.push({
-    nama_mapel: '',
+    nama_mapel: 'Mata Pelajaran Baru',
     kelompok: 'Umum',
     nilai_akhir: null,
-    capaian_kompetensi: '',
+    predikat: null,
+    capaian_kompetensi: null,
     urutan: nextUrutan,
   })
 }
 
-const removeSubjectRow = (index: number) => {
+const removeGradeRow = (index: number) => {
   if (!activeReportCard.value) return
-  if (confirm('Hapus mata pelajaran ini dari daftar rapor?')) {
+  if (confirm('Hapus mata pelajaran/aspek ini dari rapor?')) {
     activeReportCard.value.grades.splice(index, 1)
   }
 }
 
-// Add/Remove Extracurricular Row
 const addExtracurricularRow = () => {
   if (!activeReportCard.value) return
   const nextUrutan = (activeReportCard.value.extracurriculars.length || 0) + 1
@@ -393,27 +600,33 @@ const removeExtracurricularRow = (index: number) => {
   activeReportCard.value.extracurriculars.splice(index, 1)
 }
 
-// Print Views
-const openPrintRaport = async (studentId: number, reportCardId?: number) => {
-  await openEditor(studentId, reportCardId)
-  currentView.value = 'print_raport'
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+// Open Print View
+const openPrintView = (studentId: number, reportCardId: number | null) => {
+  openEditor(studentId, reportCardId).then(() => {
+    if (selectedJenisRapor.value === 'triwulan_tematik') {
+      currentView.value = 'print_tematik'
+    } else if (selectedJenisRapor.value === 'karakter_lifeskill') {
+      currentView.value = 'print_karakter'
+    } else {
+      currentView.value = 'print_raport'
+    }
+  })
 }
 
-const openPrintIdentitas = async (studentId: number, reportCardId?: number) => {
-  await openEditor(studentId, reportCardId)
-  currentView.value = 'print_identitas'
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+const openIdentityPrint = (studentId: number, reportCardId: number | null) => {
+  openEditor(studentId, reportCardId).then(() => {
+    currentView.value = 'print_identitas'
+  })
 }
 
 const handlePrintBrowser = () => {
   window.print()
 }
 
-// Excel Export & Import
+// Export / Import Excel
 const handleExportExcel = () => {
   if (!selectedClassId.value) return
-  const url = `/api/v1/report-cards/export-excel?class_id=${selectedClassId.value}&semester=${selectedSemester.value}&academic_year_id=${selectedAcademicYearId.value || ''}`
+  const url = `/api/v1/report-cards/export-excel?class_id=${selectedClassId.value}&semester=${selectedSemester.value}&academic_year_id=${selectedAcademicYearId.value || ''}&jenis_rapor=${selectedJenisRapor.value}&periode=${encodeURIComponent(selectedPeriode.value || '')}`
   window.open(url, '_blank')
 }
 
@@ -421,33 +634,36 @@ const triggerFileInput = () => {
   fileInput.value?.click()
 }
 
-const handleFileUpload = async (event: Event) => {
+const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  if (!file) return
+  if (!target.files || !target.files[0]) return
 
-  if (!confirm(`Import nilai rapor dari file "${file.name}" untuk kelas yang dipilih?`)) {
+  const file = target.files[0]
+  if (!confirm(`Import data nilai dari file "${file.name}" untuk kelas ini?`)) {
     target.value = ''
     return
   }
 
+  importingExcel.value = true
   const formData = new FormData()
   formData.append('file', file)
   formData.append('class_id', String(selectedClassId.value))
   formData.append('semester', selectedSemester.value)
+  formData.append('jenis_rapor', selectedJenisRapor.value)
   if (selectedAcademicYearId.value) {
     formData.append('academic_year_id', String(selectedAcademicYearId.value))
   }
 
-  importingExcel.value = true
   try {
-    const res = await api.post('/report-cards/import-excel', formData)
+    const res = await api.post('/report-cards/import-excel', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
     if (res.data.success) {
       showNotification(res.data.message, 'success')
       await loadClassReports()
     }
   } catch (err: any) {
-    showNotification('Gagal mengimpor Excel: ' + (err.response?.data?.message || err.message), 'error')
+    showNotification('Import Excel gagal: ' + (err.response?.data?.message || err.message), 'error')
   } finally {
     importingExcel.value = false
     target.value = ''
@@ -460,103 +676,123 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 text-slate-800 pb-16">
-    <!-- Toast Notification -->
-    <div
-      v-if="message"
-      class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl text-sm font-semibold transition-all transform animate-bounce"
-      :class="{
-        'bg-emerald-600 text-white shadow-emerald-600/30': message.type === 'success',
-        'bg-rose-600 text-white shadow-rose-600/30': message.type === 'error',
-        'bg-amber-500 text-white shadow-amber-500/30': message.type === 'warning'
-      }"
+  <div class="min-h-screen bg-slate-50/80 pb-20 font-sans antialiased text-slate-800">
+    <!-- NOTIFICATION TOAST -->
+    <transition
+      enter-active-class="transform ease-out duration-300 transition"
+      enter-from-class="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+      enter-to-class="translate-y-0 opacity-100 sm:translate-x-0"
+      leave-active-class="transition ease-in duration-200"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
     >
-      <span>{{ message.text }}</span>
-      <button @click="message = null" class="ml-2 text-white/80 hover:text-white">&times;</button>
-    </div>
+      <div
+        v-if="message"
+        class="fixed top-5 right-5 z-50 max-w-md w-full shadow-2xl rounded-2xl p-4 flex items-center gap-3 border text-xs font-semibold backdrop-blur-md"
+        :class="{
+          'bg-emerald-500/90 text-white border-emerald-400': message.type === 'success',
+          'bg-rose-500/90 text-white border-rose-400': message.type === 'error',
+          'bg-amber-500/90 text-white border-amber-400': message.type === 'warning',
+        }"
+      >
+        <span class="text-base">🔔</span>
+        <div class="flex-1 leading-snug">{{ message.text }}</div>
+        <button @click="message = null" class="text-white/80 hover:text-white font-black">&times;</button>
+      </div>
+    </transition>
 
-    <!-- ========================================================================= -->
-    <!-- VIEW 1: DAFTAR RAPOR KELAS (LIST OVERVIEW) -->
-    <!-- ========================================================================= -->
-    <div v-if="currentView === 'list'" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
-      <!-- Header Banner -->
-      <div class="relative overflow-hidden bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-emerald-950/10">
-        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div class="space-y-2">
-            <div class="flex items-center gap-2">
-              <span class="px-3 py-1 bg-emerald-500/30 backdrop-blur-md rounded-full text-xs font-bold tracking-wider uppercase border border-emerald-300/30 text-emerald-100">
-                Kurikulum Merdeka & Deep Learning
-              </span>
-              <span class="px-2.5 py-1 bg-amber-400 text-amber-950 rounded-full text-[10px] font-extrabold uppercase shadow-sm">
-                Akses Khusus Admin & Kepala Sekolah
-              </span>
+    <!-- TOP HEADER -->
+    <header class="bg-white border-b border-slate-200/80 sticky top-0 z-30 shadow-xs print:hidden">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between py-4 gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-600/20 text-lg font-black shrink-0">
+              📑
             </div>
-            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              E-Rapor & Buku Hasil Belajar Siswa
-            </h1>
-            <p class="text-emerald-100/90 text-sm max-w-2xl leading-relaxed">
-              Sistem database rapor terpadu SDI Bina Insan Mandiri. Pengolahan nilai intrakurikuler (18 mapel), kokurikuler P5, ekstrakurikuler, dan rekapitulasi kehadiran siap cetak.
-            </p>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-lg font-black tracking-tight text-slate-900">
+                  Manajemen & Pengolahan Rapor Siswa
+                </h1>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  3 Format Rapor
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 font-medium">
+                Alur pengisian oleh Wali Kelas & validasi resmi oleh Kepala Sekolah SDI Bina Insan Mandiri.
+              </p>
+            </div>
           </div>
 
-          <!-- Quick Action Buttons on Banner -->
-          <div class="flex flex-wrap items-center gap-2.5">
+          <!-- BACK TO LIST BUTTON IF IN EDITOR / PRINT -->
+          <div v-if="currentView !== 'list'" class="flex items-center gap-2 self-start sm:self-auto">
             <button
-              @click="handleInitializeClass(false)"
-              :disabled="loading"
-              class="px-4 py-2.5 bg-white text-emerald-900 rounded-xl font-bold text-xs hover:bg-emerald-50 active:scale-95 transition-all shadow-md flex items-center gap-2"
-              title="Buat draf rapor untuk semua siswa di rombel ini"
+              @click="currentView = 'list'"
+              class="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-xs transition-all flex items-center gap-1.5"
             >
-              <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Inisialisasi Rapor Kelas
+              <span>Kembali ke Daftar Siswa</span>
             </button>
-
-            <button
-              @click="handleExportExcel"
-              :disabled="loading || !selectedClassId"
-              class="px-3.5 py-2.5 bg-emerald-900/60 hover:bg-emerald-900/80 text-white rounded-xl font-bold text-xs transition-all border border-emerald-400/30 flex items-center gap-2"
-              title="Export database rapor ke Excel format SDI BIM"
-            >
-              <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Unduh Excel Rapor
-            </button>
-
-            <button
-              @click="triggerFileInput"
-              :disabled="importingExcel || loading"
-              class="px-3.5 py-2.5 bg-emerald-900/60 hover:bg-emerald-900/80 text-white rounded-xl font-bold text-xs transition-all border border-emerald-400/30 flex items-center gap-2"
-              title="Unggah spreadsheet nilai"
-            >
-              <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              <span>{{ importingExcel ? 'Mengunggah...' : 'Import Nilai' }}</span>
-            </button>
-            <input
-              ref="fileInput"
-              type="file"
-              accept=".xlsx,.xls"
-              class="hidden"
-              @change="handleFileUpload"
-            />
           </div>
         </div>
-      </div>
 
-      <!-- Filters & Control Bar -->
-      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <!-- Pilih Rombel -->
+        <!-- 3 REPORT CARD TABS SWITCHER (TOP NAVIGATION) -->
+        <div class="flex border-b border-slate-200/80 gap-2 overflow-x-auto scrollbar-none pt-1">
+          <button
+            type="button"
+            @click="selectedJenisRapor = 'kurikulum_merdeka'"
+            class="px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap"
+            :class="selectedJenisRapor === 'kurikulum_merdeka'
+              ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50'
+              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50'"
+          >
+            <span class="w-2 h-2 rounded-full" :class="selectedJenisRapor === 'kurikulum_merdeka' ? 'bg-emerald-600' : 'bg-slate-300'"></span>
+            <span>📘 Rapor Kurikulum Merdeka (Intra & P5)</span>
+          </button>
+
+          <button
+            type="button"
+            @click="selectedJenisRapor = 'triwulan_tematik'"
+            class="px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap"
+            :class="selectedJenisRapor === 'triwulan_tematik'
+              ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50'
+              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50'"
+          >
+            <span class="w-2 h-2 rounded-full" :class="selectedJenisRapor === 'triwulan_tematik' ? 'bg-emerald-600' : 'bg-slate-300'"></span>
+            <span>📗 Rapor Triwulan Tematik BIM (5 Tema)</span>
+          </button>
+
+          <button
+            type="button"
+            @click="selectedJenisRapor = 'karakter_lifeskill'"
+            class="px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap"
+            :class="selectedJenisRapor === 'karakter_lifeskill'
+              ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50'
+              : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50'"
+          >
+            <span class="w-2 h-2 rounded-full" :class="selectedJenisRapor === 'karakter_lifeskill' ? 'bg-emerald-600' : 'bg-slate-300'"></span>
+            <span>📙 Laporan Karakter & Life Skill (Triwulan)</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- VIEW 1: STUDENT LIST & CLASS OVERVIEW -->
+    <div v-if="currentView === 'list'" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+      <!-- FILTER TOOLBAR -->
+      <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 items-end">
+          <!-- Class Selector -->
           <div>
-            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Rombel / Kelas</label>
+            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              Rombongan Belajar
+            </label>
             <select
               v-model="selectedClassId"
               @change="loadClassReports"
-              class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
             >
               <option v-for="c in classes" :key="c.id" :value="c.id">
                 {{ c.nama }} (Tingkat {{ c.tingkat }})
@@ -564,215 +800,403 @@ onMounted(() => {
             </select>
           </div>
 
-          <!-- Pilih Semester -->
+          <!-- Academic Year -->
           <div>
-            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Semester</label>
-            <select
-              v-model="selectedSemester"
-              @change="loadClassReports"
-              class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-            >
-              <option value="Gasal">Semester Gasal (Ganjil)</option>
-              <option value="Genap">Semester Genap</option>
-            </select>
-          </div>
-
-          <!-- Tahun Ajaran -->
-          <div>
-            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tahun Ajaran</label>
+            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              Tahun Ajaran
+            </label>
             <select
               v-model="selectedAcademicYearId"
               @change="loadClassReports"
-              class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
             >
               <option v-for="y in academicYears" :key="y.id" :value="y.id">
-                {{ y.nama }} {{ y.is_aktif ? '(Aktif)' : '' }}
+                {{ y.nama }} {{ y.is_aktif ? '★ (Aktif)' : '' }}
               </option>
+            </select>
+          </div>
+
+          <!-- Semester -->
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              Semester
+            </label>
+            <select
+              v-model="selectedSemester"
+              @change="loadClassReports"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            >
+              <option value="Gasal">Semester Gasal (1)</option>
+              <option value="Genap">Semester Genap (2)</option>
+            </select>
+          </div>
+
+          <!-- Periode / Triwulan -->
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              Periode Rapor
+            </label>
+            <select
+              v-model="selectedPeriode"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            >
+              <option v-for="opt in periodeOptions" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Search & Filter Status -->
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              Filter Status
+            </label>
+            <select
+              v-model="statusFilter"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            >
+              <option value="all">Semua Status ({{ classReportData?.total_students || 0 }})</option>
+              <option value="belum_ada">Belum Dibuat ({{ classReportData?.belum_ada_count || 0 }})</option>
+              <option value="draft">Draft Wali Kelas ({{ classReportData?.draft_count || 0 }})</option>
+              <option value="menunggu_validasi">Menunggu Validasi ({{ classReportData?.submitted_count || 0 }})</option>
+              <option value="final">Disetujui / Final ({{ classReportData?.completed_count || 0 }})</option>
+              <option value="perlu_revisi">Perlu Revisi ({{ classReportData?.revision_count || 0 }})</option>
             </select>
           </div>
         </div>
 
-        <!-- Search Bar -->
-        <div class="w-full md:w-72">
-          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cari Siswa</label>
-          <div class="relative">
+        <!-- SEARCH BAR & ACTION BUTTONS -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
+          <div class="relative w-full sm:w-72">
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Cari nama, NISN, atau NIS..."
-              class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              placeholder="Cari nama siswa / NIS / NISN..."
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
             />
             <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
+
+          <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+            <!-- WALI KELAS: SUBMIT CLASS BULK -->
+            <button
+              v-if="draftOrRevisionCount > 0"
+              @click="handleBulkSubmitClass"
+              :disabled="submittingValidation"
+              class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+              title="Ajukan seluruh draf rapor siswa kelas ini ke Kepala Sekolah"
+            >
+              <span>🚀</span>
+              <span>Ajukan Semua ke KS ({{ draftOrRevisionCount }})</span>
+            </button>
+
+            <!-- KEPALA SEKOLAH / ADMIN: VALIDATE CLASS BULK -->
+            <button
+              v-if="auth.isAdmin && pendingCount > 0"
+              @click="handleBulkValidateClass"
+              :disabled="validatingReport"
+              class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+              title="Validasi dan setujui massal semua rapor yang diajukan di kelas ini"
+            >
+              <span>✓✓</span>
+              <span>Validasi Massal 1 Kelas ({{ pendingCount }})</span>
+            </button>
+
+            <!-- INITIALIZE BUTTON -->
+            <button
+              @click="handleInitializeClass(false)"
+              :disabled="loading"
+              class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+            >
+              <span>⚡</span>
+              <span>Inisialisasi Kelas</span>
+            </button>
+
+            <!-- EXPORT EXCEL -->
+            <button
+              @click="handleExportExcel"
+              class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+              title="Download rekap nilai rapor kelas dalam format Excel"
+            >
+              <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Export Excel</span>
+            </button>
+
+            <!-- IMPORT EXCEL -->
+            <input ref="fileInput" type="file" accept=".xlsx,.xls" class="hidden" @change="handleFileChange" />
+            <button
+              @click="triggerFileInput"
+              :disabled="importingExcel"
+              class="px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+              title="Upload file spreadsheet nilai siswa"
+            >
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              <span>{{ importingExcel ? 'Mengimpor...' : 'Import Excel' }}</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- Quick KPI Stats Cards -->
-      <div v-if="classReportData" class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Siswa Rombel</div>
-          <div class="text-2xl font-black text-slate-800 mt-1">{{ classReportData.total_students || 0 }}</div>
-          <div class="text-[10px] text-emerald-600 font-semibold mt-1">Kelas {{ classReportData.class?.nama }} • Fase {{ classReportData.class?.fase }}</div>
+      <!-- CLASS INFO & KPI CARDS -->
+      <div v-if="classReportData" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Siswa</div>
+          <div class="text-xl font-black text-slate-900 mt-1">{{ classReportData.total_students || 0 }}</div>
+          <div class="text-[10px] text-slate-500 mt-0.5">{{ classReportData.class?.nama }}</div>
         </div>
 
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Rapor Selesai (Final)</div>
-          <div class="text-2xl font-black text-emerald-600 mt-1">{{ classReportData.completed_count || 0 }}</div>
-          <div class="text-[10px] text-slate-500 font-medium mt-1">Siap dicetak resmi</div>
-        </div>
-
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Dalam Proses (Draft)</div>
-          <div class="text-2xl font-black text-amber-500 mt-1">{{ classReportData.draft_count || 0 }}</div>
-          <div class="text-[10px] text-slate-500 font-medium mt-1">Pengisian nilai & catatan</div>
-        </div>
-
-        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Wali Kelas Pengampu</div>
-          <div class="text-sm font-extrabold text-slate-800 mt-1 truncate" :title="classReportData.class?.wali_kelas">
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Wali Kelas</div>
+          <div class="text-xs font-bold text-slate-800 mt-1 truncate" :title="classReportData.class?.wali_kelas">
             {{ classReportData.class?.wali_kelas || '-' }}
           </div>
-          <div class="text-[10px] text-slate-400 font-mono mt-1">NIP: {{ classReportData.class?.wali_kelas_nip || '-' }}</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">NIP: {{ classReportData.class?.wali_kelas_nip || '-' }}</div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 border border-amber-200/80 bg-amber-50/20 shadow-xs">
+          <div class="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Draft Wali Kelas</div>
+          <div class="text-xl font-black text-amber-800 mt-1">{{ classReportData.draft_count || 0 }}</div>
+          <div class="text-[10px] text-amber-600 mt-0.5">Dalam pengisian</div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 border border-blue-200/80 bg-blue-50/20 shadow-xs">
+          <div class="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Menunggu Validasi</div>
+          <div class="text-xl font-black text-blue-800 mt-1">{{ classReportData.submitted_count || 0 }}</div>
+          <div class="text-[10px] text-blue-600 mt-0.5">Diajukan ke KS</div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 border border-emerald-200/80 bg-emerald-50/20 shadow-xs">
+          <div class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Disetujui / Final</div>
+          <div class="text-xl font-black text-emerald-800 mt-1">{{ classReportData.completed_count || 0 }}</div>
+          <div class="text-[10px] text-emerald-600 mt-0.5">Siap cetak resmi</div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 border border-rose-200/80 bg-rose-50/20 shadow-xs">
+          <div class="text-[10px] font-bold text-rose-700 uppercase tracking-wider">Perlu Revisi</div>
+          <div class="text-xl font-black text-rose-800 mt-1">{{ classReportData.revision_count || 0 }}</div>
+          <div class="text-[10px] text-rose-600 mt-0.5">Catatan dari KS</div>
         </div>
       </div>
 
-      <!-- Student Rapor Table -->
-      <div class="bg-white rounded-2xl shadow-xs border border-slate-200/80 overflow-hidden">
-        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-          <div class="font-extrabold text-sm text-slate-800">
-            Daftar Nilai & Rapor Siswa — {{ classReportData?.class?.nama }} ({{ selectedSemester }})
-          </div>
-          <div class="text-xs text-slate-500">
-            Menampilkan <strong class="text-slate-800">{{ filteredStudents.length }}</strong> siswa
-          </div>
-        </div>
-
+      <!-- STUDENTS TABLE -->
+      <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs text-slate-600">
-            <thead class="bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
-              <tr>
-                <th class="py-3.5 px-4 w-12 text-center">No</th>
-                <th class="py-3.5 px-4">Nama Lengkap & NISN</th>
-                <th class="py-3.5 px-4 text-center">JK</th>
-                <th class="py-3.5 px-4 text-center">Kelengkapan Mapel</th>
-                <th class="py-3.5 px-4 text-center">Rata-Rata</th>
-                <th class="py-3.5 px-4 text-center">Presensi (S/I/A)</th>
-                <th class="py-3.5 px-4 text-center">Status</th>
-                <th class="py-3.5 px-4 text-right">Aksi Manajemen</th>
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-extrabold text-slate-600 uppercase tracking-wider">
+                <th class="py-3 px-4 w-12 text-center">No</th>
+                <th class="py-3 px-4">Nama Siswa</th>
+                <th class="py-3 px-4 w-32">NIS / NISN</th>
+                <th class="py-3 px-4 w-40 text-center">Kelengkapan Nilai</th>
+                <th class="py-3 px-4 w-44 text-center">Status Validasi</th>
+                <th class="py-3 px-4 w-40 text-center">Kehadiran (S/I/A)</th>
+                <th class="py-3 px-4 w-52 text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100 font-medium">
-              <tr v-if="loading" class="animate-pulse">
-                <td colspan="8" class="py-8 text-center text-slate-400">
-                  Memuat data rapor siswa...
+            <tbody class="divide-y divide-slate-100 text-xs font-medium text-slate-700">
+              <tr v-if="loading" class="text-center py-10">
+                <td colspan="7" class="py-10 text-slate-400">
+                  <div class="flex items-center justify-center gap-2">
+                    <svg class="animate-spin w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Memuat daftar rapor siswa...</span>
+                  </div>
                 </td>
               </tr>
-              <tr v-else-if="filteredStudents.length === 0">
-                <td colspan="8" class="py-12 text-center">
-                  <div class="text-slate-400 font-semibold text-sm">Tidak ada siswa yang ditemukan di kelas ini.</div>
-                  <div class="text-slate-400 text-xs mt-1">Gunakan tombol "Inisialisasi Rapor Kelas" untuk membuat draf awal.</div>
+              <tr v-else-if="filteredStudents.length === 0" class="text-center py-10">
+                <td colspan="7" class="py-10 text-slate-400">
+                  Tidak ada data siswa ditemukan untuk kriteria filter ini.
                 </td>
               </tr>
               <tr
                 v-for="st in filteredStudents"
                 :key="st.student_id"
-                class="hover:bg-slate-50/80 transition-colors"
+                class="hover:bg-slate-50/70 transition-colors"
               >
-                <td class="py-3.5 px-4 text-center font-bold text-slate-400">{{ st.no_urut }}</td>
-                <td class="py-3.5 px-4">
-                  <div class="font-extrabold text-slate-900">{{ st.nama_lengkap }}</div>
-                  <div class="text-[10px] text-slate-400 font-mono">NISN: {{ st.nisn || '-' }} • NIS: {{ st.nis || '-' }}</div>
+                <td class="py-3 px-4 text-center text-slate-400 font-bold">
+                  {{ st.no_urut }}
                 </td>
-                <td class="py-3.5 px-4 text-center">
+                <td class="py-3 px-4">
+                  <div class="font-bold text-slate-900 flex items-center gap-2">
+                    <span>{{ st.nama_lengkap }}</span>
+                    <span v-if="st.jenis_kelamin === 'L'" class="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.2 rounded">L</span>
+                    <span v-else class="text-[10px] text-pink-600 font-bold bg-pink-50 px-1.5 py-0.2 rounded">P</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">
+                    Periode: {{ st.periode }}
+                  </div>
+                  <!-- Catatan revisi alert jika ada -->
+                  <div v-if="st.status === 'perlu_revisi' && st.validation_notes" class="mt-1 text-[10px] text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                    ⚠️ Revisi: {{ st.validation_notes }}
+                  </div>
+                </td>
+                <td class="py-3 px-4 text-slate-600 font-mono text-[11px]">
+                  <div>{{ st.nis || '-' }}</div>
+                  <div class="text-[10px] text-slate-400">NISN: {{ st.nisn || '-' }}</div>
+                </td>
+                <td class="py-3 px-4 text-center">
+                  <div class="flex items-center justify-center gap-1.5">
+                    <span class="font-bold text-slate-900">{{ st.mapel_terisi }}</span>
+                    <span class="text-slate-400">/</span>
+                    <span class="text-slate-500">{{ st.total_mapel }}</span>
+                  </div>
+                  <div class="w-full bg-slate-100 rounded-full h-1.5 mt-1.5 overflow-hidden">
+                    <div
+                      class="h-full rounded-full transition-all duration-300"
+                      :class="st.mapel_terisi === st.total_mapel && st.total_mapel > 0 ? 'bg-emerald-500' : 'bg-amber-500'"
+                      :style="{ width: `${st.total_mapel > 0 ? (st.mapel_terisi / st.total_mapel) * 100 : 0}%` }"
+                    ></div>
+                  </div>
+                </td>
+                <td class="py-3 px-4 text-center">
                   <span
-                    class="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                    :class="st.jenis_kelamin === 'L' ? 'bg-sky-100 text-sky-800' : 'bg-pink-100 text-pink-800'"
+                    class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border"
+                    :class="{
+                      'bg-slate-100 text-slate-600 border-slate-200': st.status === 'belum_ada',
+                      'bg-amber-50 text-amber-800 border-amber-200': st.status === 'draft',
+                      'bg-blue-50 text-blue-800 border-blue-200': st.status === 'menunggu_validasi',
+                      'bg-emerald-50 text-emerald-800 border-emerald-200': st.status === 'final',
+                      'bg-rose-50 text-rose-800 border-rose-200': st.status === 'perlu_revisi',
+                    }"
                   >
-                    {{ st.jenis_kelamin === 'L' ? 'L' : 'P' }}
+                    <span v-if="st.status === 'belum_ada'">⚪ Belum Dibuat</span>
+                    <span v-else-if="st.status === 'draft'">🟡 Draft Wali Kelas</span>
+                    <span v-else-if="st.status === 'menunggu_validasi'">🔵 Menunggu KS</span>
+                    <span v-else-if="st.status === 'final'">🟢 Disetujui (Final)</span>
+                    <span v-else-if="st.status === 'perlu_revisi'">🔴 Perlu Revisi</span>
                   </span>
+                  <div v-if="st.validated_at" class="text-[9px] text-slate-400 mt-0.5">
+                    Oleh: {{ st.validated_by_name || 'Kepala Sekolah' }}
+                  </div>
                 </td>
-                <td class="py-3.5 px-4 text-center">
-                  <span
-                    v-if="st.total_mapel > 0"
-                    class="px-2 py-1 rounded-lg text-[10px] font-bold"
-                    :class="st.mapel_terisi === st.total_mapel ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
-                  >
-                    {{ st.mapel_terisi }} / {{ st.total_mapel }} Mapel
-                  </span>
-                  <span v-else class="text-slate-400 text-[10px]">Belum dibuat</span>
-                </td>
-                <td class="py-3.5 px-4 text-center">
-                  <span v-if="st.rata_rata" class="font-extrabold text-slate-800 text-xs px-2 py-0.5 rounded-md bg-slate-100">
-                    {{ st.rata_rata }}
-                  </span>
-                  <span v-else class="text-slate-400">-</span>
-                </td>
-                <td class="py-3.5 px-4 text-center">
-                  <div v-if="st.kehadiran" class="text-[10px] font-mono space-x-1">
-                    <span class="text-amber-700" title="Sakit">S:{{ st.kehadiran.sakit }}</span>
-                    <span class="text-sky-700" title="Izin">I:{{ st.kehadiran.izin }}</span>
+                <td class="py-3 px-4 text-center text-xs">
+                  <div v-if="st.kehadiran" class="flex items-center justify-center gap-2">
+                    <span class="text-amber-700 font-bold" title="Sakit">S:{{ st.kehadiran.sakit }}</span>
+                    <span class="text-blue-700 font-bold" title="Izin">I:{{ st.kehadiran.izin }}</span>
                     <span class="text-rose-700 font-bold" title="Alpa">A:{{ st.kehadiran.alpa }}</span>
                   </div>
-                  <span v-else class="text-slate-400 text-[10px]">-</span>
+                  <span v-else class="text-slate-400">-</span>
                 </td>
-                <td class="py-3.5 px-4 text-center">
-                  <span
-                    v-if="st.status === 'final'"
-                    class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300"
-                  >
-                    Final
-                  </span>
-                  <span
-                    v-else-if="st.status === 'draft'"
-                    class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-amber-100 text-amber-800 border border-amber-300"
-                  >
-                    Draft
-                  </span>
-                  <span
-                    v-else
-                    class="px-2 py-0.5 rounded-full text-[10px] font-semibold text-slate-400 bg-slate-100"
-                  >
-                    Belum Ada
-                  </span>
-                </td>
-                <td class="py-3.5 px-4 text-right">
-                  <div class="flex items-center justify-end gap-1.5">
-                    <!-- Buka Form Input / Edit Rapor (Full-Page Mode) -->
-                    <button
-                      @click="openEditor(st.student_id, st.report_card_id)"
-                      class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs transition-all shadow-xs flex items-center gap-1"
-                      title="Buka form input nilai & catatan rapor"
-                    >
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                      <span>{{ st.report_card_id ? 'Isi / Edit' : 'Buat Rapor' }}</span>
-                    </button>
+                <td class="py-3 px-4 text-right">
+                  <div class="flex items-center justify-end gap-1.5 flex-wrap">
+                    <!-- TAMPILAN UNTUK KEPALA SEKOLAH & ADMIN (VALIDATOR) -->
+                    <template v-if="auth.isAdmin">
+                      <!-- KONDISI 1: MENUNGGU VALIDASI (PRIORITAS REVIEW KS) -->
+                      <template v-if="st.status === 'menunggu_validasi'">
+                        <button
+                          @click="openEditor(st.student_id, st.report_card_id)"
+                          class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1"
+                          title="Periksa dan evaluasi capaian rapor siswa"
+                        >
+                          <span>🔍</span>
+                          <span>Cek Rapor</span>
+                        </button>
+                        <button
+                          @click="handleValidateSingle(st.report_card_id)"
+                          :disabled="validatingReport"
+                          class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1"
+                          title="Validasi & setujui langsung rapor ini"
+                        >
+                          <span>✓</span>
+                          <span>Setujui</span>
+                        </button>
+                        <button
+                          @click="openRevisionModal(st.report_card_id)"
+                          class="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                          title="Kembalikan ke wali kelas dengan catatan perbaikan"
+                        >
+                          <span>↩</span>
+                          <span>Revisi</span>
+                        </button>
+                      </template>
 
-                    <!-- Cetak Rapor -->
+                      <!-- KONDISI 2: SUDAH FINAL / DISETUJUI -->
+                      <template v-else-if="st.status === 'final'">
+                        <button
+                          @click="openEditor(st.student_id, st.report_card_id)"
+                          class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                          title="Lihat detail rapor yang telah disahkan"
+                        >
+                          <span>👁️</span>
+                          <span>Lihat</span>
+                        </button>
+                        <button
+                          @click="openRevisionModal(st.report_card_id)"
+                          class="px-2 py-1 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold transition-all"
+                          title="Batalkan pengesahan untuk perbaikan darurat"
+                        >
+                          ↩ Revisi
+                        </button>
+                      </template>
+
+                      <!-- KONDISI 3: PERLU REVISI -->
+                      <template v-else-if="st.status === 'perlu_revisi'">
+                        <button
+                          @click="openEditor(st.student_id, st.report_card_id)"
+                          class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                          title="Lihat status perbaikan wali kelas"
+                        >
+                          <span>🔍</span>
+                          <span>Cek Revisi</span>
+                        </button>
+                      </template>
+
+                      <!-- KONDISI 4: DRAFT / BELUM ADA -->
+                      <template v-else>
+                        <button
+                          @click="openEditor(st.student_id, st.report_card_id)"
+                          class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                          title="Tinjau atau bantu pengisian rapor siswa"
+                        >
+                          <span>✏️</span>
+                          <span>Tinjau / Edit</span>
+                        </button>
+                      </template>
+                    </template>
+
+                    <!-- TAMPILAN UNTUK WALI KELAS (PENGISI RAPOR) -->
+                    <template v-else>
+                      <button
+                        @click="openEditor(st.student_id, st.report_card_id)"
+                        class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                        :class="st.status === 'final'
+                          ? 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'"
+                        :title="st.status === 'final' ? 'Lihat rapor siswa' : 'Isi capaian nilai dan catatan rapor siswa'"
+                      >
+                        <span v-if="st.status === 'final'">👁️ Lihat</span>
+                        <span v-else>✏️ Isi Nilai</span>
+                      </button>
+
+                      <!-- AJUKAN KE KS JIKA STATUS DRAFT / REVISI -->
+                      <button
+                        v-if="st.report_card_id && (st.status === 'draft' || st.status === 'perlu_revisi')"
+                        @click="submitSingleForValidation(st.report_card_id)"
+                        :disabled="submittingValidation"
+                        class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1"
+                        title="Ajukan rapor ini ke Kepala Sekolah untuk divalidasi"
+                      >
+                        <span>🚀</span>
+                        <span>Ajukan ke KS</span>
+                      </button>
+                    </template>
+
+                    <!-- PRINT BUTTON (JIKA RAPOR SUDAH DIINISIALISASI) -->
                     <button
                       v-if="st.report_card_id"
-                      @click="openPrintRaport(st.student_id, st.report_card_id)"
-                      class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all"
-                      title="Cetak Rapor Siswa"
+                      @click="openPrintView(st.student_id, st.report_card_id)"
+                      class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 hover:text-emerald-700 transition-all"
+                      title="Cetak lembar cetak rapor resmi"
                     >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                      </svg>
-                    </button>
-
-                    <!-- Cetak Biodata Identitas -->
-                    <button
-                      v-if="st.report_card_id"
-                      @click="openPrintIdentitas(st.student_id, st.report_card_id)"
-                      class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all"
-                      title="Cetak Lembar Identitas Murid"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
+                      🖨️
                     </button>
                   </div>
                 </td>
@@ -783,344 +1207,480 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- ========================================================================= -->
-    <!-- VIEW 2: FORM INPUT / EDITOR RAPOR SISWA (FULL PAGE, NO POPUPS) -->
-    <!-- ========================================================================= -->
+    <!-- VIEW 2: REPORT CARD EDITOR -->
     <div v-else-if="currentView === 'editor' && activeReportCard" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
-      <!-- Editor Top Bar -->
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <button
-            @click="currentView = 'list'"
-            class="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl transition-all flex items-center gap-2 text-xs font-bold"
-            title="Kembali ke Daftar Siswa"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span>Daftar Rapor</span>
-          </button>
-
+      <!-- EDITOR HEADER CARD -->
+      <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <div class="flex items-center gap-2">
-              <h2 class="text-xl font-black text-slate-900 leading-tight">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-md uppercase">
+                {{ activeReportCard.jenis_rapor.replace('_', ' ') }}
+              </span>
+              <h2 class="text-xl font-black text-slate-900">
                 {{ activeReportCard.student?.nama_lengkap }}
               </h2>
               <span
-                class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border"
-                :class="activeReportCard.status === 'final' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-amber-100 text-amber-800 border-amber-300'"
+                class="px-2.5 py-0.5 rounded-full text-xs font-extrabold border"
+                :class="{
+                  'bg-amber-50 text-amber-800 border-amber-200': activeReportCard.status === 'draft',
+                  'bg-blue-50 text-blue-800 border-blue-200': activeReportCard.status === 'menunggu_validasi',
+                  'bg-emerald-50 text-emerald-800 border-emerald-200': activeReportCard.status === 'final',
+                  'bg-rose-50 text-rose-800 border-rose-200': activeReportCard.status === 'perlu_revisi',
+                }"
               >
-                {{ activeReportCard.status }}
+                {{ activeReportCard.status.toUpperCase() }}
               </span>
             </div>
-            <div class="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span>NISN: <strong class="text-slate-700">{{ activeReportCard.student?.nisn || '-' }}</strong></span>
-              <span>Kelas: <strong class="text-slate-700">{{ activeReportCard.school_class?.nama }}</strong></span>
-              <span>Fase: <strong class="text-slate-700">{{ activeReportCard.fase }}</strong></span>
-              <span>Semester: <strong class="text-slate-700">{{ activeReportCard.semester }}</strong></span>
-              <span>Rata-Rata: <strong class="text-emerald-700 font-bold">{{ averageScore }}</strong></span>
+
+            <div class="flex items-center gap-4 text-xs text-slate-500 mt-2 flex-wrap font-medium">
+              <span>NISN: <strong class="text-slate-800">{{ activeReportCard.student?.nisn || '-' }}</strong></span>
+              <span>Kelas: <strong class="text-slate-800">{{ activeReportCard.school_class?.nama }}</strong></span>
+              <span>Fase: <strong class="text-slate-800">{{ activeReportCard.fase }}</strong></span>
+              <span>Periode: <strong class="text-slate-800">{{ activeReportCard.periode || activeReportCard.semester }}</strong></span>
+              <span v-if="activeReportCard.submitter">Diajukan: <strong class="text-slate-800">{{ activeReportCard.submitter.nama }}</strong></span>
+              <span v-if="activeReportCard.validator">Divalidasi: <strong class="text-slate-800">{{ activeReportCard.validator.nama }}</strong></span>
+            </div>
+
+            <!-- Catatan revisi alert -->
+            <div v-if="activeReportCard.validation_notes" class="mt-3 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800">
+              <strong>Catatan dari Kepala Sekolah:</strong> {{ activeReportCard.validation_notes }}
+            </div>
+
+            <!-- KS VALIDASI CALLOUT BANNER -->
+            <div v-if="auth.isAdmin && activeReportCard.status === 'menunggu_validasi'" class="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl flex items-center justify-between gap-4 flex-wrap">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">📋</span>
+                <div>
+                  <div class="text-xs font-black text-blue-900">Menunggu Validasi & Persetujuan Kepala Sekolah</div>
+                  <div class="text-[11px] text-blue-700 mt-0.5">
+                    Silakan tinjau seluruh nilai dan capaian siswa di bawah ini. Tekan tombol <strong class="text-emerald-700">Setujui</strong> jika sudah sesuai, atau <strong class="text-rose-700">Minta Revisi</strong> jika ada catatan perbaikan.
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  @click="handleValidateSingle(activeReportCard.id)"
+                  :disabled="validatingReport"
+                  class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-1.5"
+                >
+                  <span>✓</span>
+                  <span>Setujui & Sahkan Rapor</span>
+                </button>
+                <button
+                  @click="openRevisionModal(activeReportCard.id)"
+                  class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black transition-all shadow-sm flex items-center gap-1.5"
+                >
+                  <span>↩</span>
+                  <span>Minta Revisi ke Wali Kelas</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Action Controls -->
-        <div class="flex items-center gap-2">
-          <!-- Status Selector -->
-          <select
-            v-model="activeReportCard.status"
-            class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
-          >
-            <option value="draft">Status: DRAFT</option>
-            <option value="final">Status: FINAL</option>
-          </select>
+          <!-- ACTIONS IN EDITOR -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <!-- WALI KELAS AJUKAN -->
+            <button
+              v-if="activeReportCard.status === 'draft' || activeReportCard.status === 'perlu_revisi'"
+              @click="submitSingleForValidation(activeReportCard.id)"
+              :disabled="saving || submittingValidation"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+            >
+              <span>🚀</span>
+              <span>Ajukan ke KS</span>
+            </button>
 
-          <!-- Cetak Rapor Langsung -->
-          <button
-            @click="currentView = 'print_raport'"
-            class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5"
-            title="Pratinjau cetak rapor"
-          >
-            <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            <span>Pratinjau Cetak</span>
-          </button>
+            <!-- KS VALIDASI & REVISI -->
+            <template v-if="auth.isAdmin">
+              <button
+                v-if="activeReportCard.status !== 'final'"
+                @click="handleValidateSingle(activeReportCard.id)"
+                :disabled="validatingReport"
+                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+              >
+                <span>✓</span>
+                <span>Validasi & Setujui</span>
+              </button>
 
-          <!-- Simpan Button -->
-          <button
-            @click="saveReportCard()"
-            :disabled="saving"
-            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-extrabold text-xs transition-all shadow-md flex items-center gap-2 active:scale-95"
-          >
-            <svg v-if="saving" class="animate-spin w-4 h-4" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-            </svg>
-            <span>{{ saving ? 'Menyimpan...' : 'Simpan Rapor' }}</span>
-          </button>
+              <button
+                @click="openRevisionModal(activeReportCard.id)"
+                class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all"
+              >
+                Minta Revisi
+              </button>
+            </template>
+
+            <!-- SAVE BUTTON -->
+            <button
+              @click="saveReportCard()"
+              :disabled="saving"
+              class="px-4 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+            >
+              <svg v-if="saving" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>{{ saving ? 'Menyimpan...' : 'Simpan Draf' }}</span>
+            </button>
+
+            <!-- PRINT BUTTON -->
+            <button
+              @click="openPrintView(activeReportCard.student_id, activeReportCard.id)"
+              class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+            >
+              <span>🖨️</span>
+              <span>Cetak</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- Navigation Tabs (Full-Page Sub-Sections) -->
-      <div class="flex border-b border-slate-200 gap-2 sm:gap-4 overflow-x-auto">
+      <!-- EDITOR NAVIGATION TABS -->
+      <div class="flex border-b border-slate-200/80 gap-2 overflow-x-auto pb-1">
         <button
-          @click="activeEditorTab = 'intra'"
-          class="pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-          :class="activeEditorTab === 'intra' ? 'border-emerald-600 text-emerald-700 font-extrabold' : 'border-transparent text-slate-500 hover:text-slate-800'"
+          type="button"
+          @click="activeEditorTab = 'grades'"
+          class="px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-2"
+          :class="activeEditorTab === 'grades' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'"
         >
-          <span>1. Nilai Intrakurikuler</span>
-          <span class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-700 font-mono font-normal">
-            {{ activeReportCard.grades?.length || 0 }} Mapel
-          </span>
+          <span>📊</span>
+          <span>Penilaian & Nilai ({{ activeReportCard.grades?.length || 0 }})</span>
         </button>
 
         <button
+          v-if="activeReportCard.jenis_rapor === 'kurikulum_merdeka'"
+          type="button"
           @click="activeEditorTab = 'koku'"
-          class="pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-          :class="activeEditorTab === 'koku' ? 'border-emerald-600 text-emerald-700 font-extrabold' : 'border-transparent text-slate-500 hover:text-slate-800'"
+          class="px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-2"
+          :class="activeEditorTab === 'koku' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'"
         >
-          <span>2. Kokurikuler (P5 & Deep Learning)</span>
+          <span>🌱</span>
+          <span>Kokurikuler (P5)</span>
         </button>
 
         <button
+          v-if="activeReportCard.jenis_rapor !== 'karakter_lifeskill'"
+          type="button"
           @click="activeEditorTab = 'ekstra'"
-          class="pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-          :class="activeEditorTab === 'ekstra' ? 'border-emerald-600 text-emerald-700 font-extrabold' : 'border-transparent text-slate-500 hover:text-slate-800'"
+          class="px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-2"
+          :class="activeEditorTab === 'ekstra' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'"
         >
-          <span>3. Ekstrakurikuler & Kehadiran</span>
+          <span>⚽</span>
+          <span>Ekstrakurikuler & Absensi</span>
         </button>
 
         <button
+          type="button"
           @click="activeEditorTab = 'notes'"
-          class="pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-          :class="activeEditorTab === 'notes' ? 'border-emerald-600 text-emerald-700 font-extrabold' : 'border-transparent text-slate-500 hover:text-slate-800'"
+          class="px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-2"
+          :class="activeEditorTab === 'notes' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'"
         >
-          <span>4. Catatan & Pengesahan</span>
+          <span>📝</span>
+          <span>Catatan Wali & Pengesahan</span>
         </button>
       </div>
 
-      <!-- TAB 1: NILAI INTRAKURIKULER -->
-      <div v-show="activeEditorTab === 'intra'" class="space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100">
-          <div>
-            <h3 class="font-extrabold text-sm text-emerald-950">Mata Pelajaran & Capaian Kompetensi</h3>
-            <p class="text-xs text-emerald-800">
-              Input nilai akhir skala 0-100 dan deskripsi capaian pembelajaran sesuai acuan Kurikulum Merdeka.
-            </p>
-          </div>
-          <div class="flex items-center gap-2">
-            <button
-              @click="generateAllCompetencies"
-              class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
-              title="Isi otomatis deskripsi capaian yang masih kosong berdasarkan nilai"
-            >
-              <span>✨ Generate Semua Capaian</span>
-            </button>
-            <button
-              @click="addSubjectRow"
-              class="px-3 py-1.5 bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-900 rounded-xl text-xs font-bold transition-all"
-            >
-              + Tambah Mapel
-            </button>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs text-slate-700">
-              <thead class="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
-                <tr>
-                  <th class="py-3 px-3 w-10 text-center">No</th>
-                  <th class="py-3 px-4 w-64">Mata Pelajaran</th>
-                  <th class="py-3 px-3 w-28 text-center">Kelompok</th>
-                  <th class="py-3 px-3 w-24 text-center">Nilai Akhir</th>
-                  <th class="py-3 px-4">Capaian Kompetensi / Deskripsi Belajar</th>
-                  <th class="py-3 px-3 w-12 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100 font-medium">
-                <tr
-                  v-for="(g, idx) in activeReportCard.grades"
-                  :key="idx"
-                  class="hover:bg-slate-50/50 transition-colors"
-                >
-                  <td class="py-3 px-3 text-center text-slate-400 font-bold">{{ idx + 1 }}</td>
-                  <td class="py-3 px-4">
-                    <input
-                      v-model="g.nama_mapel"
-                      type="text"
-                      class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-                      placeholder="Nama Mata Pelajaran..."
-                    />
-                  </td>
-                  <td class="py-3 px-3 text-center">
-                    <select
-                      v-model="g.kelompok"
-                      class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] text-slate-700 focus:outline-none"
-                    >
-                      <option value="Umum">Umum</option>
-                      <option value="Agama">Agama</option>
-                      <option value="Muatan Lokal">Muatan Lokal</option>
-                      <option value="Pilihan">Pilihan</option>
-                    </select>
-                  </td>
-                  <td class="py-3 px-3 text-center">
-                    <input
-                      v-model.number="g.nilai_akhir"
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      placeholder="0"
-                      class="w-20 text-center font-black bg-slate-50 border border-slate-200 rounded-lg py-1.5 text-xs focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-                      :class="{
-                        'text-emerald-700 bg-emerald-50/30': Number(g.nilai_akhir) >= 85,
-                        'text-blue-700': Number(g.nilai_akhir) >= 75 && Number(g.nilai_akhir) < 85,
-                        'text-amber-700': Number(g.nilai_akhir) < 75 && g.nilai_akhir !== null && g.nilai_akhir !== ''
-                      }"
-                    />
-                  </td>
-                  <td class="py-3 px-4">
-                    <div class="space-y-1">
-                      <textarea
-                        v-model="g.capaian_kompetensi"
-                        rows="2"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-                        placeholder="Deskripsi pencapaian kompetensi siswa..."
-                      ></textarea>
-                      <div class="flex items-center justify-between text-[10px]">
-                        <button
-                          type="button"
-                          @click="generateCompetencyDescription(g)"
-                          class="text-emerald-700 hover:text-emerald-900 font-bold hover:underline flex items-center gap-1"
-                        >
-                          <span>✨ Saran Otomatis</span>
-                        </button>
-                        <span class="text-slate-400">{{ (g.capaian_kompetensi || '').length }} karakter</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="py-3 px-3 text-center">
-                    <button
-                      type="button"
-                      @click="removeSubjectRow(idx)"
-                      class="text-slate-400 hover:text-rose-600 p-1"
-                      title="Hapus baris mapel"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 2: KOKURIKULER (P5 & DEEP LEARNING) -->
-      <div v-show="activeEditorTab === 'koku'" class="space-y-6">
-        <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-6">
+      <!-- TAB 1: GRADES / PENILAIAN -->
+      <div v-show="activeEditorTab === 'grades'" class="space-y-6">
+        <!-- SUB-VIEW A: KURIKULUM MERDEKA -->
+        <div v-if="activeReportCard.jenis_rapor === 'kurikulum_merdeka'" class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
           <div class="flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
-              <h3 class="font-extrabold text-base text-slate-900">Projek Kokurikuler & Dimensi Profil Lulusan</h3>
-              <p class="text-xs text-slate-500 mt-0.5">
-                Evaluasi pembelajaran mendalam (Deep Learning) dan Projek Penguatan Profil Pelajar Pancasila (P5).
-              </p>
+              <h3 class="font-extrabold text-base text-slate-900">Nilai Capaian Intrakurikuler</h3>
+              <p class="text-xs text-slate-500">Mata pelajaran standar Kurikulum Merdeka Fase {{ activeReportCard.fase }}</p>
             </div>
             <button
               type="button"
-              @click="generateKokurikulerNarrative"
-              class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+              @click="addGradeRow"
+              class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1"
             >
-              <span>✨ Susun Narasi Otomatis</span>
+              <span>+</span>
+              <span>Tambah Mapel</span>
             </button>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="space-y-3">
+            <div
+              v-for="(g, idx) in activeReportCard.grades"
+              :key="idx"
+              class="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-3"
+            >
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2 flex-1">
+                  <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-black">
+                    {{ idx + 1 }}
+                  </span>
+                  <input
+                    v-model="g.nama_mapel"
+                    type="text"
+                    class="font-bold text-xs bg-white border border-slate-200 rounded-xl px-3 py-1.5 flex-1 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    placeholder="Nama Mata Pelajaran"
+                  />
+                  <select
+                    v-model="g.kelompok"
+                    class="text-xs bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-slate-700 focus:outline-none"
+                  >
+                    <option value="Umum">Umum</option>
+                    <option value="Agama">Agama</option>
+                    <option value="Muatan Lokal">Muatan Lokal</option>
+                  </select>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-500">Nilai:</span>
+                  <input
+                    v-model.number="g.nilai_akhir"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    placeholder="0-100"
+                    class="w-20 text-center font-bold text-xs bg-white border border-slate-200 rounded-xl py-1.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  />
+                  <button
+                    type="button"
+                    @click="removeGradeRow(idx)"
+                    class="text-slate-400 hover:text-rose-600 p-1"
+                    title="Hapus mata pelajaran ini"
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  Capaian Kompetensi / Narasi
+                </label>
+                <textarea
+                  v-model="g.capaian_kompetensi"
+                  rows="2"
+                  placeholder="Deskripsi pencapaian kompetensi siswa pada mapel ini..."
+                  class="w-full text-xs bg-white border border-slate-200 rounded-xl p-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-VIEW B: RAPOR TRIWULAN TEMATIK (5 TEMA BESAR) -->
+        <div v-else-if="activeReportCard.jenis_rapor === 'triwulan_tematik'" class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tema Projek Kokurikuler</label>
+              <h3 class="font-extrabold text-base text-slate-900">5 Klaster Tema Rapor Triwulan Tematik BIM</h3>
+              <p class="text-xs text-slate-500">Sesuai format resmi penilaian tematik terpadu SDI Bina Insan Mandiri</p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div
+              v-for="(g, idx) in activeReportCard.grades"
+              :key="idx"
+              class="p-5 rounded-2xl bg-slate-50/80 border border-slate-200/90 space-y-3"
+            >
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/60 pb-3">
+                <div class="space-y-0.5">
+                  <div class="text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider">
+                    Tema {{ idx + 1 }}: {{ g.tema || 'Tematik' }}
+                  </div>
+                  <div class="font-black text-sm text-slate-900">
+                    {{ g.nama_mapel }}
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-bold text-slate-600">Nilai Angka:</span>
+                    <input
+                      v-model.number="g.nilai_akhir"
+                      @input="g.predikat = calculatePredicate(g.nilai_akhir)"
+                      type="number"
+                      min="0"
+                      max="100"
+                      class="w-20 text-center font-bold text-xs bg-white border border-slate-200 rounded-xl py-1.5 text-slate-900 focus:outline-none"
+                      placeholder="0-100"
+                    />
+                  </div>
+
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-bold text-slate-600">Predikat:</span>
+                    <select
+                      v-model="g.predikat"
+                      class="font-black text-xs bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-emerald-800 focus:outline-none"
+                    >
+                      <option value="">-</option>
+                      <option value="A">A (Sangat Baik)</option>
+                      <option value="B">B (Baik)</option>
+                      <option value="C">C (Cukup)</option>
+                      <option value="D">D (Kurang)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                  Capaian Kompetensi / Tujuan Pembelajaran
+                </label>
+                <textarea
+                  v-model="g.capaian_kompetensi"
+                  rows="3"
+                  placeholder="Narasi pencapaian ananda dalam klaster tema ini..."
+                  class="w-full text-xs bg-white border border-slate-200 rounded-xl p-3 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 leading-relaxed"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-VIEW C: LAPORAN PENGUATAN KARAKTER & LIFE SKILL (17 BUTIR) -->
+        <div v-else-if="activeReportCard.jenis_rapor === 'karakter_lifeskill'" class="space-y-6">
+          <!-- INTERVAL NILAI REFERENSI -->
+          <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-3xl p-5 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h4 class="font-black text-sm uppercase tracking-wider">Interval & Pedoman Nilai Karakter</h4>
+                <p class="text-xs text-emerald-100 mt-0.5">Penilaian perkembangan sikap, pembiasaan ibadah, emosi, dan kecakapan hidup</p>
+              </div>
+              <div class="flex items-center gap-3 text-xs font-bold">
+                <span class="bg-white/20 px-2.5 py-1 rounded-xl">A: >92-100 (Sangat Baik)</span>
+                <span class="bg-white/20 px-2.5 py-1 rounded-xl">B: >83-92 (Baik)</span>
+                <span class="bg-white/20 px-2.5 py-1 rounded-xl">C: 75-83 (Cukup)</span>
+                <span class="bg-white/20 px-2.5 py-1 rounded-xl">D: &lt;75 (Kurang)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- GROUPED BY ASPEK -->
+          <div
+            v-for="(items, aspekTitle) in groupedCharacterGrades"
+            :key="aspekTitle"
+            class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4"
+          >
+            <div class="border-b border-slate-100 pb-3">
+              <h3 class="font-black text-sm text-slate-900 uppercase tracking-wider text-emerald-800">
+                {{ aspekTitle }}
+              </h3>
+            </div>
+
+            <div class="space-y-3">
+              <div
+                v-for="(item, iIdx) in items"
+                :key="iIdx"
+                class="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2.5"
+              >
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div class="font-bold text-xs text-slate-900 flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-black shrink-0">
+                      {{ item.urutan || iIdx + 1 }}
+                    </span>
+                    <span>{{ item.sub_aspek || item.nama_mapel }}</span>
+                  </div>
+
+                  <div class="flex items-center gap-3 self-end sm:self-auto">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-bold text-slate-500">Nilai:</span>
+                      <select
+                        v-model="item.predikat"
+                        class="font-black text-xs bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-emerald-800 focus:outline-none"
+                      >
+                        <option value="A">A (Sangat Baik)</option>
+                        <option value="B">B (Baik)</option>
+                        <option value="C">C (Cukup)</option>
+                        <option value="D">D (Kurang)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Pelaksanaan Implementasi
+                  </label>
+                  <textarea
+                    v-model="item.capaian_kompetensi"
+                    rows="2"
+                    placeholder="Deskripsi bukti perilaku dan implementasi yang ditunjukkan siswa..."
+                    class="w-full text-xs bg-white border border-slate-200 rounded-xl p-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: KOKURIKULER P5 (KHUSUS KURIKULUM MERDEKA) -->
+      <div v-show="activeEditorTab === 'koku'" class="space-y-6">
+        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+          <div class="border-b border-slate-100 pb-4">
+            <h3 class="font-extrabold text-base text-slate-900">Projek Penguatan Profil Pelajar Pancasila (P5)</h3>
+            <p class="text-xs text-slate-500">Tema dan asesmen perkembangan kokurikuler siswa</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tema Projek</label>
               <input
                 v-model="activeReportCard.kokurikuler_tema"
                 type="text"
-                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                placeholder="Contoh: Sampahku bersih lingkunganku sehat"
+                placeholder="misal: Sampahku Bersih Lingkunganku Sehat"
+                class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none"
               />
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Capaian Akhir / Predikat</label>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Dimensi Profil</label>
+              <input
+                v-model="activeReportCard.kokurikuler_dimensi"
+                type="text"
+                placeholder="misal: Kolaborasi, Kemandirian, Kreativitas"
+                class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none"
+              />
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Capaian Akhir</label>
               <select
                 v-model="activeReportCard.kokurikuler_capaian"
-                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none"
               >
-                <option value="Sangat Berkembang">Sangat Berkembang (SB)</option>
-                <option value="Berkembang Sesuai Harapan">Berkembang Sesuai Harapan (BSH)</option>
                 <option value="Mulai Berkembang">Mulai Berkembang (MB)</option>
-                <option value="Perlu Bimbingan">Perlu Bimbingan (PB)</option>
+                <option value="Sedang Berkembang">Sedang Berkembang (SB)</option>
+                <option value="Berkembang Sesuai Harapan">Berkembang Sesuai Harapan (BSH)</option>
+                <option value="Sangat Berkembang">Sangat Berkembang (SAB)</option>
               </select>
             </div>
 
             <div class="md:col-span-2">
-              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Dimensi Profil yang Dinilai</label>
-              <input
-                v-model="activeReportCard.kokurikuler_dimensi"
-                type="text"
-                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                placeholder="Contoh: Kolaborasi, Kemandirian, dan Kreativitas"
-              />
-              <div class="flex flex-wrap gap-1.5 mt-2">
-                <span
-                  v-for="dim in dimensiOptions"
-                  :key="dim"
-                  @click="activeReportCard.kokurikuler_dimensi = activeReportCard.kokurikuler_dimensi ? activeReportCard.kokurikuler_dimensi + ', ' + dim : dim"
-                  class="cursor-pointer px-2.5 py-1 bg-slate-100 hover:bg-emerald-100 hover:text-emerald-900 text-slate-600 rounded-lg text-[10px] font-bold transition-all"
-                >
-                  + {{ dim }}
-                </span>
-              </div>
-            </div>
-
-            <div class="md:col-span-2">
-              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Target Pembelajaran / Capaian Akhir Target</label>
-              <input
-                v-model="activeReportCard.kokurikuler_target"
-                type="text"
-                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                placeholder="Contoh: Peserta didik mampu memilah sampah organik dan membuat kompos sederhana secara mandiri."
-              />
-            </div>
-
-            <div class="md:col-span-2">
-              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Narasi Lengkap Rapor Kokurikuler</label>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Deskripsi Kokurikuler</label>
               <textarea
                 v-model="activeReportCard.kokurikuler_deskripsi"
-                rows="4"
-                class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 leading-relaxed focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                placeholder="Paragraf evaluasi kokurikuler yang akan dicetak di lembar rapor..."
+                rows="3"
+                placeholder="Deskripsi pencapaian projek kokurikuler..."
+                class="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none"
               ></textarea>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- TAB 3: EKSTRAKURIKULER & KEHADIRAN -->
+      <!-- TAB 3: EKSTRAKURIKULER & ABSENSI -->
       <div v-show="activeEditorTab === 'ekstra'" class="space-y-6">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Ekstrakurikuler (2/3 width) -->
-          <div class="lg:col-span-2 bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4">
+          <div class="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 class="font-extrabold text-sm text-slate-900">Kegiatan Ekstrakurikuler (Maks. 5)</h3>
-                <p class="text-xs text-slate-500">Pramuka, Renang, Pencak Silat, Mading, Publikasi, dsb.</p>
+                <h3 class="font-extrabold text-sm text-slate-900">Kegiatan Ekstrakurikuler</h3>
+                <p class="text-xs text-slate-500">Pramuka, Renang, Silat, Mading, Public Speaking, dll.</p>
               </div>
               <button
                 type="button"
                 @click="addExtracurricularRow"
-                class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-all"
+                class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold transition-all"
               >
-                + Tambah Ekstra
+                + Tambah
               </button>
             </div>
 
@@ -1128,28 +1688,28 @@ onMounted(() => {
               <div
                 v-for="(e, eIdx) in activeReportCard.extracurriculars"
                 :key="eIdx"
-                class="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100"
+                class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200 flex-wrap sm:flex-nowrap"
               >
-                <div class="w-full sm:w-1/3">
+                <div class="w-full sm:w-44">
                   <input
                     v-model="e.kegiatan"
                     type="text"
-                    placeholder="Nama Ekstrakurikuler..."
+                    placeholder="Nama Ekstrakurikuler"
                     class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:outline-none"
                   />
                 </div>
-                <div class="w-full sm:w-1/4">
+                <div class="w-32">
                   <select
                     v-model="e.predikat"
-                    class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:outline-none"
+                    class="w-full bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-bold text-slate-800 focus:outline-none"
                   >
-                    <option value="Sangat Baik">Sangat Baik</option>
-                    <option value="Baik">Baik</option>
-                    <option value="Cukup">Cukup</option>
-                    <option value="Kurang">Kurang</option>
+                    <option value="A">A (Sangat Baik)</option>
+                    <option value="B">B (Baik)</option>
+                    <option value="C">C (Cukup)</option>
+                    <option value="-">- (Belum Aktif)</option>
                   </select>
                 </div>
-                <div class="w-full sm:flex-1">
+                <div class="flex-1">
                   <input
                     v-model="e.keterangan"
                     type="text"
@@ -1168,19 +1728,19 @@ onMounted(() => {
             </div>
           </div>
 
-          <!-- Kehadiran (1/3 width) -->
-          <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4">
+          <!-- Kehadiran -->
+          <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 class="font-extrabold text-sm text-slate-900">Rekap Ketidakhadiran</h3>
-                <p class="text-xs text-slate-500">Jumlah hari absen dalam semester</p>
+                <p class="text-xs text-slate-500">Jumlah hari absen</p>
               </div>
               <button
                 type="button"
                 @click="syncAttendanceCurrent"
                 :disabled="syncing"
                 class="p-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl text-xs font-bold transition-all flex items-center gap-1"
-                title="Tarik data presensi dari modul KBM harian"
+                title="Tarik presensi dari sistem harian"
               >
                 <svg class="w-4 h-4" :class="{ 'animate-spin': syncing }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1234,12 +1794,10 @@ onMounted(() => {
 
       <!-- TAB 4: CATATAN WALI KELAS & PENGESAHAN -->
       <div v-show="activeEditorTab === 'notes'" class="space-y-6">
-        <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-6">
+        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-6">
           <div class="border-b border-slate-100 pb-4">
-            <h3 class="font-extrabold text-base text-slate-900">Catatan Wali Kelas & Lembar Pengesahan Rapor</h3>
-            <p class="text-xs text-slate-500 mt-0.5">
-              Pesan motivasi, feedback orang tua, dan identitas penandatangan rapor.
-            </p>
+            <h3 class="font-extrabold text-base text-slate-900">Catatan Wali Kelas & Lembar Pengesahan</h3>
+            <p class="text-xs text-slate-500">Pesan motivasi, titimangsa rapor, dan nama pejabat pengesah.</p>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1248,44 +1806,18 @@ onMounted(() => {
               <textarea
                 v-model="activeReportCard.catatan_wali_kelas"
                 rows="3"
-                class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 leading-relaxed focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                placeholder="Tuliskan motivasi atau catatan perkembangan belajar siswa..."
+                placeholder="Pesan bimbingan dan motivasi untuk ananda..."
+                class="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none"
               ></textarea>
-              <div class="flex flex-wrap gap-2 mt-2">
-                <button
-                  type="button"
-                  @click="activeReportCard.catatan_wali_kelas = 'Alhamdulillah, ananda menunjukkan perkembangan belajar dan adab yang baik. Pertahankan prestasimu dan terus bersemangat menuntut ilmu.'"
-                  class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-[10px] font-bold text-slate-600"
-                >
-                  Preset Motivasi Umum
-                </button>
-                <button
-                  type="button"
-                  @click="activeReportCard.catatan_wali_kelas = 'Tingkatkan ketekunan belajar dan keaktifan di kelas. Terus asah potensi yang dimiliki untuk hasil yang lebih baik.'"
-                  class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-[10px] font-bold text-slate-600"
-                >
-                  Preset Peningkatan
-                </button>
-              </div>
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tempat & Tanggal Penerbitan Rapor</label>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Titimangsa Cetak</label>
               <input
                 v-model="activeReportCard.tempat_tanggal"
                 type="text"
-                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none"
-                placeholder="Contoh: Purwokerto, 20 Desember 2025"
-              />
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Fase Kurikulum</label>
-              <input
-                v-model="activeReportCard.fase"
-                type="text"
-                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none"
-                placeholder="A / B / C"
+                placeholder="misal: Purwokerto, 20 Desember 2025"
+                class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none"
               />
             </div>
 
@@ -1294,16 +1826,7 @@ onMounted(() => {
               <input
                 v-model="activeReportCard.wali_kelas_nama"
                 type="text"
-                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">NIP Wali Kelas</label>
-              <input
-                v-model="activeReportCard.wali_kelas_nip"
-                type="text"
-                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 focus:outline-none"
+                class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none"
               />
             </div>
 
@@ -1312,7 +1835,7 @@ onMounted(() => {
               <input
                 v-model="activeReportCard.kepala_sekolah_nama"
                 type="text"
-                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none"
+                class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none"
               />
             </div>
 
@@ -1321,7 +1844,7 @@ onMounted(() => {
               <input
                 v-model="activeReportCard.kepala_sekolah_nip"
                 type="text"
-                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 focus:outline-none"
+                class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none"
               />
             </div>
           </div>
@@ -1329,40 +1852,257 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- ========================================================================= -->
-    <!-- VIEW 3: PRATINJAU CETAK RAPOR HASIL BELAJAR (PRINT LAYOUT A4) -->
-    <!-- ========================================================================= -->
-    <div v-else-if="currentView === 'print_raport' && activeReportCard" class="max-w-4xl mx-auto px-4 py-8">
-      <!-- Print Actions (Hidden on Print) -->
-      <div class="print:hidden mb-6 flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-        <button
-          @click="currentView = 'editor'"
-          class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
-        >
+    <!-- VIEW 3: PRINT VIEWS -->
+    <!-- (A) PRINT TEMATIK (ABRISAM 1 - TRIWULAN TEMATIK) -->
+    <div v-else-if="currentView === 'print_tematik' && activeReportCard" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-4">
+      <div class="flex items-center justify-between print:hidden bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <button @click="currentView = 'editor'" class="px-4 py-2 border border-slate-200 bg-white rounded-xl text-xs font-bold text-slate-700">
           ← Kembali ke Editor
         </button>
-        <div class="flex items-center gap-3">
-          <button
-            @click="currentView = 'print_identitas'"
-            class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
-          >
-            Lihat Lembar Identitas Murid
-          </button>
-          <button
-            @click="handlePrintBrowser"
-            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-md transition-all flex items-center gap-2"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            <span>Cetak Dokumen (Ctrl + P)</span>
-          </button>
-        </div>
+        <button @click="handlePrintBrowser" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-md flex items-center gap-2">
+          <span>🖨️</span>
+          <span>Cetak Dokumen (Ctrl + P)</span>
+        </button>
       </div>
 
-      <!-- OFFICIAL REPORT SHEET (A4 PRINT CONTENT) -->
+      <div class="bg-white p-8 sm:p-12 shadow-xl border border-slate-200 rounded-xl text-black font-serif print:shadow-none print:border-none print:p-0">
+        <!-- School Header -->
+        <div class="text-center pb-3 border-b-2 border-black mb-5">
+          <h3 class="text-xs font-bold uppercase tracking-wider font-sans">Sekolah Dasar Islam Bina Insan Mandiri Purwokerto</h3>
+          <h2 class="text-lg sm:text-xl font-black uppercase tracking-wider font-sans mt-1">
+            LAPORAN HASIL BELAJAR - {{ (activeReportCard.periode || 'TRIWULAN').toUpperCase() }}
+          </h2>
+        </div>
+
+        <!-- Student Meta Box -->
+        <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs mb-5 font-sans">
+          <div class="flex"><span class="w-24 font-bold">Nama</span><span class="mr-2">:</span><span class="font-bold">{{ activeReportCard.student?.nama_lengkap }}</span></div>
+          <div class="flex"><span class="w-24 font-bold">Semester</span><span class="mr-2">:</span><span>{{ activeReportCard.semester }}</span></div>
+          <div class="flex"><span class="w-24 font-bold">NIS / NISN</span><span class="mr-2">:</span><span>{{ activeReportCard.student?.nis || '-' }} / {{ activeReportCard.student?.nisn || '-' }}</span></div>
+          <div class="flex"><span class="w-24 font-bold">Fase</span><span class="mr-2">:</span><span>{{ activeReportCard.fase || 'A' }}</span></div>
+          <div class="flex"><span class="w-24 font-bold">Kelas</span><span class="mr-2">:</span><span>{{ activeReportCard.school_class?.nama || '-' }}</span></div>
+          <div class="flex"><span class="w-24 font-bold">Tahun Ajaran</span><span class="mr-2">:</span><span>{{ activeReportCard.academic_year?.nama || '2025/2026' }}</span></div>
+        </div>
+
+        <!-- Tabel Muatan Tematik (5 Tema) -->
+        <div class="mb-5">
+          <table class="w-full border-collapse border border-black text-xs font-sans">
+            <thead>
+              <tr class="bg-slate-100 text-center font-bold">
+                <th class="border border-black py-2 px-1 w-8">No</th>
+                <th class="border border-black py-2 px-2 text-left w-36">Tema</th>
+                <th class="border border-black py-2 px-2 text-left w-48">Muatan Pelajaran</th>
+                <th class="border border-black py-2 px-1 w-14">Nilai</th>
+                <th class="border border-black py-2 px-1 w-12">Predikat</th>
+                <th class="border border-black py-2 px-2 text-left">Capaian Kompetensi / Tujuan Pembelajaran</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(g, idx) in activeReportCard.grades" :key="idx">
+                <td class="border border-black py-2 px-1 text-center align-top">{{ idx + 1 }}</td>
+                <td class="border border-black py-2 px-2 align-top font-bold text-[11px]">{{ g.tema || 'Tematik' }}</td>
+                <td class="border border-black py-2 px-2 align-top text-[11px] font-semibold">{{ g.nama_mapel }}</td>
+                <td class="border border-black py-2 px-1 text-center align-top font-bold">{{ g.nilai_akhir ?? '-' }}</td>
+                <td class="border border-black py-2 px-1 text-center align-top font-bold text-emerald-800">{{ g.predikat || '-' }}</td>
+                <td class="border border-black py-2 px-2 align-top text-[11px] leading-relaxed text-justify">
+                  {{ g.capaian_kompetensi || '-' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Ekstrakurikuler -->
+        <div class="mb-5 font-sans">
+          <h4 class="font-bold text-xs uppercase tracking-wider mb-1.5 border-b border-black pb-1">
+            Ekstrakurikuler
+          </h4>
+          <table class="w-full border-collapse border border-black text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-center font-bold">
+                <th class="border border-black py-1.5 px-2 w-8">No</th>
+                <th class="border border-black py-1.5 px-3 text-left w-48">Ekstrakurikuler</th>
+                <th class="border border-black py-1.5 px-2 text-center w-20">Predikat</th>
+                <th class="border border-black py-1.5 px-3 text-left">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(e, eIdx) in activeReportCard.extracurriculars" :key="eIdx">
+                <td class="border border-black py-1.5 px-2 text-center">{{ eIdx + 1 }}</td>
+                <td class="border border-black py-1.5 px-3 font-semibold">{{ e.kegiatan }}</td>
+                <td class="border border-black py-1.5 px-2 text-center font-bold">{{ e.predikat }}</td>
+                <td class="border border-black py-1.5 px-3 text-[11px]">{{ e.keterangan || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Catatan Guru & Absensi -->
+        <div class="grid grid-cols-2 gap-4 mb-6 font-sans">
+          <div class="border border-black p-3">
+            <h5 class="font-bold text-xs uppercase mb-1">Catatan Guru</h5>
+            <p class="text-xs italic leading-relaxed">
+              {{ activeReportCard.catatan_wali_kelas || 'Pertahankan prestasi dan terus bersemangat dalam belajar. Baarakallahu fiik.' }}
+            </p>
+          </div>
+
+          <div class="border border-black p-3">
+            <h5 class="font-bold text-xs uppercase mb-1">Absensi</h5>
+            <div class="text-xs space-y-0.5">
+              <div class="flex justify-between"><span>Sakit:</span><strong>{{ activeReportCard.sakit }} hari</strong></div>
+              <div class="flex justify-between"><span>Izin:</span><strong>{{ activeReportCard.izin }} hari</strong></div>
+              <div class="flex justify-between"><span>Tanpa Keterangan:</span><strong>{{ activeReportCard.alpa }} hari</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lembar Tanda Tangan (3 Kolom) -->
+        <div class="font-sans text-xs pt-4">
+          <div class="text-right mb-6">{{ activeReportCard.tempat_tanggal || 'Purwokerto' }}</div>
+          <div class="grid grid-cols-3 text-center gap-4">
+            <div>
+              <p>Mengetahui,</p>
+              <p class="font-bold">Orang Tua / Wali</p>
+              <div class="h-16"></div>
+              <p class="border-t border-black pt-1 w-36 mx-auto">................................</p>
+            </div>
+            <div>
+              <p>&nbsp;</p>
+              <p class="font-bold">Wali Kelas</p>
+              <div class="h-16"></div>
+              <p class="border-t border-black pt-1 w-44 mx-auto font-bold">{{ activeReportCard.wali_kelas_nama || 'Wali Kelas' }}</p>
+            </div>
+            <div>
+              <p>Mengetahui,</p>
+              <p class="font-bold">Kepala Sekolah</p>
+              <div class="h-16"></div>
+              <p class="border-t border-black pt-1 w-48 mx-auto font-bold">{{ activeReportCard.kepala_sekolah_nama || 'Kepala Sekolah' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- (B) PRINT KARAKTER & LIFE SKILL (ABRISAM 2) -->
+    <div v-else-if="currentView === 'print_karakter' && activeReportCard" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-4">
+      <div class="flex items-center justify-between print:hidden bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <button @click="currentView = 'editor'" class="px-4 py-2 border border-slate-200 bg-white rounded-xl text-xs font-bold text-slate-700">
+          ← Kembali ke Editor
+        </button>
+        <button @click="handlePrintBrowser" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-md flex items-center gap-2">
+          <span>🖨️</span>
+          <span>Cetak Dokumen (Ctrl + P)</span>
+        </button>
+      </div>
+
       <div class="bg-white p-8 sm:p-12 shadow-xl border border-slate-200 rounded-xl text-black font-serif print:shadow-none print:border-none print:p-0">
         <!-- Title -->
+        <div class="text-center pb-3 border-b-2 border-black mb-5">
+          <h3 class="text-xs font-bold uppercase tracking-wider font-sans">Sekolah Dasar Islam Bina Insan Mandiri Purwokerto</h3>
+          <h2 class="text-base sm:text-lg font-black uppercase tracking-wider font-sans mt-1">
+            LAPORAN PERKEMBANGAN PENGUATAN KARAKTER DAN LIFE SKILL
+          </h2>
+          <p class="text-xs font-bold tracking-widest uppercase font-sans mt-0.5">
+            {{ activeReportCard.periode || 'TRIWULAN I' }}
+          </p>
+        </div>
+
+        <!-- Student Meta -->
+        <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs mb-5 font-sans">
+          <div class="flex"><span class="w-24 font-bold">Nama</span><span class="mr-2">:</span><span class="font-bold">{{ activeReportCard.student?.nama_lengkap }}</span></div>
+          <div class="flex"><span class="w-24 font-bold">Semester</span><span class="mr-2">:</span><span>{{ activeReportCard.semester }}</span></div>
+          <div class="flex"><span class="w-24 font-bold">NIS / NISN</span><span class="mr-2">:</span><span>{{ activeReportCard.student?.nis || '-' }} / {{ activeReportCard.student?.nisn || '-' }}</span></div>
+          <div class="flex"><span class="w-24 font-bold">Fase</span><span class="mr-2">:</span><span>{{ activeReportCard.fase || 'A' }}</span></div>
+          <div class="flex"><span class="w-24 font-bold">Kelas</span><span class="mr-2">:</span><span>{{ activeReportCard.school_class?.nama || '-' }}</span></div>
+          <div class="flex"><span class="w-24 font-bold">Tahun Ajaran</span><span class="mr-2">:</span><span>{{ activeReportCard.academic_year?.nama || '2025/2026' }}</span></div>
+        </div>
+
+        <!-- Tabel 17 Butir Karakter & Life Skill -->
+        <div class="mb-5">
+          <table class="w-full border-collapse border border-black text-xs font-sans">
+            <thead>
+              <tr class="bg-slate-100 text-center font-bold">
+                <th class="border border-black py-2 px-1 w-8">No</th>
+                <th class="border border-black py-2 px-2 text-left w-44">Aspek Penguatan</th>
+                <th class="border border-black py-2 px-2 text-left w-48">Butir Karakter & Life Skill</th>
+                <th class="border border-black py-2 px-2 text-left">Pelaksanaan Implementasi</th>
+                <th class="border border-black py-2 px-1 w-12 text-center">Nilai</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(g, idx) in activeReportCard.grades" :key="idx">
+                <td class="border border-black py-2 px-1 text-center align-top">{{ idx + 1 }}</td>
+                <td class="border border-black py-2 px-2 align-top font-bold text-[10px] text-slate-800">{{ g.aspek || '-' }}</td>
+                <td class="border border-black py-2 px-2 align-top font-semibold text-[11px]">{{ g.sub_aspek || g.nama_mapel }}</td>
+                <td class="border border-black py-2 px-2 align-top text-[11px] leading-relaxed text-justify">
+                  {{ g.capaian_kompetensi || '-' }}
+                </td>
+                <td class="border border-black py-2 px-1 text-center align-top font-black text-emerald-800">{{ g.predikat || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pedoman Interval Nilai -->
+        <div class="mb-6 font-sans">
+          <h5 class="font-bold text-[11px] uppercase mb-1">INTERVAL NILAI:</h5>
+          <table class="w-64 border-collapse border border-black text-[10px]">
+            <thead>
+              <tr class="bg-slate-100 text-center font-bold">
+                <th class="border border-black py-1 px-1">Interval Nilai</th>
+                <th class="border border-black py-1 px-1">Predikat</th>
+                <th class="border border-black py-1 px-1">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody class="text-center">
+              <tr><td class="border border-black py-0.5 px-1">&gt; 92 - 100</td><td class="border border-black font-bold">A</td><td class="border border-black">Sangat Baik</td></tr>
+              <tr><td class="border border-black py-0.5 px-1">&gt; 83 - 92</td><td class="border border-black font-bold">B</td><td class="border border-black">Baik</td></tr>
+              <tr><td class="border border-black py-0.5 px-1">75 - 83</td><td class="border border-black font-bold">C</td><td class="border border-black">Cukup</td></tr>
+              <tr><td class="border border-black py-0.5 px-1">&lt; 75</td><td class="border border-black font-bold">D</td><td class="border border-black">Kurang</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tanda Tangan -->
+        <div class="font-sans text-xs pt-3">
+          <div class="text-right mb-6">{{ activeReportCard.tempat_tanggal || 'Purwokerto' }}</div>
+          <div class="grid grid-cols-3 text-center gap-4">
+            <div>
+              <p>Mengetahui,</p>
+              <p class="font-bold">Orang Tua / Wali</p>
+              <div class="h-16"></div>
+              <p class="border-t border-black pt-1 w-36 mx-auto">................................</p>
+            </div>
+            <div>
+              <p>&nbsp;</p>
+              <p class="font-bold">Wali Kelas</p>
+              <div class="h-16"></div>
+              <p class="border-t border-black pt-1 w-44 mx-auto font-bold">{{ activeReportCard.wali_kelas_nama || 'Wali Kelas' }}</p>
+            </div>
+            <div>
+              <p>Mengetahui,</p>
+              <p class="font-bold">Kepala Sekolah</p>
+              <div class="h-16"></div>
+              <p class="border-t border-black pt-1 w-48 mx-auto font-bold">{{ activeReportCard.kepala_sekolah_nama || 'Kepala Sekolah' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- (C) PRINT KURIKULUM MERDEKA & IDENTITAS (EXISTING FORMAL REPORT) -->
+    <div v-else-if="currentView === 'print_raport' && activeReportCard" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-4">
+      <div class="flex items-center justify-between print:hidden bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <button @click="currentView = 'editor'" class="px-4 py-2 border border-slate-200 bg-white rounded-xl text-xs font-bold text-slate-700">
+          ← Kembali ke Editor
+        </button>
+        <button @click="handlePrintBrowser" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-md flex items-center gap-2">
+          <span>🖨️</span>
+          <span>Cetak Dokumen (Ctrl + P)</span>
+        </button>
+      </div>
+
+      <div class="bg-white p-8 sm:p-12 shadow-xl border border-slate-200 rounded-xl text-black font-serif print:shadow-none print:border-none print:p-0">
         <div class="text-center pb-4 border-b-2 border-black mb-6">
           <h2 class="text-xl sm:text-2xl font-bold uppercase tracking-wider">LAPORAN HASIL BELAJAR</h2>
           <p class="text-xs tracking-widest uppercase font-sans mt-0.5 font-semibold">
@@ -1370,48 +2110,15 @@ onMounted(() => {
           </p>
         </div>
 
-        <!-- Student Header Info (2 Columns) -->
         <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs mb-6 font-sans">
-          <div class="flex">
-            <span class="w-28 font-semibold">Nama Murid</span>
-            <span class="mr-2">:</span>
-            <span class="font-bold uppercase">{{ activeReportCard.student?.nama_lengkap }}</span>
-          </div>
-          <div class="flex">
-            <span class="w-28 font-semibold">Kelas</span>
-            <span class="mr-2">:</span>
-            <span>{{ activeReportCard.school_class?.nama || '-' }}</span>
-          </div>
-          <div class="flex">
-            <span class="w-28 font-semibold">NISN</span>
-            <span class="mr-2">:</span>
-            <span>{{ activeReportCard.student?.nisn || '-' }}</span>
-          </div>
-          <div class="flex">
-            <span class="w-28 font-semibold">Fase</span>
-            <span class="mr-2">:</span>
-            <span>{{ activeReportCard.fase || 'A' }}</span>
-          </div>
-          <div class="flex">
-            <span class="w-28 font-semibold">Sekolah</span>
-            <span class="mr-2">:</span>
-            <span>{{ schoolProfile?.nama_sekolah || 'SD Islam Bina Insan Mandiri' }}</span>
-          </div>
-          <div class="flex">
-            <span class="w-28 font-semibold">Semester</span>
-            <span class="mr-2">:</span>
-            <span>{{ activeReportCard.semester }}</span>
-          </div>
-          <div class="flex">
-            <span class="w-28 font-semibold">Alamat</span>
-            <span class="mr-2">:</span>
-            <span class="truncate">{{ activeReportCard.student?.alamat_jalan || schoolProfile?.alamat || 'Purwokerto' }}</span>
-          </div>
-          <div class="flex">
-            <span class="w-28 font-semibold">Tahun Ajaran</span>
-            <span class="mr-2">:</span>
-            <span>{{ activeReportCard.academic_year?.nama || '2025/2026' }}</span>
-          </div>
+          <div class="flex"><span class="w-28 font-semibold">Nama Murid</span><span class="mr-2">:</span><span class="font-bold uppercase">{{ activeReportCard.student?.nama_lengkap }}</span></div>
+          <div class="flex"><span class="w-28 font-semibold">Kelas</span><span class="mr-2">:</span><span>{{ activeReportCard.school_class?.nama || '-' }}</span></div>
+          <div class="flex"><span class="w-28 font-semibold">NISN</span><span class="mr-2">:</span><span>{{ activeReportCard.student?.nisn || '-' }}</span></div>
+          <div class="flex"><span class="w-28 font-semibold">Fase</span><span class="mr-2">:</span><span>{{ activeReportCard.fase || 'A' }}</span></div>
+          <div class="flex"><span class="w-28 font-semibold">Sekolah</span><span class="mr-2">:</span><span>{{ schoolProfile?.nama_sekolah || 'SD Islam Bina Insan Mandiri' }}</span></div>
+          <div class="flex"><span class="w-28 font-semibold">Semester</span><span class="mr-2">:</span><span>{{ activeReportCard.semester }}</span></div>
+          <div class="flex"><span class="w-28 font-semibold">Alamat</span><span class="mr-2">:</span><span class="truncate">{{ activeReportCard.student?.alamat_jalan || schoolProfile?.alamat || 'Purwokerto' }}</span></div>
+          <div class="flex"><span class="w-28 font-semibold">Tahun Ajaran</span><span class="mr-2">:</span><span>{{ activeReportCard.academic_year?.nama || '2025/2026' }}</span></div>
         </div>
 
         <!-- Tabel Nilai Intrakurikuler -->
@@ -1479,9 +2186,8 @@ onMounted(() => {
           </table>
         </div>
 
-        <!-- Ketidakhadiran & Catatan Wali Kelas Side-by-Side -->
-        <div class="grid grid-cols-2 gap-4 mb-6 font-sans">
-          <!-- Ketidakhadiran -->
+        <!-- Ketidakhadiran & Catatan -->
+        <div class="grid grid-cols-2 gap-6 mb-8 font-sans">
           <div>
             <h4 class="font-bold text-xs uppercase tracking-wider mb-2 border-b border-black pb-1">
               D. Ketidakhadiran
@@ -1489,242 +2195,117 @@ onMounted(() => {
             <table class="w-full border-collapse border border-black text-xs">
               <tbody>
                 <tr>
-                  <td class="border border-black py-1.5 px-3 w-40">Sakit</td>
-                  <td class="border border-black py-1.5 px-3 text-center font-bold">{{ activeReportCard.sakit || 0 }} hari</td>
+                  <td class="border border-black py-1 px-3 w-36">Sakit</td>
+                  <td class="border border-black py-1 px-3">: {{ activeReportCard.sakit }} hari</td>
                 </tr>
                 <tr>
-                  <td class="border border-black py-1.5 px-3">Izin</td>
-                  <td class="border border-black py-1.5 px-3 text-center font-bold">{{ activeReportCard.izin || 0 }} hari</td>
+                  <td class="border border-black py-1 px-3">Izin</td>
+                  <td class="border border-black py-1 px-3">: {{ activeReportCard.izin }} hari</td>
                 </tr>
                 <tr>
-                  <td class="border border-black py-1.5 px-3">Tanpa Keterangan</td>
-                  <td class="border border-black py-1.5 px-3 text-center font-bold">{{ activeReportCard.alpa || 0 }} hari</td>
+                  <td class="border border-black py-1 px-3">Tanpa Keterangan</td>
+                  <td class="border border-black py-1 px-3">: {{ activeReportCard.alpa }} hari</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          <!-- Catatan Wali Kelas -->
           <div>
             <h4 class="font-bold text-xs uppercase tracking-wider mb-2 border-b border-black pb-1">
               E. Catatan Wali Kelas
             </h4>
-            <div class="border border-black p-3 h-24 text-[11px] leading-relaxed">
-              {{ activeReportCard.catatan_wali_kelas || '-' }}
+            <div class="border border-black p-3 text-xs italic leading-relaxed min-h-[75px]">
+              {{ activeReportCard.catatan_wali_kelas || 'Pertahankan prestasimu dan terus bersemangat dalam menuntut ilmu.' }}
             </div>
           </div>
         </div>
 
-        <!-- Tanggapan Orang Tua -->
-        <div class="mb-8 font-sans">
-          <h4 class="font-bold text-xs uppercase tracking-wider mb-2 border-b border-black pb-1">
-            F. Tanggapan Orang Tua / Wali Murid
-          </h4>
-          <div class="border border-black p-3 h-16 border-dashed"></div>
-        </div>
-
-        <!-- Tanda Tangan Pengesahan -->
-        <div class="grid grid-cols-3 gap-4 text-center text-xs font-sans mt-8">
-          <div>
-            <div>Mengetahui,</div>
-            <div class="font-semibold">Orang Tua / Wali Murid</div>
-            <div class="h-20"></div>
-            <div class="border-b border-black w-36 mx-auto"></div>
-          </div>
-
-          <div>
-            <div class="invisible">Spacer</div>
-            <div class="font-semibold">Wali Kelas</div>
-            <div class="h-20"></div>
-            <div class="font-bold">{{ activeReportCard.wali_kelas_nama || 'Rasiti, S.Pd.' }}</div>
-            <div class="text-[10px]">NIP. {{ activeReportCard.wali_kelas_nip || '199707202024211001' }}</div>
-          </div>
-
-          <div>
-            <div>{{ activeReportCard.tempat_tanggal || 'Purwokerto, 20 Desember 2025' }}</div>
-            <div class="font-semibold">Kepala Sekolah</div>
-            <div class="h-20"></div>
-            <div class="font-bold">{{ activeReportCard.kepala_sekolah_nama || 'Yuniatul Inayah, A.Md., S.Pd.' }}</div>
-            <div class="text-[10px]">NIP. {{ activeReportCard.kepala_sekolah_nip || '197707202024211001' }}</div>
+        <!-- Tanda Tangan -->
+        <div class="font-sans text-xs pt-4">
+          <div class="text-right mb-6">{{ activeReportCard.tempat_tanggal || 'Purwokerto' }}</div>
+          <div class="grid grid-cols-3 text-center gap-4">
+            <div>
+              <p>Mengetahui,</p>
+              <p class="font-bold">Orang Tua / Wali</p>
+              <div class="h-16"></div>
+              <p class="border-t border-black pt-1 w-36 mx-auto">................................</p>
+            </div>
+            <div>
+              <p>&nbsp;</p>
+              <p class="font-bold">Wali Kelas</p>
+              <div class="h-16"></div>
+              <p class="border-t border-black pt-1 w-44 mx-auto font-bold">{{ activeReportCard.wali_kelas_nama || 'Wali Kelas' }}</p>
+            </div>
+            <div>
+              <p>Mengetahui,</p>
+              <p class="font-bold">Kepala Sekolah</p>
+              <div class="h-16"></div>
+              <p class="border-t border-black pt-1 w-48 mx-auto font-bold">{{ activeReportCard.kepala_sekolah_nama || 'Kepala Sekolah' }}</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ========================================================================= -->
-    <!-- VIEW 4: PRATINJAU CETAK IDENTITAS MURID (BIODATA RESMI A4) -->
-    <!-- ========================================================================= -->
-    <div v-else-if="currentView === 'print_identitas' && activeReportCard" class="max-w-4xl mx-auto px-4 py-8">
-      <!-- Print Actions -->
-      <div class="print:hidden mb-6 flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-        <button
-          @click="currentView = 'editor'"
-          class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
-        >
-          ← Kembali ke Editor
-        </button>
-        <div class="flex items-center gap-3">
-          <button
-            @click="currentView = 'print_raport'"
-            class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
-          >
-            Lihat Lembar Nilai Rapor
-          </button>
-          <button
-            @click="handlePrintBrowser"
-            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-md transition-all flex items-center gap-2"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            <span>Cetak Identitas (Ctrl + P)</span>
+    <!-- MODAL CATATAN REVISI (KEPALA SEKOLAH) -->
+    <div
+      v-if="showRevisionModal"
+      class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+    >
+      <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-2 text-rose-600 font-black">
+            <span>⚠️</span>
+            <h3 class="text-base text-slate-900 font-extrabold">Kembalikan Rapor untuk Direvisi</h3>
+          </div>
+          <button @click="showRevisionModal = false" class="text-slate-400 hover:text-slate-600 text-lg font-bold">
+            &times;
           </button>
         </div>
-      </div>
 
-      <!-- OFFICIAL STUDENT BIODATA SHEET -->
-      <div class="bg-white p-8 sm:p-12 shadow-xl border border-slate-200 rounded-xl text-black font-serif print:shadow-none print:border-none print:p-0">
-        <div class="text-center pb-4 mb-8">
-          <h2 class="text-xl sm:text-2xl font-bold uppercase tracking-wider">IDENTITAS MURID</h2>
-          <div class="w-32 border-b-2 border-black mx-auto mt-1"></div>
+        <p class="text-xs text-slate-600 leading-relaxed">
+          Tuliskan catatan perbaikan atau koreksi nilai untuk Wali Kelas agar dapat diperbaiki sebelum divalidasi kembali.
+        </p>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            Catatan Revisi dari Kepala Sekolah
+          </label>
+          <textarea
+            v-model="revisionNoteInput"
+            rows="4"
+            placeholder="misal: Mohon lengkapi narasi capaian pada tema Art & Language, serta sesuaikan nilai muatan lokal."
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+          ></textarea>
         </div>
 
-        <table class="w-full text-xs font-sans leading-relaxed">
-          <tbody>
-            <tr>
-              <td class="w-8 py-1.5 align-top">1.</td>
-              <td class="w-64 py-1.5 align-top">Nama Murid</td>
-              <td class="w-4 py-1.5 align-top">:</td>
-              <td class="py-1.5 align-top font-bold uppercase">{{ activeReportCard.student?.nama_lengkap }}</td>
-            </tr>
-            <tr>
-              <td class="py-1.5 align-top">2.</td>
-              <td class="py-1.5 align-top">Nomor Induk Siswa (NIS)</td>
-              <td class="py-1.5 align-top">:</td>
-              <td class="py-1.5 align-top font-mono">{{ activeReportCard.student?.nis || '-' }}</td>
-            </tr>
-            <tr>
-              <td class="py-1.5 align-top">3.</td>
-              <td class="py-1.5 align-top">Nomor Induk Siswa Nasional (NISN)</td>
-              <td class="py-1.5 align-top">:</td>
-              <td class="py-1.5 align-top font-mono">{{ activeReportCard.student?.nisn || '-' }}</td>
-            </tr>
-            <tr>
-              <td class="py-1.5 align-top">4.</td>
-              <td class="py-1.5 align-top">Tempat, Tanggal Lahir</td>
-              <td class="py-1.5 align-top">:</td>
-              <td class="py-1.5 align-top">
-                {{ activeReportCard.student?.tempat_lahir || '-' }}, {{ activeReportCard.student?.tgl_lahir || '-' }}
-              </td>
-            </tr>
-            <tr>
-              <td class="py-1.5 align-top">5.</td>
-              <td class="py-1.5 align-top">Jenis Kelamin</td>
-              <td class="py-1.5 align-top">:</td>
-              <td class="py-1.5 align-top">
-                {{ activeReportCard.student?.jenis_kelamin === 'L' ? 'Laki-Laki' : 'Perempuan' }}
-              </td>
-            </tr>
-            <tr>
-              <td class="py-1.5 align-top">6.</td>
-              <td class="py-1.5 align-top">Agama</td>
-              <td class="py-1.5 align-top">:</td>
-              <td class="py-1.5 align-top">
-                {{ activeReportCard.student?.religion?.nama || 'Islam' }}
-              </td>
-            </tr>
-            <tr>
-              <td class="py-1.5 align-top">7.</td>
-              <td class="py-1.5 align-top">Pendidikan Sebelumnya</td>
-              <td class="py-1.5 align-top">:</td>
-              <td class="py-1.5 align-top">
-                {{ activeReportCard.student?.asal_sekolah_tk || 'TK / RA' }}
-              </td>
-            </tr>
-            <tr>
-              <td class="py-1.5 align-top">8.</td>
-              <td class="py-1.5 align-top">Alamat Murid</td>
-              <td class="py-1.5 align-top">:</td>
-              <td class="py-1.5 align-top">
-                {{ activeReportCard.student?.alamat_jalan || '-' }},
-                {{ activeReportCard.student?.desa_kelurahan || '' }},
-                {{ activeReportCard.student?.kecamatan || '' }},
-                {{ activeReportCard.student?.kab_kota || '' }}
-              </td>
-            </tr>
-            <tr>
-              <td class="py-1.5 align-top">9.</td>
-              <td class="py-1.5 align-top">Diterima di Sekolah Ini Tanggal</td>
-              <td class="py-1.5 align-top">:</td>
-              <td class="py-1.5 align-top">
-                {{ activeReportCard.student?.tgl_masuk || '15 Juli 2024' }}
-              </td>
-            </tr>
-            <tr>
-              <td class="py-1.5 align-top">10.</td>
-              <td class="py-1.5 align-top">Nama Orang Tua</td>
-              <td class="py-1.5 align-top">:</td>
-              <td class="py-1.5 align-top"></td>
-            </tr>
-            <tr>
-              <td></td>
-              <td class="py-1 pl-4">a. Ayah</td>
-              <td>:</td>
-              <td class="py-1">
-                {{ activeReportCard.student?.guardians?.find((g: any) => g.pivot?.hubungan === 'ayah')?.nama_lengkap || '-' }}
-              </td>
-            </tr>
-            <tr>
-              <td></td>
-              <td class="py-1 pl-4">b. Ibu</td>
-              <td>:</td>
-              <td class="py-1">
-                {{ activeReportCard.student?.guardians?.find((g: any) => g.pivot?.hubungan === 'ibu')?.nama_lengkap || '-' }}
-              </td>
-            </tr>
-            <tr>
-              <td class="py-1.5 align-top">11.</td>
-              <td class="py-1.5 align-top">Pekerjaan Orang Tua</td>
-              <td class="py-1.5 align-top">:</td>
-              <td class="py-1.5 align-top">Karyawan / Wiraswasta</td>
-            </tr>
-            <tr>
-              <td class="py-1.5 align-top">12.</td>
-              <td class="py-1.5 align-top">Alamat Orang Tua</td>
-              <td class="py-1.5 align-top">:</td>
-              <td class="py-1.5 align-top">
-                {{ activeReportCard.student?.alamat_jalan || 'Purwokerto' }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- Foto 3x4 Frame & Tanda Tangan -->
-        <div class="mt-16 flex items-end justify-between font-sans text-xs">
-          <!-- Foto Box -->
-          <div class="w-28 h-36 border-2 border-dashed border-slate-400 flex items-center justify-center text-slate-400 text-center p-2 font-mono text-[10px]">
-            <span>Pas Foto Siswa<br>3 x 4 cm</span>
-          </div>
-
-          <!-- Tanda Tangan Kepala Sekolah -->
-          <div class="text-center w-64">
-            <div>{{ activeReportCard.tempat_tanggal || 'Purwokerto, 20 Desember 2025' }}</div>
-            <div class="font-semibold">Kepala Sekolah,</div>
-            <div class="h-20"></div>
-            <div class="font-bold underline">{{ activeReportCard.kepala_sekolah_nama || 'Yuniatul Inayah, A.Md., S.Pd.' }}</div>
-            <div class="text-[10px]">NIP. {{ activeReportCard.kepala_sekolah_nip || '197707202024211001' }}</div>
-          </div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button
+            type="button"
+            @click="showRevisionModal = false"
+            class="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-xs font-bold"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            @click="handleSendRevision"
+            :disabled="validatingReport"
+            class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md"
+          >
+            {{ validatingReport ? 'Mengirim...' : 'Kirim Catatan Revisi' }}
+          </button>
         </div>
       </div>
     </div>
   </div>
 </template>
 
-<style scoped>
+<style>
 @media print {
   @page {
-    size: A4;
-    margin: 1.5cm;
+    size: A4 portrait;
+    margin: 15mm 15mm 15mm 15mm;
   }
   body {
     background: white !important;

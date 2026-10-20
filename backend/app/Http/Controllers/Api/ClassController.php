@@ -257,4 +257,116 @@ class ClassController extends Controller
             'data' => null,
         ]);
     }
+
+    /**
+     * Memproses kenaikan kelas & mutasi/kelulusan siswa secara massal
+     */
+    public function promoteStudents(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'from_class_id' => ['required', 'exists:classes,id'],
+            'to_class_id' => ['nullable', 'exists:classes,id'],
+            'to_academic_year_id' => ['required', 'exists:academic_years,id'],
+            'students' => ['required', 'array', 'min:1'],
+            'students.*.student_id' => ['required', 'exists:students,id'],
+            'students.*.status_kelas' => ['required', 'in:naik,tinggal_kelas,lulus,pindah'],
+            'students.*.nomor_absen' => ['nullable', 'integer'],
+        ]);
+
+        $fromClass = SchoolClass::findOrFail($validated['from_class_id']);
+        $toClass = !empty($validated['to_class_id']) ? SchoolClass::findOrFail($validated['to_class_id']) : null;
+        $targetYearId = $validated['to_academic_year_id'];
+
+        $processedCount = 0;
+        $graduatedCount = 0;
+
+        DB::beginTransaction();
+        try {
+            foreach ($validated['students'] as $item) {
+                $studentId = $item['student_id'];
+                $statusKelas = $item['status_kelas'];
+                $nomorAbsen = $item['nomor_absen'] ?? null;
+
+                // 1. Tutup enrollment di kelas asal jika ada yang aktif
+                \App\Models\StudentEnrollment::where('student_id', $studentId)
+                    ->where('class_id', $fromClass->id)
+                    ->whereNull('tgl_keluar_kelas')
+                    ->update([
+                        'tgl_keluar_kelas' => now()->toDateString(),
+                        'status_kelas' => $statusKelas,
+                        'updated_by' => auth()->id(),
+                    ]);
+
+                // 2. Jika Lulus
+                if ($statusKelas === 'lulus') {
+                    \App\Models\Student::where('id', $studentId)->update([
+                        'status' => 'lulus',
+                        'updated_by' => auth()->id(),
+                    ]);
+                    $graduatedCount++;
+                }
+                // 3. Jika Pindah / Keluar
+                elseif ($statusKelas === 'pindah') {
+                    \App\Models\Student::where('id', $studentId)->update([
+                        'status' => 'mutasi_keluar',
+                        'updated_by' => auth()->id(),
+                    ]);
+                }
+                // 4. Jika Naik Kelas atau Tinggal Kelas
+                else {
+                    $assignedClassId = ($statusKelas === 'tinggal_kelas') ? $fromClass->id : ($toClass ? $toClass->id : $fromClass->id);
+
+                    // Buat enrollment baru di tahun ajaran baru
+                    \App\Models\StudentEnrollment::updateOrCreate(
+                        [
+                            'student_id' => $studentId,
+                            'academic_year_id' => $targetYearId,
+                        ],
+                        [
+                            'class_id' => $assignedClassId,
+                            'tgl_masuk_kelas' => now()->toDateString(),
+                            'status_kelas' => 'aktif',
+                            'nomor_absen' => $nomorAbsen,
+                            'created_by' => auth()->id(),
+                            'updated_by' => auth()->id(),
+                        ]
+                    );
+
+                    // Update current_class_id di tabel students
+                    \App\Models\Student::where('id', $studentId)->update([
+                        'class_id' => $assignedClassId,
+                        'status' => 'aktif',
+                        'updated_by' => auth()->id(),
+                    ]);
+
+                    $processedCount++;
+                }
+            }
+
+            DB::commit();
+
+            ActivityLogService::log(
+                aksi: 'promote_students',
+                modul: 'classes',
+                targetType: SchoolClass::class,
+                targetId: $fromClass->id,
+                keterangan: "Memproses kenaikan kelas dari {$fromClass->nama}: {$processedCount} siswa dipromosikan, {$graduatedCount} siswa lulus."
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => "Proses kenaikan kelas berhasil. {$processedCount} siswa ditempatkan di kelas baru, {$graduatedCount} siswa berstatus lulus.",
+                'data' => [
+                    'processed_count' => $processedCount,
+                    'graduated_count' => $graduatedCount,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses kenaikan kelas: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
 }

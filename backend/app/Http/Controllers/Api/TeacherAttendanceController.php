@@ -8,12 +8,14 @@ use App\Models\SchoolProfile;
 use App\Models\Setting;
 use App\Models\TeacherAttendance;
 use App\Services\ActivityLogService;
+use App\Services\Export\AttendanceRecapExportService;
 use App\Services\GeofenceService;
 use App\Services\PhotoCompressionService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TeacherAttendanceController extends Controller
 {
@@ -442,7 +444,7 @@ class TeacherAttendanceController extends Controller
         $user = $request->user();
         $isAdmin = $user->isAdmin();
 
-        $query = TeacherAttendance::with(['teacher:id,nik,nama_lengkap,jenis_ptk', 'staff:id,nik,nama_lengkap,jabatan']);
+        $query = TeacherAttendance::with(['teacher:id,nip,nik,nama_lengkap,jenis_ptk,foto_path', 'staff:id,nik,nama_lengkap,jabatan,foto_path']);
 
         // Jika bukan admin, hanya bisa melihat absensinya sendiri
         if (!$isAdmin) {
@@ -477,7 +479,7 @@ class TeacherAttendanceController extends Controller
             $query->whereYear('tanggal', $request->query('tahun'));
         }
 
-        if ($request->filled('status')) {
+        if ($request->filled('status') && $request->query('status') !== 'belum_absen') {
             $query->where('status', $request->query('status'));
         }
 
@@ -488,15 +490,174 @@ class TeacherAttendanceController extends Controller
         // Summary stats
         $summaryQuery = clone $query;
         $allRecords = $summaryQuery->get();
+
+        $totalTeachers = \App\Models\Teacher::count();
+        $totalStaff = \App\Models\Staff::count();
+        $totalPtk = $totalTeachers + $totalStaff;
+
+        $totalRecord = $allRecords->count();
+        $hadir = $allRecords->where('status', 'hadir')->count();
+        $terlambat = $allRecords->filter(function ($rec) {
+            return $rec->status === 'terlambat' || $rec->is_terlambat;
+        })->count();
+        $hadirTepatWaktu = $allRecords->where('status', 'hadir')->where('is_terlambat', false)->count();
+        $izin = $allRecords->where('status', 'izin')->count();
+        $sakit = $allRecords->where('status', 'sakit')->count();
+        $dinas = $allRecords->where('status', 'dinas')->count();
+        $alpa = $allRecords->where('status', 'alpa')->count();
+
+        $totalHadirFisik = $hadir + $terlambat + $dinas;
+
+        $persentaseKehadiran = $totalPtk > 0 
+            ? round(($totalHadirFisik / $totalPtk) * 100, 1) 
+            : ($totalRecord > 0 ? round(($totalHadirFisik / $totalRecord) * 100, 1) : 0);
+
+        $kepatuhanRate = $totalPtk > 0 
+            ? round(($totalRecord / $totalPtk) * 100, 1) 
+            : ($totalRecord > 0 ? 100 : 0);
+
+        $belumAbsen = max(0, $totalPtk - $totalRecord);
+
         $summary = [
-            'total_record' => $allRecords->count(),
-            'hadir' => $allRecords->where('status', 'hadir')->count(),
-            'terlambat' => $allRecords->where('is_terlambat', true)->count(),
-            'izin' => $allRecords->where('status', 'izin')->count(),
-            'sakit' => $allRecords->where('status', 'sakit')->count(),
-            'dinas' => $allRecords->where('status', 'dinas')->count(),
-            'alpa' => $allRecords->where('status', 'alpa')->count(),
+            'total_record' => $totalRecord,
+            'total_ptk' => $totalPtk,
+            'total_teachers' => $totalTeachers,
+            'total_staff' => $totalStaff,
+            'hadir' => $hadir,
+            'hadir_tepat_waktu' => $hadirTepatWaktu,
+            'terlambat' => $terlambat,
+            'izin' => $izin,
+            'sakit' => $sakit,
+            'dinas' => $dinas,
+            'alpa' => $alpa,
+            'belum_absen' => $belumAbsen,
+            'total_hadir_fisik' => $totalHadirFisik,
+            'persentase_kehadiran' => $persentaseKehadiran,
+            'kepatuhan_rate' => $kepatuhanRate,
         ];
+
+        // Mode Monitoring Seluruh PTK (Pendidik & Tendik yang sudah maupun belum check-in)
+        if ($request->boolean('with_all_ptk') && $isAdmin && $request->filled('tanggal')) {
+            $tanggal = $request->query('tanggal');
+            $teachers = \App\Models\Teacher::select('id', 'nip', 'nik', 'nama_lengkap', 'jenis_ptk', 'foto_path')->get();
+            $staffs = \App\Models\Staff::select('id', 'nik', 'nama_lengkap', 'jabatan', 'foto_path')->get();
+
+            $existingAttendances = TeacherAttendance::with(['teacher:id,nip,nik,nama_lengkap,jenis_ptk,foto_path', 'staff:id,nik,nama_lengkap,jabatan,foto_path'])
+                ->whereDate('tanggal', $tanggal)
+                ->get();
+
+            $teacherAttendanceMap = $existingAttendances->whereNotNull('teacher_id')->keyBy('teacher_id');
+            $staffAttendanceMap = $existingAttendances->whereNotNull('staff_id')->keyBy('staff_id');
+
+            $allPtkList = collect();
+
+            foreach ($teachers as $t) {
+                if ($teacherAttendanceMap->has($t->id)) {
+                    $att = $teacherAttendanceMap->get($t->id);
+                    $att->ptk_type = 'guru';
+                    $allPtkList->push($att);
+                } else {
+                    $allPtkList->push([
+                        'id' => null,
+                        'teacher_id' => $t->id,
+                        'staff_id' => null,
+                        'tanggal' => $tanggal,
+                        'jam_masuk' => null,
+                        'jam_keluar' => null,
+                        'status' => 'belum_absen',
+                        'lat' => null,
+                        'lng' => null,
+                        'jarak_masuk_m' => null,
+                        'foto_masuk' => null,
+                        'is_terlambat' => false,
+                        'menit_keterlambatan' => 0,
+                        'keterangan' => 'Belum melakukan check-in GPS',
+                        'status_persetujuan' => 'disetujui',
+                        'teacher' => $t,
+                        'staff' => null,
+                        'ptk_type' => 'guru',
+                    ]);
+                }
+            }
+
+            foreach ($staffs as $s) {
+                if ($staffAttendanceMap->has($s->id)) {
+                    $att = $staffAttendanceMap->get($s->id);
+                    $att->ptk_type = 'tendik';
+                    $allPtkList->push($att);
+                } else {
+                    $allPtkList->push([
+                        'id' => null,
+                        'teacher_id' => null,
+                        'staff_id' => $s->id,
+                        'tanggal' => $tanggal,
+                        'jam_masuk' => null,
+                        'jam_keluar' => null,
+                        'status' => 'belum_absen',
+                        'lat' => null,
+                        'lng' => null,
+                        'jarak_masuk_m' => null,
+                        'foto_masuk' => null,
+                        'is_terlambat' => false,
+                        'menit_keterlambatan' => 0,
+                        'keterangan' => 'Belum melakukan check-in GPS',
+                        'status_persetujuan' => 'disetujui',
+                        'teacher' => null,
+                        'staff' => $s,
+                        'ptk_type' => 'tendik',
+                    ]);
+                }
+            }
+
+            // Filter status jika ada
+            if ($request->filled('status')) {
+                $statusFilter = $request->query('status');
+                $allPtkList = $allPtkList->filter(function ($item) use ($statusFilter) {
+                    $st = is_array($item) ? ($item['status'] ?? '') : ($item->status ?? '');
+                    if ($statusFilter === 'terlambat') {
+                        $isTerlambat = is_array($item) ? ($item['is_terlambat'] ?? false) : ($item->is_terlambat ?? false);
+                        return $st === 'terlambat' || $isTerlambat;
+                    }
+                    return $st === $statusFilter;
+                });
+            }
+
+            // Filter kategori guru/tendik jika ada
+            if ($request->filled('kategori')) {
+                $kat = $request->query('kategori');
+                $allPtkList = $allPtkList->filter(function ($item) use ($kat) {
+                    $ptkType = is_array($item) ? ($item['ptk_type'] ?? '') : ($item->ptk_type ?? '');
+                    return $ptkType === $kat;
+                });
+            }
+
+            // Filter pencarian nama/NIP jika ada
+            if ($request->filled('search')) {
+                $q = strtolower($request->query('search'));
+                $allPtkList = $allPtkList->filter(function ($item) use ($q) {
+                    $teacher = is_array($item) ? ($item['teacher'] ?? null) : ($item->teacher ?? null);
+                    $staff = is_array($item) ? ($item['staff'] ?? null) : ($item->staff ?? null);
+                    $nama = strtolower($teacher?->nama_lengkap ?? $staff?->nama_lengkap ?? '');
+                    $nip = strtolower($teacher?->nip ?? $staff?->nik ?? '');
+                    return str_contains($nama, $q) || str_contains($nip, $q);
+                });
+            }
+
+            $allPtkList = $allPtkList->values();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data monitoring presensi guru & tendik berhasil diambil.',
+                'data' => $allPtkList,
+                'summary' => $summary,
+                'meta' => [
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => $allPtkList->count(),
+                    'total' => $allPtkList->count(),
+                ],
+            ]);
+        }
 
         $perPage = min((int) $request->query('per_page', 20), 100);
         $attendances = $query->orderBy('tanggal', 'desc')->orderBy('jam_masuk', 'desc')->paginate($perPage);
@@ -548,5 +709,277 @@ class TeacherAttendanceController extends Controller
             'message' => 'Absensi berhasil dikoreksi oleh Admin.',
             'data' => $attendance->fresh(),
         ]);
+    }
+
+    public function recap(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user || !$user->isAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Hanya Admin dan Kepala Sekolah yang dapat mengakses rekapitulasi presensi guru & tendik.'], 403);
+        }
+
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        if ($request->filled('bulan') && $request->filled('tahun')) {
+            $tahun = (int) $request->query('tahun');
+            $bulan = (int) $request->query('bulan');
+            $startDate = Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth()->toDateString();
+            $endDate = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth()->toDateString();
+        } elseif ($request->filled('bulan')) {
+            $bulan = (int) $request->query('bulan');
+            $tahun = (int) now()->year;
+            $startDate = Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth()->toDateString();
+            $endDate = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth()->toDateString();
+        }
+
+        if (empty($startDate)) {
+            $startDate = now()->startOfMonth()->toDateString();
+        }
+        if (empty($endDate)) {
+            $endDate = now()->toDateString();
+        }
+
+        $kategori = $request->query('kategori'); // 'guru' | 'tendik' | null
+        $search = $request->query('search');
+
+        $recap = $this->buildTeacherRecapData($startDate, $endDate, $kategori, $search);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data rekapitulasi presensi guru & tendik berhasil dimuat.',
+            'data' => $recap,
+        ]);
+    }
+
+    public function exportRecap(Request $request, AttendanceRecapExportService $exportService): StreamedResponse
+    {
+        $user = $request->user();
+        if (!$user || !$user->isAdmin()) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        if ($request->filled('bulan') && $request->filled('tahun')) {
+            $tahun = (int) $request->query('tahun');
+            $bulan = (int) $request->query('bulan');
+            $startDate = Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth()->toDateString();
+            $endDate = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth()->toDateString();
+        } elseif ($request->filled('bulan')) {
+            $bulan = (int) $request->query('bulan');
+            $tahun = (int) now()->year;
+            $startDate = Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth()->toDateString();
+            $endDate = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth()->toDateString();
+        }
+
+        if (empty($startDate)) {
+            $startDate = now()->startOfMonth()->toDateString();
+        }
+        if (empty($endDate)) {
+            $endDate = now()->toDateString();
+        }
+
+        $kategori = $request->query('kategori');
+        $search = $request->query('search');
+
+        $recap = $this->buildTeacherRecapData($startDate, $endDate, $kategori, $search);
+
+        return $exportService->exportTeacherRecap($recap, $startDate, $endDate);
+    }
+
+    protected function buildTeacherRecapData(string $startDate, string $endDate, ?string $kategori = null, ?string $search = null): array
+    {
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+        $workDays = 0;
+        $curr = $start->copy();
+        while ($curr->lte($end)) {
+            if ($curr->dayOfWeek !== Carbon::SUNDAY) {
+                $workDays++;
+            }
+            $curr->addDay();
+        }
+        $workDays = max(1, $workDays);
+
+        $teachersQuery = \App\Models\Teacher::select('id', 'nip', 'nik', 'nama_lengkap', 'jenis_ptk', 'foto_path');
+        $staffsQuery = \App\Models\Staff::select('id', 'nik', 'nama_lengkap', 'jabatan', 'foto_path');
+
+        if ($search) {
+            $teachersQuery->where(function ($q) use ($search) {
+                $q->where('nama_lengkap', 'like', "%{$search}%")
+                  ->orWhere('nip', 'like', "%{$search}%")
+                  ->orWhere('nik', 'like', "%{$search}%");
+            });
+            $staffsQuery->where(function ($q) use ($search) {
+                $q->where('nama_lengkap', 'like', "%{$search}%")
+                  ->orWhere('nik', 'like', "%{$search}%");
+            });
+        }
+
+        $teachers = ($kategori === 'tendik') ? collect() : $teachersQuery->get();
+        $staffs = ($kategori === 'guru') ? collect() : $staffsQuery->get();
+
+        $attendances = TeacherAttendance::whereBetween('tanggal', [$startDate, $endDate])
+            ->orderBy('tanggal', 'asc')
+            ->orderBy('jam_masuk', 'asc')
+            ->get();
+
+        $teacherGroup = $attendances->whereNotNull('teacher_id')->groupBy('teacher_id');
+        $staffGroup = $attendances->whereNotNull('staff_id')->groupBy('staff_id');
+
+        $ptkList = collect();
+
+        foreach ($teachers as $t) {
+            $recs = $teacherGroup->get($t->id, collect());
+            $hadirTepatWaktu = $recs->where('status', 'hadir')->where('is_terlambat', false)->count();
+            $terlambatRecs = $recs->filter(fn($r) => $r->status === 'terlambat' || $r->is_terlambat);
+            $terlambatCount = $terlambatRecs->count();
+            $menitTerlambat = (int) $terlambatRecs->sum('menit_keterlambatan');
+            $izin = $recs->where('status', 'izin')->count();
+            $sakit = $recs->where('status', 'sakit')->count();
+            $dinas = $recs->where('status', 'dinas')->count();
+            $alpa = $recs->where('status', 'alpa')->count();
+
+            $totalHadirFisik = $hadirTepatWaktu + $terlambatCount + $dinas;
+            $totalRecorded = $recs->count();
+
+            $persentase = round(($totalHadirFisik / $workDays) * 100, 1);
+            if ($persentase > 100) $persentase = 100.0;
+
+            if ($persentase >= 95) {
+                $predikat = 'Sangat Disiplin';
+            } elseif ($persentase >= 85) {
+                $predikat = 'Disiplin Baik';
+            } elseif ($persentase >= 75) {
+                $predikat = 'Cukup';
+            } else {
+                $predikat = 'Perlu Pembinaan';
+            }
+
+            $ptkList->push([
+                'id' => $t->id,
+                'ptk_id' => $t->id,
+                'ptk_type' => 'guru',
+                'nama_lengkap' => $t->nama_lengkap,
+                'nip' => $t->nip ?: '-',
+                'nik' => $t->nik ?: '-',
+                'peran' => $t->jenis_ptk ?: 'Guru',
+                'foto_path' => $t->foto_path,
+                'hadir_tepat_waktu' => $hadirTepatWaktu,
+                'terlambat' => $terlambatCount,
+                'menit_terlambat' => $menitTerlambat,
+                'izin' => $izin,
+                'sakit' => $sakit,
+                'dinas' => $dinas,
+                'alpa' => $alpa,
+                'total_hadir_fisik' => $totalHadirFisik,
+                'total_recorded' => $totalRecorded,
+                'persentase_kehadiran' => $persentase,
+                'predikat' => $predikat,
+                'logs' => $recs->map(fn($r) => [
+                    'id' => $r->id,
+                    'tanggal' => $r->tanggal->toDateString(),
+                    'jam_masuk' => $r->jam_masuk,
+                    'jam_keluar' => $r->jam_keluar,
+                    'status' => $r->status,
+                    'is_terlambat' => (bool) $r->is_terlambat,
+                    'menit_keterlambatan' => (int) $r->menit_keterlambatan,
+                    'jarak_masuk_m' => $r->jarak_masuk_m,
+                    'foto_masuk' => $r->foto_masuk,
+                    'keterangan' => $r->keterangan,
+                ])->values(),
+            ]);
+        }
+
+        foreach ($staffs as $s) {
+            $recs = $staffGroup->get($s->id, collect());
+            $hadirTepatWaktu = $recs->where('status', 'hadir')->where('is_terlambat', false)->count();
+            $terlambatRecs = $recs->filter(fn($r) => $r->status === 'terlambat' || $r->is_terlambat);
+            $terlambatCount = $terlambatRecs->count();
+            $menitTerlambat = (int) $terlambatRecs->sum('menit_keterlambatan');
+            $izin = $recs->where('status', 'izin')->count();
+            $sakit = $recs->where('status', 'sakit')->count();
+            $dinas = $recs->where('status', 'dinas')->count();
+            $alpa = $recs->where('status', 'alpa')->count();
+
+            $totalHadirFisik = $hadirTepatWaktu + $terlambatCount + $dinas;
+            $totalRecorded = $recs->count();
+
+            $persentase = round(($totalHadirFisik / $workDays) * 100, 1);
+            if ($persentase > 100) $persentase = 100.0;
+
+            if ($persentase >= 95) {
+                $predikat = 'Sangat Disiplin';
+            } elseif ($persentase >= 85) {
+                $predikat = 'Disiplin Baik';
+            } elseif ($persentase >= 75) {
+                $predikat = 'Cukup';
+            } else {
+                $predikat = 'Perlu Pembinaan';
+            }
+
+            $ptkList->push([
+                'id' => $s->id,
+                'ptk_id' => $s->id,
+                'ptk_type' => 'tendik',
+                'nama_lengkap' => $s->nama_lengkap,
+                'nip' => $s->nik ?: '-',
+                'nik' => $s->nik ?: '-',
+                'peran' => $s->jabatan ?: 'Tendik',
+                'foto_path' => $s->foto_path,
+                'hadir_tepat_waktu' => $hadirTepatWaktu,
+                'terlambat' => $terlambatCount,
+                'menit_terlambat' => $menitTerlambat,
+                'izin' => $izin,
+                'sakit' => $sakit,
+                'dinas' => $dinas,
+                'alpa' => $alpa,
+                'total_hadir_fisik' => $totalHadirFisik,
+                'total_recorded' => $totalRecorded,
+                'persentase_kehadiran' => $persentase,
+                'predikat' => $predikat,
+                'logs' => $recs->map(fn($r) => [
+                    'id' => $r->id,
+                    'tanggal' => $r->tanggal->toDateString(),
+                    'jam_masuk' => $r->jam_masuk,
+                    'jam_keluar' => $r->jam_keluar,
+                    'status' => $r->status,
+                    'is_terlambat' => (bool) $r->is_terlambat,
+                    'menit_keterlambatan' => (int) $r->menit_keterlambatan,
+                    'jarak_masuk_m' => $r->jarak_masuk_m,
+                    'foto_masuk' => $r->foto_masuk,
+                    'keterangan' => $r->keterangan,
+                ])->values(),
+            ]);
+        }
+
+        $avgPersen = $ptkList->count() > 0 ? round($ptkList->avg('persentase_kehadiran'), 1) : 0;
+        $summary = [
+            'total_ptk' => $ptkList->count(),
+            'total_hari_kerja' => $workDays,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'rata_rata_kehadiran' => $avgPersen,
+            'total_hadir_tepat_waktu' => (int) $ptkList->sum('hadir_tepat_waktu'),
+            'total_terlambat' => (int) $ptkList->sum('terlambat'),
+            'total_menit_terlambat' => (int) $ptkList->sum('menit_terlambat'),
+            'total_izin' => (int) $ptkList->sum('izin'),
+            'total_sakit' => (int) $ptkList->sum('sakit'),
+            'total_dinas' => (int) $ptkList->sum('dinas'),
+            'total_alpa' => (int) $ptkList->sum('alpa'),
+            'total_hadir_fisik' => (int) $ptkList->sum('total_hadir_fisik'),
+        ];
+
+        return [
+            'period' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'total_hari_kerja' => $workDays,
+            ],
+            'summary' => $summary,
+            'ptk_list' => $ptkList->values(),
+        ];
     }
 }

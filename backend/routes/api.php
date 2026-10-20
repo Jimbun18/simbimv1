@@ -85,6 +85,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/check-in', [TeacherAttendanceController::class, 'checkIn']);
             Route::post('/check-out', [TeacherAttendanceController::class, 'checkOut']);
             Route::post('/leave', [TeacherAttendanceController::class, 'leave']);
+            Route::get('/recap/export', [TeacherAttendanceController::class, 'exportRecap']);
+            Route::get('/recap', [TeacherAttendanceController::class, 'recap']);
             Route::get('/', [TeacherAttendanceController::class, 'index']);
         });
 
@@ -181,6 +183,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/classes', [ClassController::class, 'store']);
             Route::put('/classes/{class}', [ClassController::class, 'update']);
             Route::delete('/classes/{class}', [ClassController::class, 'destroy']);
+            Route::post('/classes/promote-students', [ClassController::class, 'promoteStudents']);
 
             // Guardians & Students (Write)
             Route::apiResource('guardians', GuardianController::class);
@@ -264,19 +267,26 @@ Route::prefix('v1')->group(function () {
                 Route::post('/{id}/restore', [BackupController::class, 'restore']);
                 Route::delete('/{id}', [BackupController::class, 'destroy']);
             });
+        });
 
-            // Rapor Kurikulum Merdeka (FR-RAPOR) - Khusus Staf Admin & Kepala Sekolah
-            Route::prefix('report-cards')->group(function () {
-                Route::get('/', [ReportCardController::class, 'index']);
-                Route::get('/default-subjects', [ReportCardController::class, 'defaultSubjects']);
-                Route::post('/initialize-class', [ReportCardController::class, 'initializeClass']);
-                Route::post('/student', [ReportCardController::class, 'getOrCreateForStudent']);
-                Route::get('/export-excel', [ReportCardController::class, 'exportExcel']);
-                Route::post('/import-excel', [ReportCardController::class, 'importExcel']);
-                Route::get('/{id}', [ReportCardController::class, 'show']);
-                Route::put('/{id}', [ReportCardController::class, 'update']);
-                Route::post('/{id}/sync-attendance', [ReportCardController::class, 'syncAttendance']);
-            });
+        // Rapor Siswa Multi-Format & Validasi (Wali Kelas, Kepala Sekolah & Admin)
+        Route::middleware('role:kepala_sekolah,staf_admin,guru')->prefix('report-cards')->group(function () {
+            Route::get('/', [ReportCardController::class, 'index']);
+            Route::get('/default-subjects', [ReportCardController::class, 'defaultSubjects']);
+            Route::get('/default-templates', [ReportCardController::class, 'defaultTemplates']);
+            Route::post('/initialize-class', [ReportCardController::class, 'initializeClass']);
+            Route::post('/student', [ReportCardController::class, 'getOrCreateForStudent']);
+            Route::get('/export-excel', [ReportCardController::class, 'exportExcel']);
+            Route::post('/import-excel', [ReportCardController::class, 'importExcel']);
+            Route::post('/submit-class', [ReportCardController::class, 'submitClassForValidation']);
+            Route::post('/validate-class', [ReportCardController::class, 'validateClass']);
+            Route::get('/{id}', [ReportCardController::class, 'show']);
+            Route::put('/{id}', [ReportCardController::class, 'update']);
+            Route::post('/{id}/sync-attendance', [ReportCardController::class, 'syncAttendance']);
+            Route::post('/{id}/submit', [ReportCardController::class, 'submitForValidation']);
+            Route::post('/{id}/validate', [ReportCardController::class, 'validateReportCard']);
+            Route::post('/{id}/request-revision', [ReportCardController::class, 'requestRevision']);
+            Route::get('/student/{studentId}/history', [ReportCardController::class, 'studentHistory']);
         });
     });
 });

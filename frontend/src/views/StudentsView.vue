@@ -1501,6 +1501,16 @@
           >
             <span>💳 Bantuan & Bank</span>
           </button>
+          <button
+            @click="detailTab = 'rapor'"
+            :class="detailTab === 'rapor' ? 'border-emerald-600 text-emerald-700 bg-white shadow-xs font-bold' : 'border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-100/60'"
+            class="py-3.5 px-4 border-b-2 rounded-t-xl whitespace-nowrap transition flex items-center gap-2"
+          >
+            <span>📑 Arsip & Riwayat Rapor</span>
+            <span v-if="studentReportHistory.length > 0" class="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-black">
+              {{ studentReportHistory.reduce((acc: number, y: any) => acc + (y.report_cards?.length || 0), 0) }}
+            </span>
+          </button>
         </div>
 
         <!-- Tab Content Body (Full Page Height, Spacious) -->
@@ -1963,6 +1973,165 @@
               </div>
             </div>
           </div>
+
+          <!-- TAB 7: ARSIP & RIWAYAT RAPOR (TIMELINE PORTFOLIO) -->
+          <div v-if="detailTab === 'rapor'" class="space-y-6">
+            <div class="border-b border-gray-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                  <span>📑</span>
+                  <span>Buku Induk & Arsip Rapor Digital</span>
+                </h3>
+                <p class="text-gray-500 text-[11px] mt-0.5">
+                  Rekam jejak riwayat perkembangan belajar, intrakurikuler, P5, tematik terpadu, dan karakter siswa per tahun ajaran.
+                </p>
+              </div>
+              <router-link
+                to="/rapor"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl font-bold text-[11px] border border-emerald-200 transition"
+              >
+                <span>Buka Menu Olah Rapor</span>
+                <span>↗</span>
+              </router-link>
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="loadingReportHistory" class="py-12 text-center text-slate-400">
+              <div class="inline-block animate-spin w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full mb-2"></div>
+              <div>Memuat arsip riwayat rapor siswa...</div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else-if="studentReportHistory.length === 0" class="py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              <div class="text-3xl mb-2">📂</div>
+              <div class="text-xs font-bold text-slate-700">Belum Ada Arsip Rapor Tercatat</div>
+              <p class="text-[11px] text-slate-400 mt-1 max-w-sm mx-auto">
+                Rapor untuk siswa ini belum diinisialisasi atau belum dibuat di menu Rapor Siswa.
+              </p>
+            </div>
+
+            <!-- Timeline Years -->
+            <div v-else class="space-y-6">
+              <div
+                v-for="yearBlock in studentReportHistory"
+                :key="yearBlock.academic_year.id"
+                class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden"
+              >
+                <!-- Year Header -->
+                <div class="p-4 bg-gradient-to-r from-slate-50 to-slate-100/70 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
+                      TA
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-sm font-black text-slate-900">
+                          Tahun Pelajaran {{ yearBlock.academic_year.nama }}
+                        </span>
+                        <span
+                          class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase border"
+                          :class="yearBlock.academic_year.status === 'aktif' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'"
+                        >
+                          {{ yearBlock.academic_year.status }}
+                        </span>
+                      </div>
+                      <div class="text-[11px] text-slate-500 mt-0.5">
+                        Rombel: <strong>{{ yearBlock.class?.nama_kelas || yearBlock.class?.nama || '-' }}</strong>
+                        <span v-if="yearBlock.nomor_absen"> • No. Absen: {{ yearBlock.nomor_absen }}</span>
+                        • Status: <strong class="capitalize">{{ yearBlock.status_kelas }}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="text-right text-[11px]">
+                    <span class="text-slate-500">Total Rapor: </span>
+                    <strong class="text-slate-900">{{ yearBlock.report_cards?.length || 0 }}</strong>
+                    <span class="mx-1">•</span>
+                    <span class="text-emerald-700 font-bold">{{ yearBlock.final_count || 0 }} Disahkan KS</span>
+                  </div>
+                </div>
+
+                <!-- Cards for each report card in this year -->
+                <div class="p-4 sm:p-5">
+                  <div v-if="!yearBlock.report_cards || yearBlock.report_cards.length === 0" class="text-slate-400 text-xs italic py-2">
+                    Belum ada rapor yang dibuat pada tahun pelajaran ini.
+                  </div>
+                  <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                    <div
+                      v-for="rc in yearBlock.report_cards"
+                      :key="rc.id"
+                      class="p-4 rounded-2xl border transition-all hover:shadow-xs flex flex-col justify-between"
+                      :class="{
+                        'bg-emerald-50/30 border-emerald-200': rc.status === 'final',
+                        'bg-blue-50/30 border-blue-200': rc.status === 'menunggu_validasi',
+                        'bg-amber-50/30 border-amber-200': rc.status === 'draft',
+                        'bg-rose-50/30 border-rose-200': rc.status === 'perlu_revisi',
+                      }"
+                    >
+                      <div>
+                        <!-- Header badge -->
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                          <span
+                            class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider"
+                            :class="{
+                              'bg-indigo-100 text-indigo-800': rc.jenis_rapor === 'kurikulum_merdeka',
+                              'bg-amber-100 text-amber-800': rc.jenis_rapor === 'triwulan_tematik',
+                              'bg-purple-100 text-purple-800': rc.jenis_rapor === 'karakter_lifeskill',
+                            }"
+                          >
+                            {{ rc.jenis_rapor === 'kurikulum_merdeka' ? 'Kurikulum Merdeka' : (rc.jenis_rapor === 'triwulan_tematik' ? 'Tematik Terpadu' : 'Karakter & Life Skill') }}
+                          </span>
+
+                          <span
+                            class="px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                            :class="{
+                              'bg-emerald-100 text-emerald-800 border-emerald-300': rc.status === 'final',
+                              'bg-blue-100 text-blue-800 border-blue-300': rc.status === 'menunggu_validasi',
+                              'bg-amber-100 text-amber-800 border-amber-300': rc.status === 'draft',
+                              'bg-rose-100 text-rose-800 border-rose-300': rc.status === 'perlu_revisi',
+                            }"
+                          >
+                            {{ rc.status === 'final' ? '✓ Disahkan KS' : (rc.status === 'menunggu_validasi' ? '⏳ Menunggu KS' : (rc.status === 'perlu_revisi' ? '⚠️ Perlu Revisi' : 'Draf')) }}
+                          </span>
+                        </div>
+
+                        <div class="text-xs font-black text-slate-800">
+                          {{ rc.periode || (rc.semester === 'gasal' ? 'Semester Gasal' : 'Semester Genap') }}
+                        </div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">
+                          Fase {{ rc.fase || 'A' }} • {{ rc.grades_count || 0 }} Nilai Aspek/Mapel
+                        </div>
+
+                        <div class="mt-2.5 pt-2.5 border-t border-slate-200/60 text-[10px] text-slate-500 space-y-0.5">
+                          <div v-if="rc.wali_kelas_nama">Wali Kelas: <strong class="text-slate-700">{{ rc.wali_kelas_nama }}</strong></div>
+                          <div v-if="rc.kepala_sekolah_nama">Kepala Sekolah: <strong class="text-slate-700">{{ rc.kepala_sekolah_nama }}</strong></div>
+                          <div v-if="rc.validated_at" class="text-emerald-700">Divalidasi: {{ formatDateIndo(rc.validated_at) }}</div>
+                        </div>
+                      </div>
+
+                      <div class="mt-3 pt-2 flex items-center justify-between gap-2 border-t border-slate-200/60">
+                        <router-link
+                          :to="`/rapor?class_id=${rc.class_id}&semester=${rc.semester}&jenis_rapor=${rc.jenis_rapor}`"
+                          class="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 transition"
+                        >
+                          Buka di Menu Rapor
+                        </router-link>
+
+                        <router-link
+                          :to="`/rapor?class_id=${rc.class_id}&semester=${rc.semester}&jenis_rapor=${rc.jenis_rapor}`"
+                          class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold shadow-xs transition flex items-center gap-1 cursor-pointer"
+                          title="Cetak format resmi dokumen rapor ini"
+                        >
+                          <span>🖨️</span>
+                          <span>Cetak</span>
+                        </router-link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Tab Bottom Bar -->
@@ -2020,7 +2189,24 @@ const saving = ref(false);
 const exporting = ref(false);
 
 const selectedStudent = ref<any>(null);
-const detailTab = ref<'identitas' | 'rombel' | 'alamat' | 'ortu' | 'fisik' | 'bantuan'>('identitas');
+const detailTab = ref<'identitas' | 'rombel' | 'alamat' | 'ortu' | 'fisik' | 'bantuan' | 'rapor'>('identitas');
+const studentReportHistory = ref<any[]>([]);
+const loadingReportHistory = ref(false);
+
+const fetchStudentReportHistory = async (studentId: number) => {
+  loadingReportHistory.value = true;
+  try {
+    const res = await api.get(`/report-cards/student/${studentId}/history`);
+    if (res.data.success && res.data.data) {
+      studentReportHistory.value = res.data.data.timeline || [];
+    }
+  } catch (err) {
+    console.error('Gagal mengambil riwayat rapor siswa:', err);
+    studentReportHistory.value = [];
+  } finally {
+    loadingReportHistory.value = false;
+  }
+};
 
 // Photo Upload State
 const fileInputRef = ref<HTMLInputElement | null>(null);
@@ -2275,6 +2461,7 @@ const fetchClasses = async () => {
 
 const openDetail = async (student: any) => {
   detailTab.value = 'identitas';
+  fetchStudentReportHistory(student.id);
   try {
     const res = await api.get(`/students/${student.id}`);
     if (res.data.success && res.data.data) {

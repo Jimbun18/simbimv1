@@ -17,7 +17,11 @@ class ReportCardGrade extends Model
         'subject_id',
         'nama_mapel',
         'kelompok',
+        'tema',
+        'aspek',
+        'sub_aspek',
         'nilai_akhir',
+        'predikat',
         'capaian_kompetensi',
         'urutan',
     ];

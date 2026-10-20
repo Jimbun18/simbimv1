@@ -114,7 +114,7 @@ const routes = [
     path: '/rapor',
     name: 'rapor',
     component: ReportCardView,
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru'] },
   },
   {
     path: '/finance',

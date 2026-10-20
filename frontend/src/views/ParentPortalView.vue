@@ -264,6 +264,17 @@
           >
             <span>Pengumuman Sekolah</span>
           </button>
+
+          <button 
+            @click="activeTab = 'rapor'; fetchChildReportCards()"
+            :class="activeTab === 'rapor' ? 'border-emerald-600 text-emerald-700 font-black' : 'border-transparent text-slate-500 hover:text-slate-800 font-semibold'"
+            class="py-4 border-b-2 text-xs sm:text-sm whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <span>📑 E-Rapor Ananda</span>
+            <span v-if="reportCardList.length > 0" class="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-black">
+              {{ reportCardList.length }}
+            </span>
+          </button>
         </div>
 
         <!-- Tab 1: JURNAL TAHFIDZ & KARAKTER -->
@@ -553,8 +564,255 @@
           </div>
         </div>
 
+        <!-- Tab 6: E-RAPOR RESMI ANANDA -->
+        <div v-if="activeTab === 'rapor'" class="p-5 sm:p-7 space-y-6">
+          <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                <span>📑</span>
+                <span>Dokumen Resmi E-Rapor Hasil Belajar Ananda</span>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">
+                Daftar buku rapor yang telah divalidasi dan disahkan secara resmi oleh Kepala Sekolah SDI Bina Insan Mandiri Purwokerto.
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-xs font-bold">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Hanya Dokumen Sah (Final)</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Loading State -->
+          <div v-if="loadingReportCards" class="py-12 text-center text-slate-400">
+            <div class="inline-block animate-spin w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full mb-3"></div>
+            <p class="text-xs text-slate-500 font-medium">Mengambil berkas e-rapor ananda...</p>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else-if="reportCardList.length === 0" class="py-12 text-center bg-slate-50/80 rounded-3xl border border-dashed border-slate-200 p-8 space-y-3">
+            <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto text-2xl font-bold">
+              📂
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-slate-800">Belum Ada E-Rapor Resmi yang Diterbitkan</h4>
+              <p class="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
+                Buku rapor ananda akan otomatis muncul dan dapat diunduh di sini setelah nilai selesai direkap oleh Wali Kelas dan divalidasi resmi oleh Kepala Sekolah.
+              </p>
+            </div>
+          </div>
+
+          <!-- Cards Grid -->
+          <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div
+              v-for="rc in reportCardList"
+              :key="rc.id"
+              class="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all p-5 flex flex-col justify-between"
+            >
+              <div>
+                <!-- Badge Jenis Rapor -->
+                <div class="flex items-center justify-between gap-2 mb-3">
+                  <span
+                    class="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider"
+                    :class="{
+                      'bg-indigo-100 text-indigo-800 border border-indigo-200': rc.jenis_rapor === 'kurikulum_merdeka',
+                      'bg-emerald-100 text-emerald-800 border border-emerald-200': rc.jenis_rapor === 'triwulan_tematik',
+                      'bg-purple-100 text-purple-800 border border-purple-200': rc.jenis_rapor === 'karakter_lifeskill',
+                    }"
+                  >
+                    {{ rc.jenis_rapor === 'kurikulum_merdeka' ? 'Kurikulum Merdeka' : (rc.jenis_rapor === 'triwulan_tematik' ? 'Tematik Terpadu BIM' : 'Karakter & Life Skill') }}
+                  </span>
+
+                  <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <span>✓</span>
+                    <span>Sah / Final</span>
+                  </span>
+                </div>
+
+                <h4 class="text-base font-black text-slate-900 leading-snug">
+                  {{ rc.periode || (rc.semester === 'gasal' ? 'Semester Gasal' : 'Semester Genap') }}
+                </h4>
+                <div class="text-xs text-slate-500 mt-1">
+                  Tahun Pelajaran {{ rc.academic_year?.nama || '-' }} • {{ rc.school_class?.nama_kelas || '-' }}
+                </div>
+
+                <!-- Snapshot Penandatangan & Pengesahan -->
+                <div class="mt-4 pt-3 border-t border-slate-100 space-y-1 text-xs">
+                  <div class="flex items-center justify-between text-slate-600">
+                    <span class="text-slate-400">Wali Kelas:</span>
+                    <strong class="text-slate-800 truncate max-w-[150px]">{{ rc.wali_kelas_nama || '-' }}</strong>
+                  </div>
+                  <div class="flex items-center justify-between text-slate-600">
+                    <span class="text-slate-400">Kepala Sekolah:</span>
+                    <strong class="text-slate-800 truncate max-w-[150px]">{{ rc.kepala_sekolah_nama || '-' }}</strong>
+                  </div>
+                  <div class="flex items-center justify-between text-emerald-700 text-[11px] pt-1 font-semibold">
+                    <span>Status Validasi:</span>
+                    <span>Telah Divalidasi KS</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  @click="openReportDetailModal(rc)"
+                  class="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <span>👁️</span>
+                  <span>Lihat & Unduh</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
+    </div>
+
+    <!-- MODAL PREVIEW DETAIL RAPOR UNTUK WALI MURID -->
+    <div
+      v-if="showReportModal && selectedReportDetail"
+      class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5"
+    >
+      <div class="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <!-- Modal Header -->
+        <div class="p-5 bg-gradient-to-r from-emerald-800 to-teal-900 text-white flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">📑</span>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs uppercase font-extrabold px-2 py-0.5 rounded bg-white/20 text-emerald-100">
+                  {{ selectedReportDetail.jenis_rapor?.replace('_', ' ') }}
+                </span>
+                <span class="text-xs text-emerald-200 font-bold">
+                  {{ selectedReportDetail.periode || selectedReportDetail.semester }}
+                </span>
+              </div>
+              <h3 class="text-lg font-black text-white mt-0.5">
+                Rapor {{ summary?.student?.nama_lengkap }}
+              </h3>
+            </div>
+          </div>
+          <button
+            @click="showReportModal = false"
+            class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-black cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Modal Body Content -->
+        <div class="p-6 overflow-y-auto space-y-6 text-xs text-slate-700">
+          <!-- Summary Info Bar -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-semibold">Tahun Pelajaran</span>
+              <strong class="text-slate-900">{{ selectedReportDetail.academic_year?.nama || '-' }}</strong>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-semibold">Rombel Kelas</span>
+              <strong class="text-slate-900">{{ selectedReportDetail.school_class?.nama_kelas || '-' }}</strong>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-semibold">Fase Kurikulum</span>
+              <strong class="text-slate-900">Fase {{ selectedReportDetail.fase || 'A' }}</strong>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-semibold">Kehadiran (S/I/A)</span>
+              <strong class="text-emerald-800">
+                S: {{ selectedReportDetail.sakit || 0 }} • I: {{ selectedReportDetail.izin || 0 }} • A: {{ selectedReportDetail.alpa || 0 }}
+              </strong>
+            </div>
+          </div>
+
+          <!-- Grades Table -->
+          <div>
+            <h4 class="font-bold text-slate-900 text-sm mb-2 flex items-center gap-1.5">
+              <span>📊</span>
+              <span>Capaian Penilaian & Nilai Akhir</span>
+            </h4>
+            <div class="border border-slate-200 rounded-2xl overflow-hidden">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100/80 text-slate-700 font-extrabold uppercase text-[10px] border-b border-slate-200">
+                  <tr>
+                    <th class="py-2.5 px-3 w-10 text-center">No</th>
+                    <th class="py-2.5 px-3">Mata Pelajaran / Aspek Penilaian</th>
+                    <th class="py-2.5 px-3 w-20 text-center">Nilai</th>
+                    <th class="py-2.5 px-3 w-20 text-center">Predikat</th>
+                    <th class="py-2.5 px-3">Deskripsi Capaian Kompetensi</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <tr v-if="!selectedReportDetail.grades || selectedReportDetail.grades.length === 0">
+                    <td colspan="5" class="py-6 text-center text-slate-400 italic">Belum ada daftar nilai tercatat.</td>
+                  </tr>
+                  <tr v-for="(g, idx) in selectedReportDetail.grades" :key="idx" class="hover:bg-slate-50/50">
+                    <td class="py-2.5 px-3 text-center text-slate-400 font-mono">{{ idx + 1 }}</td>
+                    <td class="py-2.5 px-3 font-bold text-slate-800">
+                      {{ g.nama_mapel || g.sub_aspek || g.tema }}
+                    </td>
+                    <td class="py-2.5 px-3 text-center font-mono font-bold text-slate-900">
+                      {{ g.nilai_akhir ?? '-' }}
+                    </td>
+                    <td class="py-2.5 px-3 text-center">
+                      <span v-if="g.predikat" class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800">
+                        {{ g.predikat }}
+                      </span>
+                      <span v-else class="text-slate-400">-</span>
+                    </td>
+                    <td class="py-2.5 px-3 text-slate-600 leading-relaxed text-[11px]">
+                      {{ g.capaian_kompetensi || '-' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Catatan Wali Kelas -->
+          <div v-if="selectedReportDetail.catatan_wali_kelas" class="p-4 bg-emerald-50/50 border border-emerald-200 rounded-2xl">
+            <h5 class="font-bold text-emerald-950 text-xs mb-1">Catatan & Pesan Wali Kelas:</h5>
+            <p class="text-xs text-emerald-900 leading-relaxed italic">
+              "{{ selectedReportDetail.catatan_wali_kelas }}"
+            </p>
+          </div>
+
+          <!-- Validasi & Tanda Tangan -->
+          <div class="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200 text-center">
+            <div>
+              <span class="text-slate-400 text-[10px] block">Wali Kelas Pengampu:</span>
+              <strong class="text-slate-900 text-xs block mt-1">{{ selectedReportDetail.wali_kelas_nama || '-' }}</strong>
+              <span class="text-slate-400 text-[10px] font-mono">NIP: {{ selectedReportDetail.wali_kelas_nip || '-' }}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 text-[10px] block">Disahkan oleh Kepala Sekolah:</span>
+              <strong class="text-slate-900 text-xs block mt-1">{{ selectedReportDetail.kepala_sekolah_nama || '-' }}</strong>
+              <span class="text-slate-400 text-[10px] font-mono">NIP: {{ selectedReportDetail.kepala_sekolah_nip || '-' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="p-4 bg-slate-100/80 border-t border-slate-200 flex items-center justify-between gap-3">
+          <button
+            @click="showReportModal = false"
+            class="px-4 py-2 bg-white hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 transition cursor-pointer"
+          >
+            Tutup
+          </button>
+          <button
+            @click="printReportDetail"
+            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>🖨️</span>
+            <span>Cetak / Unduh PDF Dokumen Resmi</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -569,7 +827,46 @@ const children = ref<any[]>([]);
 const selectedChildId = ref<number | null>(null);
 const summary = ref<any>(null);
 const loading = ref(false);
-const activeTab = ref<'progress' | 'attendance' | 'activities' | 'finance' | 'announcements'>('progress');
+const activeTab = ref<'progress' | 'attendance' | 'activities' | 'finance' | 'announcements' | 'rapor'>('progress');
+const reportCardList = ref<any[]>([]);
+const loadingReportCards = ref(false);
+const showReportModal = ref(false);
+const selectedReportDetail = ref<any>(null);
+
+const fetchChildReportCards = async () => {
+  if (!selectedChildId.value) return;
+  loadingReportCards.value = true;
+  try {
+    const res = await api.get(`/parent/children/${selectedChildId.value}/report-cards`);
+    if (res.data.success && res.data.data) {
+      reportCardList.value = res.data.data;
+    }
+  } catch (err) {
+    console.error('Gagal mengambil e-rapor ananda:', err);
+    reportCardList.value = [];
+  } finally {
+    loadingReportCards.value = false;
+  }
+};
+
+const openReportDetailModal = async (rc: any) => {
+  try {
+    const res = await api.get(`/report-cards/${rc.id}`);
+    if (res.data.success && res.data.data) {
+      selectedReportDetail.value = res.data.data;
+      showReportModal.value = true;
+      return;
+    }
+  } catch (err) {
+    console.error('Gagal mengambil detail rapor:', err);
+  }
+  selectedReportDetail.value = rc;
+  showReportModal.value = true;
+};
+
+const printReportDetail = () => {
+  window.print();
+};
 
 const formatRupiah = (val: number | string | null | undefined) => {
   return new Intl.NumberFormat('id-ID').format(Math.round(Number(val) || 0));
@@ -699,6 +996,7 @@ const selectChild = async (id: number) => {
     console.error('Gagal mengambil ringkasan anak', err);
   } finally {
     loading.value = false;
+    fetchChildReportCards();
   }
 };
 
