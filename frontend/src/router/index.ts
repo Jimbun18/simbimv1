@@ -1,31 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import LoginView from '../views/LoginView.vue';
-import DashboardView from '../views/DashboardView.vue';
-import AttendanceView from '../views/AttendanceView.vue';
-import ParentPortalView from '../views/ParentPortalView.vue';
-import BackupView from '../views/BackupView.vue';
-import StudentsView from '../views/StudentsView.vue';
-import TeachersView from '../views/TeachersView.vue';
-import ClassesAndSchedulesView from '../views/ClassesAndSchedulesView.vue';
-import ExcelImportView from '../views/ExcelImportView.vue';
-import AttendanceManagementView from '../views/AttendanceManagementView.vue';
-import ProgressAndActivitiesView from '../views/ProgressAndActivitiesView.vue';
-import FinanceView from '../views/FinanceView.vue';
-import AssetsView from '../views/AssetsView.vue';
-import UsersAndSettingsView from '../views/UsersAndSettingsView.vue';
-import ProfileView from '../views/ProfileView.vue';
-import GuardiansView from '../views/GuardiansView.vue';
-import MyScheduleView from '../views/MyScheduleView.vue';
-import LandingView from '../views/LandingView.vue';
-import ReportCardView from '../views/ReportCardView.vue';
-import MyAttendanceHistoryView from '../views/MyAttendanceHistoryView.vue';
 import { useAuthStore } from '../stores/auth';
 
 const routes = [
   {
     path: '/',
     name: 'landing',
-    component: LandingView,
+    component: () => import('../views/LandingView.vue'),
     meta: { layout: 'landing' },
   },
   {
@@ -35,115 +15,115 @@ const routes = [
   {
     path: '/login',
     name: 'login',
-    component: LoginView,
+    component: () => import('../views/LoginView.vue'),
     meta: { guest: true },
   },
   {
     path: '/dashboard',
     name: 'dashboard',
-    component: DashboardView,
+    component: () => import('../views/DashboardView.vue'),
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
   },
   {
     path: '/students',
     name: 'students',
-    component: StudentsView,
+    component: () => import('../views/StudentsView.vue'),
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru'] },
   },
   {
     path: '/teachers',
     name: 'teachers',
-    component: TeachersView,
+    component: () => import('../views/TeachersView.vue'),
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
   },
   {
     path: '/guardians',
     name: 'guardians',
-    component: GuardiansView,
+    component: () => import('../views/GuardiansView.vue'),
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
   },
   {
     path: '/classes-schedules',
     name: 'classes-schedules',
-    component: ClassesAndSchedulesView,
+    component: () => import('../views/ClassesAndSchedulesView.vue'),
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
   },
   {
     path: '/my-schedule',
     name: 'my-schedule',
-    component: MyScheduleView,
+    component: () => import('../views/MyScheduleView.vue'),
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru'] },
   },
   {
     path: '/excel-imports',
     name: 'excel-imports',
-    component: ExcelImportView,
+    component: () => import('../views/ExcelImportView.vue'),
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
   },
   {
     path: '/presensi',
     name: 'presensi',
-    component: AttendanceView,
+    component: () => import('../views/AttendanceView.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/profile',
     name: 'profile',
-    component: ProfileView,
+    component: () => import('../views/ProfileView.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/attendance-management',
     name: 'attendance-management',
-    component: AttendanceManagementView,
+    component: () => import('../views/AttendanceManagementView.vue'),
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
   },
   {
     path: '/my-attendance-history',
     name: 'my-attendance-history',
-    component: MyAttendanceHistoryView,
+    component: () => import('../views/MyAttendanceHistoryView.vue'),
     meta: { requiresAuth: true, role: ['guru', 'kepala_sekolah', 'staf_admin'] },
   },
   {
     path: '/progress-activities',
     name: 'progress-activities',
-    component: ProgressAndActivitiesView,
+    component: () => import('../views/ProgressAndActivitiesView.vue'),
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru'] },
   },
   {
     path: '/rapor',
     name: 'rapor',
-    component: ReportCardView,
+    component: () => import('../views/ReportCardView.vue'),
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru'] },
   },
   {
     path: '/finance',
     name: 'finance',
-    component: FinanceView,
+    component: () => import('../views/FinanceView.vue'),
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
   },
   {
     path: '/assets',
     name: 'assets',
-    component: AssetsView,
+    component: () => import('../views/AssetsView.vue'),
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
   },
   {
     path: '/users-settings',
     name: 'users-settings',
-    component: UsersAndSettingsView,
+    component: () => import('../views/UsersAndSettingsView.vue'),
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
   },
   {
     path: '/portal-wali',
     name: 'portal-wali',
-    component: ParentPortalView,
+    component: () => import('../views/ParentPortalView.vue'),
     meta: { requiresAuth: true, role: ['wali'] },
   },
   {
     path: '/backup',
     name: 'backup',
-    component: BackupView,
+    component: () => import('../views/BackupView.vue'),
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
   },
   {
