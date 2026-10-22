@@ -87,6 +87,16 @@ class ReportCard extends Model
         return $this->belongsTo(Semester::class, 'semester_id');
     }
 
+    public function semester(): BelongsTo
+    {
+        return $this->semesterRel();
+    }
+
+    public function semesterModel(): BelongsTo
+    {
+        return $this->semesterRel();
+    }
+
     public function grades(): HasMany
     {
         return $this->hasMany(ReportCardGrade::class)->orderBy('urutan', 'asc')->orderBy('id', 'asc');

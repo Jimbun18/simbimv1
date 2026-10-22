@@ -27,6 +27,11 @@ class TeacherAssignment extends Model
         return $this->belongsTo(Semester::class);
     }
 
+    public function semesterModel(): BelongsTo
+    {
+        return $this->belongsTo(Semester::class, 'semester_id');
+    }
+
     protected function casts(): array
     {
         return [

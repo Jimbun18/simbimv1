@@ -183,7 +183,7 @@ class ParentPortalController extends Controller
         // Hanya tampilkan rapor dengan status final untuk wali murid
         $reportCards = \App\Models\ReportCard::where('student_id', $student->id)
             ->where('status', 'final')
-            ->with(['academicYear:id,nama', 'semesterModel:id,semester,status', 'schoolClass:id,nama_kelas'])
+            ->with(['academicYear:id,nama', 'semesterModel:id,semester,status', 'schoolClass:id,nama'])
             ->orderBy('id', 'desc')
             ->get();
 

@@ -2,7 +2,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../services/api'
-import { useAuthStore } from '../stores/auth'
 
 interface SummaryStats {
   total_record: number
@@ -14,7 +13,6 @@ interface SummaryStats {
   alpa: number
 }
 
-const auth = useAuthStore()
 const router = useRouter()
 
 const loading = ref(false)

@@ -141,6 +141,18 @@ class ScheduleController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if (!$request->filled('academic_year_id')) {
+            $activeYear = AcademicYear::getActive();
+            if ($activeYear) {
+                $request->merge(['academic_year_id' => $activeYear->id]);
+            } elseif ($request->filled('class_id')) {
+                $cls = SchoolClass::find($request->input('class_id'));
+                if ($cls && $cls->academic_year_id) {
+                    $request->merge(['academic_year_id' => $cls->academic_year_id]);
+                }
+            }
+        }
+
         $validated = $request->validate([
             'academic_year_id' => ['required', 'exists:academic_years,id'],
             'class_id' => ['required', 'exists:classes,id'],
@@ -266,6 +278,18 @@ class ScheduleController extends Controller
 
     public function quickSet(Request $request): JsonResponse
     {
+        if (!$request->filled('academic_year_id')) {
+            $activeYear = AcademicYear::getActive();
+            if ($activeYear) {
+                $request->merge(['academic_year_id' => $activeYear->id]);
+            } elseif ($request->filled('class_id')) {
+                $cls = SchoolClass::find($request->input('class_id'));
+                if ($cls && $cls->academic_year_id) {
+                    $request->merge(['academic_year_id' => $cls->academic_year_id]);
+                }
+            }
+        }
+
         $validated = $request->validate([
             'academic_year_id' => ['required', 'exists:academic_years,id'],
             'class_id' => ['required', 'exists:classes,id'],
@@ -347,6 +371,18 @@ class ScheduleController extends Controller
 
     public function clearClassSchedules(Request $request): JsonResponse
     {
+        if (!$request->filled('academic_year_id')) {
+            $activeYear = AcademicYear::getActive();
+            if ($activeYear) {
+                $request->merge(['academic_year_id' => $activeYear->id]);
+            } elseif ($request->filled('class_id')) {
+                $cls = SchoolClass::find($request->input('class_id'));
+                if ($cls && $cls->academic_year_id) {
+                    $request->merge(['academic_year_id' => $cls->academic_year_id]);
+                }
+            }
+        }
+
         $validated = $request->validate([
             'class_id' => ['required', 'exists:classes,id'],
             'academic_year_id' => ['required', 'exists:academic_years,id'],
@@ -364,6 +400,18 @@ class ScheduleController extends Controller
 
     public function applyOfficialTemplate(Request $request): JsonResponse
     {
+        if (!$request->filled('academic_year_id')) {
+            $activeYear = AcademicYear::getActive();
+            if ($activeYear) {
+                $request->merge(['academic_year_id' => $activeYear->id]);
+            } elseif ($request->filled('class_id')) {
+                $cls = SchoolClass::find($request->input('class_id'));
+                if ($cls && $cls->academic_year_id) {
+                    $request->merge(['academic_year_id' => $cls->academic_year_id]);
+                }
+            }
+        }
+
         $validated = $request->validate([
             'class_id' => ['required', 'exists:classes,id'],
             'academic_year_id' => ['required', 'exists:academic_years,id'],
