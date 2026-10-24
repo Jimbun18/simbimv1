@@ -115,17 +115,6 @@ simbim/
 - [ERD](docs/ERD.md) — Entity Relationship Diagram *(segera)*
 - [API Catalog](docs/API.md) *(segera)*
 
-## Akun Demo
-
-| Role | Username | Password |
-|------|----------|----------|
-| Kepala Sekolah | kepala.sekolah | SimBim2026! |
-| Staf Admin | staf.admin | SimBim2026! |
-| Guru | guru.demo | SimBim2026! |
-| Wali Murid | wali.demo | SimBim2026! |
-
-> **Catatan:** Akun demo dibuat oleh seeder. Semua akun wajib ganti password
-> saat login pertama.
 
 ## Lisensi
 
