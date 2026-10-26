@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { formatSpacedTime } from './types'
 
 defineProps<{
@@ -7,7 +6,6 @@ defineProps<{
   schoolConfig: any
   submitting: boolean
   gpsLoading: boolean
-  photoPreview: string | null
   isHoliday?: boolean
   holidayReason?: string
 }>()
@@ -15,23 +13,8 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'check-in'): void
   (e: 'check-out'): void
-  (e: 'photo-selected', file: File): void
-  (e: 'clear-photo'): void
   (e: 'open-leave-modal'): void
 }>()
-
-const cameraInputRef = ref<HTMLInputElement | null>(null)
-
-const triggerCamera = () => {
-  cameraInputRef.value?.click()
-}
-
-const onPhotoSelected = (e: Event) => {
-  const target = e.target as HTMLInputElement
-  if (target.files && target.files[0]) {
-    emit('photo-selected', target.files[0])
-  }
-}
 </script>
 
 <template>
@@ -94,49 +77,19 @@ const onPhotoSelected = (e: Event) => {
       </div>
     </div>
 
-    <!-- Foto Selfie Presensi Box -->
-    <div class="p-3.5 border border-slate-200/80 rounded-xl flex items-center justify-between gap-3 bg-white">
-      <div class="flex items-center gap-3">
-        <div v-if="photoPreview" class="relative w-10 h-10 rounded-xl overflow-hidden border border-emerald-400 shrink-0 shadow-xs">
-          <img :src="photoPreview" alt="Preview Foto" class="w-full h-full object-cover" />
-          <button 
-            type="button"
-            @click="emit('clear-photo')" 
-            class="absolute top-0 right-0 bg-rose-600 text-white rounded-bl text-[9px] w-3.5 h-3.5 flex items-center justify-center font-bold cursor-pointer"
-            title="Hapus foto"
-          >&times;</button>
-        </div>
-        <div v-else class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        </div>
-        <div>
-          <h4 class="font-bold text-xs text-slate-800">Foto Selfie Presensi</h4>
-          <p class="text-[10px] text-slate-400 leading-tight">Ambil swafoto validasi di lingkungan sekolah</p>
-        </div>
+    <!-- Info Foto Selfie Terpadu -->
+    <div class="p-3.5 border border-emerald-100 rounded-xl flex items-center gap-3 bg-emerald-50/50">
+      <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
       </div>
-
       <div>
-        <input 
-          type="file" 
-          ref="cameraInputRef" 
-          accept="image/*" 
-          capture="user" 
-          class="hidden" 
-          @change="onPhotoSelected" 
-        />
-        <button 
-          type="button" 
-          @click="triggerCamera" 
-          class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
-        >
-          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-          </svg>
-          <span>{{ photoPreview ? 'Ganti Selfie' : 'Ambil Selfie' }}</span>
-        </button>
+        <h4 class="font-bold text-xs text-slate-800">Verifikasi Swafoto (Selfie)</h4>
+        <p class="text-[10px] text-slate-500 leading-tight">
+          Kamera swafoto akan terbuka otomatis untuk mengambil foto bukti kehadiran setelah Anda menekan tombol absen di bawah.
+        </p>
       </div>
     </div>
 

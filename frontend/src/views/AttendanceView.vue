@@ -8,6 +8,7 @@ import { calculateDistance } from '../components/attendance/types'
 import GeofenceValidationCard from '../components/attendance/GeofenceValidationCard.vue'
 import AttendanceActionCard from '../components/attendance/AttendanceActionCard.vue'
 import AttendanceHistoryTable from '../components/attendance/AttendanceHistoryTable.vue'
+import AttendanceCameraModal from '../components/attendance/AttendanceCameraModal.vue'
 import LeaveRequestModal from '../components/attendance/LeaveRequestModal.vue'
 
 const auth = useAuthStore()
@@ -26,16 +27,17 @@ const currentTime = ref('')
 const currentDateStr = ref('')
 let timer: any = null
 
-// GPS & Geofence
-const currentLat = ref(-7.4538894)
-const currentLng = ref(109.2346745)
-const distanceMeter = ref(0)
-const inGeofence = ref(true)
+// GPS & Geofence (Default null, tidak boleh fallback ke koordinat sekolah jika GPS mati)
+const currentLat = ref<number | null>(null)
+const currentLng = ref<number | null>(null)
+const distanceMeter = ref<number | null>(null)
+const inGeofence = ref(false)
 const gpsLoading = ref(false)
+const gpsError = ref<string | null>(null)
 
-// Camera / Selfie
-const selectedPhoto = ref<File | null>(null)
-const photoPreview = ref<string | null>(null)
+// Camera / Selfie Modal
+const isCameraModalOpen = ref(false)
+const cameraActionType = ref<'masuk' | 'pulang'>('masuk')
 
 // Leave Request Modal
 const isLeaveModalOpen = ref(false)
@@ -66,6 +68,11 @@ const updateClock = () => {
 }
 
 const updateGeofenceStatus = () => {
+  if (currentLat.value === null || currentLng.value === null) {
+    distanceMeter.value = null
+    inGeofence.value = false
+    return
+  }
   distanceMeter.value = calculateDistance(
     currentLat.value,
     currentLng.value,
@@ -75,89 +82,125 @@ const updateGeofenceStatus = () => {
   inGeofence.value = distanceMeter.value <= schoolRadius.value
 }
 
-// GPS Location
-const getGeoLocation = () => {
-  if (navigator.geolocation) {
-    gpsLoading.value = true
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        currentLat.value = pos.coords.latitude
-        currentLng.value = pos.coords.longitude
-        gpsLoading.value = false
-        updateGeofenceStatus()
-      },
-      (err) => {
-        console.warn('Geolocation warning/error:', err.message)
-        gpsLoading.value = false
-        updateGeofenceStatus()
-      },
-      { enableHighAccuracy: true, timeout: 8000 }
+// GPS Location (Real-time GPS, no stale cache / no fallback)
+const getGeoLocation = (showFeedback = false) => {
+  if (!navigator.geolocation) {
+    const msg = 'Browser Anda tidak mendukung deteksi lokasi (Geolocation).'
+    gpsError.value = msg
+    currentLat.value = null
+    currentLng.value = null
+    distanceMeter.value = null
+    inGeofence.value = false
+    if (showFeedback) showError('GPS Tidak Didukung', msg)
+    return
+  }
+
+  gpsLoading.value = true
+  gpsError.value = null
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      currentLat.value = pos.coords.latitude
+      currentLng.value = pos.coords.longitude
+      gpsLoading.value = false
+      gpsError.value = null
+      updateGeofenceStatus()
+    },
+    (err) => {
+      console.warn('Geolocation warning/error:', err.message)
+      gpsLoading.value = false
+      currentLat.value = null
+      currentLng.value = null
+      distanceMeter.value = null
+      inGeofence.value = false
+
+      let errorMsg = 'Gagal mendeteksi lokasi GPS. Pastikan izin lokasi (GPS) pada perangkat dan browser Anda telah diaktifkan.'
+      if (err.code === 1) { // PERMISSION_DENIED
+        errorMsg = 'Akses lokasi ditolak. Silakan izinkan akses lokasi (GPS) pada pengaturan browser Anda untuk melakukan presensi.'
+      } else if (err.code === 2) { // POSITION_UNAVAILABLE
+        errorMsg = 'Sinyal GPS tidak ditemukan. Pastikan fitur Lokasi/GPS di perangkat Anda sudah menyala.'
+      } else if (err.code === 3) { // TIMEOUT
+        errorMsg = 'Pencarian sinyal GPS melebihi batas waktu (timeout). Silakan coba segarkan GPS kembali.'
+      }
+      gpsError.value = errorMsg
+      if (showFeedback) {
+        showError('Lokasi Tidak Terdeteksi', errorMsg)
+      }
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  )
+}
+
+// Validasi sebelum membuka modal kamera
+const validateBeforeAttendance = (type: 'masuk' | 'pulang'): boolean => {
+  if (currentLat.value === null || currentLng.value === null) {
+    showError(
+      'Lokasi GPS Wajib Aktif',
+      'Lokasi Anda belum terdeteksi. Silakan aktifkan GPS perangkat Anda dan izinkan akses lokasi di browser untuk melakukan presensi.'
     )
+    getGeoLocation(false)
+    return false
   }
+
+  if (!inGeofence.value) {
+    showError(
+      'Di Luar Radius Sekolah',
+      `Posisi Anda terdeteksi berjarak ${distanceMeter.value !== null ? distanceMeter.value.toLocaleString('id-ID') : '-'} meter dari sekolah (maksimal ${schoolRadius.value} meter). Presensi hanya dapat dilakukan di lingkungan sekolah SDI Bina Insan Mandiri.`
+    )
+    return false
+  }
+
+  return true
 }
 
-// Camera / Selfie Handlers
-const onPhotoSelected = (file: File) => {
-  selectedPhoto.value = file
-  photoPreview.value = URL.createObjectURL(file)
+// Trigger tombol absen masuk -> buka kamera
+const handleTriggerCheckIn = () => {
+  if (!validateBeforeAttendance('masuk')) return
+  cameraActionType.value = 'masuk'
+  isCameraModalOpen.value = true
 }
 
-const clearPhoto = () => {
-  selectedPhoto.value = null
-  photoPreview.value = null
+// Trigger tombol absen pulang -> buka kamera
+const handleTriggerCheckOut = () => {
+  if (!validateBeforeAttendance('pulang')) return
+  cameraActionType.value = 'pulang'
+  isCameraModalOpen.value = true
 }
 
-// Submit Check-in
-const submitCheckIn = async () => {
+// Konfirmasi foto & submit presensi
+const handleConfirmPhoto = async (photoFile: File) => {
+  if (currentLat.value === null || currentLng.value === null) {
+    showError('GPS Tidak Terdeteksi', 'Lokasi GPS terputus. Pastikan GPS tetap aktif sebelum mengirim presensi.')
+    return
+  }
+
   submitting.value = true
   message.value = ''
+
   try {
     const formData = new FormData()
     formData.append('lat', String(currentLat.value))
     formData.append('lng', String(currentLng.value))
-    if (selectedPhoto.value) {
-      formData.append('foto', selectedPhoto.value)
-    }
+    formData.append('foto', photoFile)
 
-    const res = await api.post('/attendance/teachers/check-in', formData)
+    const endpoint = cameraActionType.value === 'masuk'
+      ? '/attendance/teachers/check-in'
+      : '/attendance/teachers/check-out'
+
+    const res = await api.post(endpoint, formData)
     if (res.data.success) {
       isSuccess.value = true
-      message.value = res.data.message || 'Presensi masuk berhasil dicatat!'
-      clearPhoto()
+      const successMsg = res.data.message || `Presensi ${cameraActionType.value} berhasil dicatat!`
+      message.value = successMsg
+      isCameraModalOpen.value = false
       await fetchToday()
       fetchHistory()
     }
   } catch (err: any) {
     isSuccess.value = false
-    message.value = err.response?.data?.message || 'Gagal melakukan check-in presensi masuk.'
-  } finally {
-    submitting.value = false
-  }
-}
-
-// Submit Check-out
-const submitCheckOut = async () => {
-  submitting.value = true
-  message.value = ''
-  try {
-    const formData = new FormData()
-    formData.append('lat', String(currentLat.value))
-    formData.append('lng', String(currentLng.value))
-    if (selectedPhoto.value) {
-      formData.append('foto', selectedPhoto.value)
-    }
-
-    const res = await api.post('/attendance/teachers/check-out', formData)
-    if (res.data.success) {
-      isSuccess.value = true
-      message.value = res.data.message || 'Presensi pulang berhasil dicatat!'
-      clearPhoto()
-      await fetchToday()
-      fetchHistory()
-    }
-  } catch (err: any) {
-    isSuccess.value = false
-    message.value = err.response?.data?.message || 'Gagal melakukan check-out presensi pulang.'
+    const errMsg = err.response?.data?.message || `Gagal melakukan presensi ${cameraActionType.value}.`
+    message.value = errMsg
+    showError('Presensi Gagal', errMsg)
   } finally {
     submitting.value = false
   }
@@ -365,7 +408,8 @@ onUnmounted(() => {
         :distance-meter="distanceMeter"
         :in-geofence="inGeofence"
         :gps-loading="gpsLoading"
-        @refresh-gps="getGeoLocation"
+        :gps-error="gpsError"
+        @refresh-gps="() => getGeoLocation(true)"
       />
 
       <!-- COLUMN 2: PENCATATAN JAM KEHADIRAN -->
@@ -374,13 +418,10 @@ onUnmounted(() => {
         :school-config="schoolConfig"
         :submitting="submitting"
         :gps-loading="gpsLoading"
-        :photo-preview="photoPreview"
         :is-holiday="todayData?.is_holiday"
         :holiday-reason="todayData?.holiday_reason"
-        @check-in="submitCheckIn"
-        @check-out="submitCheckOut"
-        @photo-selected="onPhotoSelected"
-        @clear-photo="clearPhoto"
+        @check-in="handleTriggerCheckIn"
+        @check-out="handleTriggerCheckOut"
         @open-leave-modal="isLeaveModalOpen = true"
       />
     </div>
@@ -390,6 +431,16 @@ onUnmounted(() => {
       :history-list="historyList"
       :history-loading="historyLoading"
       @refresh="fetchHistory"
+    />
+
+    <!-- MODAL KAMERA SWAFOTO & KONFIRMASI PRESENSI -->
+    <AttendanceCameraModal
+      :is-open="isCameraModalOpen"
+      :type="cameraActionType"
+      :submitting="submitting"
+      :distance-meter="distanceMeter"
+      @close="isCameraModalOpen = false"
+      @confirm="handleConfirmPhoto"
     />
 
     <!-- MODAL PENGAJUAN IZIN / CUTI -->
