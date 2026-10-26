@@ -14,7 +14,12 @@ const activeSemesterInfo = ref<{
   semester: string
   status: string
   reopened: boolean
-} | null>(null)
+}>({
+  academicYear: '2026/2027',
+  semester: 'Gasal',
+  status: 'aktif',
+  reopened: false,
+})
 
 const loadActivePeriod = async () => {
   try {
@@ -38,12 +43,19 @@ const loadActivePeriod = async () => {
             reopened: true,
           }
         } else {
-          const latestSem = res.data.data[0]
-          if (latestSem) {
+          const lockedSem = res.data.data.find((s: any) => s.status === 'terkunci')
+          if (lockedSem) {
             activeSemesterInfo.value = {
-              academicYear: latestSem.academic_year?.nama || '2026/2027',
-              semester: latestSem.semester_label || (latestSem.semester === 'gasal' ? 'Gasal' : 'Genap'),
-              status: latestSem.status,
+              academicYear: lockedSem.academic_year?.nama || '2026/2027',
+              semester: lockedSem.semester_label || (lockedSem.semester === 'gasal' ? 'Gasal' : 'Genap'),
+              status: 'terkunci',
+              reopened: false,
+            }
+          } else {
+            activeSemesterInfo.value = {
+              academicYear: '2026/2027',
+              semester: 'Libur',
+              status: 'libur',
               reopened: false,
             }
           }
@@ -54,6 +66,16 @@ const loadActivePeriod = async () => {
     // Ignore fallback
   }
 }
+
+watch(
+  () => auth.isAuthenticated,
+  (isAuth) => {
+    if (isAuth) {
+      auth.fetchProfile()
+      loadActivePeriod()
+    }
+  }
+)
 
 onMounted(async () => {
   if (auth.isAuthenticated) {
