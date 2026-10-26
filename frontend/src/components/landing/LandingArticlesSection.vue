@@ -5,7 +5,7 @@ import { articlesData, type ArticleItem } from './landingData'
 const selectedCategory = ref<string>('Semua')
 const selectedArticle = ref<ArticleItem | null>(null)
 
-const categories = ['Semua', 'Parenting Fitrah', 'Edukasi Qur\'ani', 'Warta Sekolah', 'Kegiatan Siswa']
+const categories = ['Semua', 'Edukasi & Karakter', 'Edukasi Qur\'ani', 'Warta Sekolah', 'Kegiatan Siswa']
 
 const filteredArticles = computed(() => {
   if (selectedCategory.value === 'Semua') return articlesData
@@ -34,7 +34,7 @@ const closeArticle = () => {
           Artikel & Kabar Sekolah
         </h2>
         <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
-          Kumpulan tulisan inspiratif seputar parenting fitrah, kiat muroja'ah Al-Qur'an, edukasi anak islami, serta dokumentasi warta kegiatan civitas SDI Bina Insan Mandiri.
+          Kumpulan tulisan inspiratif seputar pembelajaran mendalam (deep learning), kiat muroja'ah Al-Qur'an, edukasi anak islami, serta dokumentasi warta kegiatan civitas SDI Bina Insan Mandiri.
         </p>
 
         <!-- Category Filter Badges -->

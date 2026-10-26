@@ -79,7 +79,7 @@ watch(
               <strong>SDI Bina Insan Mandiri Purwokerto</strong> berdiri di bawah naungan <strong>Yayasan Bina Insan Mandiri</strong>. Berlokasi strategis dan asri di Jl. Wadas Kelir RT.04 RW.05 Kelurahan Karangklesem, Kecamatan Purwokerto Selatan, Kabupaten Banyumas.
             </p>
             <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
-              Sebagai sekolah dasar Islam unggulan, kami memadukan Kurikulum Nasional, Kurikulum Berbasis Fitrah, dan Kurikulum Khas Al-Qur'an (Tahsin Tartil & Tahfidz Mutqin).
+              Sebagai sekolah dasar Islam unggulan, kami memadukan Kurikulum Nasional, Kurikulum Berbasis Deep Learning (Mindful, Meaningful, & Joyful Learning), dan Kurikulum Khas Al-Qur'an (Tahsin Tartil & Tahfidz Mutqin).
             </p>
 
             <!-- Kartu Identitas Resmi -->
@@ -90,7 +90,7 @@ watch(
               </div>
               <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <div class="text-[10px] uppercase font-bold text-slate-400">Kurikulum</div>
-                <div class="text-base font-black text-emerald-700">Fitrah & Tematik</div>
+                <div class="text-base font-black text-emerald-700">Deep Learning & Tematik</div>
               </div>
               <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <div class="text-[10px] uppercase font-bold text-slate-400">Tahun Berdiri</div>
@@ -231,7 +231,7 @@ watch(
             Pendidik Berjiwa Pengasuh, Menginspirasi Sepenuh Hati
           </h3>
           <p class="text-xs sm:text-sm text-slate-500 mt-1">
-            Didukung oleh dewan asatidz dan tenaga kependidikan profesional yang menguasai pedagogi ramah anak dan kurikulum berbasis fitrah.
+            Didukung oleh dewan asatidz dan tenaga kependidikan profesional yang menguasai pedagogi ramah anak dan kurikulum berbasis deep learning.
           </p>
         </div>
 

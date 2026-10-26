@@ -47,10 +47,10 @@ const handlePortalAccess = () => {
           </div>
 
           <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
-            Konsep Pendidikan SDI BIM
+            Pendidikan Berbasis Deep Learning
           </h1>
           <p class="text-sm sm:text-base text-emerald-100/90 max-w-3xl mt-3 leading-relaxed">
-            Menumbuhkan potensi fitrah alami anak dan mewujudkan hakikat tertinggi pendidikan: Membangun Sebuah Peradaban Islam yang kokoh dan berkelanjutan.
+            Menyelenggarakan pembelajaran mendalam (Mindful, Meaningful, & Joyful Learning) untuk mewujudkan hakikat tertinggi pendidikan: Membangun Sebuah Peradaban Islam yang kokoh dan berkelanjutan.
           </p>
         </div>
       </section>

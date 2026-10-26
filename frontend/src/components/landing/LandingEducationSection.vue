@@ -1,30 +1,30 @@
 <script setup lang="ts">
-import { fitrahPillars, civilizationPoints } from './landingData'
+import { deepLearningPillars, civilizationPoints } from './landingData'
 </script>
 
 <template>
   <section id="pendidikan" class="py-20 bg-slate-50 border-b border-slate-200/80">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
       
-      <!-- SUB-SECTION 1: PENDIDIKAN BERBASIS FITRAH -->
-      <div id="pendidikan-fitrah" class="space-y-10">
+      <!-- SUB-SECTION 1: PENDIDIKAN BERBASIS DEEP LEARNING -->
+      <div id="pendidikan-deep-learning" class="space-y-10">
         
         <div class="text-center max-w-3xl mx-auto space-y-3">
           <span class="px-3.5 py-1 rounded-full bg-teal-100 text-teal-800 text-xs font-bold uppercase tracking-wider">
-            Bagian 2 • Filosofi & Kurikulum
+            Bagian 2 • Filosofi & Kurikulum Unggulan
           </span>
           <h2 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Pendidikan Berbasis Fitrah
+            Pendidikan Berbasis Deep Learning
           </h2>
           <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
-            "Setiap anak dilahirkan di atas fitrah..." (HR. Bukhari & Muslim). Kami tidak memandang anak sebagai botol kosong yang diisi, melainkan pohon peradaban yang dirawat agar tumbuh sesuai potensi terbaiknya.
+            Mewujudkan pembelajaran mendalam melalui sinergi <strong>Mindful Learning</strong> (kesadaran batin & tauhid), <strong>Meaningful Learning</strong> (bermakna & kontekstual), dan <strong>Joyful Learning</strong> (menggembirakan) agar ilmu meresap kokoh di hati santri.
           </p>
         </div>
 
-        <!-- 4 Pilar Fitrah Cards -->
+        <!-- 4 Pilar Deep Learning Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div 
-            v-for="pillar in fitrahPillars" 
+            v-for="pillar in deepLearningPillars" 
             :key="pillar.title"
             class="bg-white p-7 sm:p-8 rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-emerald-300 transition-all space-y-4"
           >
@@ -33,7 +33,7 @@ import { fitrahPillars, civilizationPoints } from './landingData'
                 {{ pillar.icon }}
               </span>
               <span class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
-                Pilar Fitrah
+                Pilar Deep Learning
               </span>
             </div>
 

@@ -38,12 +38,12 @@ const emit = defineEmits<{
           <span class="bg-gradient-to-r from-emerald-300 via-teal-200 to-amber-200 bg-clip-text text-transparent">
             Qur'ani & Unggul
           </span>
-          Berbasis Fitrah
+          Berbasis Deep Learning
         </h1>
 
         <p class="text-sm sm:text-base md:text-lg text-slate-100 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed drop-shadow-md">
           Selamat datang di portal resmi <strong>SDI Bina Insan Mandiri Purwokerto</strong>. 
-          Mendidik dengan cinta, menumbuhkan fitrah alami anak, dan membangun karakter peradaban islam yang kokoh, mandiri, dan berwawasan luas.
+          Mendidik dengan cinta, menerapkan pembelajaran mendalam (<em>deep learning</em>), dan membangun karakter peradaban islam yang kokoh, mandiri, dan berwawasan luas.
         </p>
 
         <!-- Action Buttons -->

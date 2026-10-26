@@ -183,13 +183,13 @@ const handlePortalClick = () => {
               class="absolute left-0 top-full w-64 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 px-1 text-xs font-medium z-50 space-y-0.5"
             >
               <button 
-                @click="navigateTo('/pendidikan#pendidikan-fitrah')"
+                @click="navigateTo('/pendidikan#pendidikan-deep-learning')"
                 class="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-800 transition flex items-center gap-2.5 cursor-pointer"
               >
-                <span class="text-emerald-600">🌱</span>
+                <span class="text-emerald-600">🧠</span>
                 <div>
-                  <div class="font-bold text-slate-800">Pendidikan Berbasis Fitrah</div>
-                  <div class="text-[10px] text-slate-400">Menyuburkan potensi alami anak</div>
+                  <div class="font-bold text-slate-800">Pendidikan Berbasis Deep Learning</div>
+                  <div class="text-[10px] text-slate-400">Mindful, Meaningful, & Joyful Learning</div>
                 </div>
               </button>
               <button 
@@ -312,8 +312,8 @@ const handlePortalClick = () => {
       <div class="py-1 border-b border-slate-100">
         <div class="font-bold text-xs uppercase tracking-wider text-slate-400 py-1">2. Pendidikan</div>
         <div class="pl-3 space-y-1.5 pt-1">
-          <button @click="navigateTo('/pendidikan#pendidikan-fitrah')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
-            • Pendidikan Berbasis Fitrah
+          <button @click="navigateTo('/pendidikan#pendidikan-deep-learning')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
+            • Pendidikan Berbasis Deep Learning
           </button>
           <button @click="navigateTo('/pendidikan#membangun-peradaban')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
             • Tujuan Pendidikan: Membangun Peradaban

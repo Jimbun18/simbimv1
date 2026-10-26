@@ -93,7 +93,7 @@ const handlePortalAccess = () => {
                 </div>
                 <h3 class="font-black text-base text-slate-900">Sejarah & Identitas</h3>
                 <p class="text-xs text-slate-600 leading-relaxed">
-                  Didirikan sejak 2012 di Karangklesem, Purwokerto Selatan di bawah naungan Yayasan Bina Insan Mandiri dengan kurikulum berbasis fitrah.
+                  Didirikan sejak 2012 di Karangklesem, Purwokerto Selatan di bawah naungan Yayasan Bina Insan Mandiri dengan kurikulum berbasis deep learning.
                 </p>
                 <div class="pt-2 text-[11px] font-mono text-emerald-700 font-semibold">
                   NPSN: 70036695 • Jenjang SD
@@ -156,10 +156,10 @@ const handlePortalAccess = () => {
                 Ringkasan • 2. Pendidikan
               </span>
               <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Pendidikan Berbasis Fitrah & Membangun Peradaban
+                Pendidikan Berbasis Deep Learning & Membangun Peradaban
               </h2>
               <p class="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl">
-                Menyuburkan potensi fitrah keimanan, akal, dan bakat unik anak untuk membangun peradaban umat yang mulia.
+                Menyelenggarakan pembelajaran mendalam (Mindful, Meaningful, & Joyful Learning) untuk membentuk generasi pembelajar pembina peradaban.
               </p>
             </div>
 
@@ -172,7 +172,7 @@ const handlePortalAccess = () => {
             </router-link>
           </div>
 
-          <!-- Preview 4 Pilar Fitrah Grid -->
+          <!-- Preview 4 Pilar Deep Learning Grid -->
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <div 
               v-for="pillar in fitrahPillars" 
@@ -187,7 +187,7 @@ const handlePortalAccess = () => {
                   {{ pillar.desc }}
                 </p>
               </div>
-              <router-link to="/pendidikan#pendidikan-fitrah" class="text-xs font-bold text-emerald-700 hover:underline pt-2">
+              <router-link to="/pendidikan#pendidikan-deep-learning" class="text-xs font-bold text-emerald-700 hover:underline pt-2">
                 Selengkapnya &rarr;
               </router-link>
             </div>

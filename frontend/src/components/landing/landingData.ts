@@ -15,7 +15,7 @@ export interface StudentPledge {
   icon: string
 }
 
-export interface FitrahPillar {
+export interface DeepLearningPillar {
   title: string
   subtitle: string
   desc: string
@@ -23,6 +23,8 @@ export interface FitrahPillar {
   icon: string
   color: string
 }
+
+export type FitrahPillar = DeepLearningPillar
 
 export interface ArticleItem {
   id: number
@@ -74,7 +76,7 @@ export const teachersData: TeacherProfile[] = [
   {
     id: 13,
     name: 'Lulu Farihati, S.Pd.',
-    role: 'Guru Kelas 4 & Koordinator Kurikulum Fitrah',
+    role: 'Guru Kelas 4 & Koordinator Kurikulum Deep Learning',
     category: 'Guru Kelas',
     education: 'S1 Pendidikan',
     quote: 'Menumbuhkan rasa ingin tahu dan nalar kritis santri melalui pembelajaran kontekstual yang menyenangkan.',
@@ -101,7 +103,7 @@ export const teachersData: TeacherProfile[] = [
   {
     id: 9,
     name: 'Rusydah Hasnaa Taqiyah Hastuti, S.Pd.',
-    role: 'Guru Kelas 1 & Pembina Karakter Fitrah',
+    role: 'Guru Kelas 1 & Pembina Karakter Santri',
     category: 'Guru Kelas',
     education: 'S1 Pendidikan',
     quote: 'Masa transisi awal sekolah yang hangat, penuh kasih, dan sarat nilai adab mulia.',
@@ -176,61 +178,64 @@ export const studentPledges: StudentPledge[] = [
   },
 ]
 
-// 3. PILAR PENDIDIKAN BERBASIS FITRAH
-export const fitrahPillars: FitrahPillar[] = [
+// 3. PILAR PENDIDIKAN BERBASIS DEEP LEARNING (PEMBELAJARAN MENDALAM)
+export const deepLearningPillars: DeepLearningPillar[] = [
   {
-    title: 'Fitrah Keimanan (Spiritualitas & Tauhid)',
-    subtitle: 'Menumbuhkan Cinta Allah Sebelum Beban Syariat',
-    desc: 'Setiap anak terlahir bertauhid. Di SDI BIM, fitrah keimanan dirawat bukan dengan doktrin yang kaku, melainkan menghadirkan kekaguman pada ciptaan Allah, sholat berjamaah yang dirindukan, dan dzikir penuh penghayatan.',
+    title: 'Mindful Learning (Pembelajaran Penuh Kesadaran)',
+    subtitle: 'Menumbuhkan Spiritualitas Tauhid, Fokus, & Keterhubungan Jiwa',
+    desc: 'Anak belajar dengan kesadaran penuh, memahami makna dan tujuan hakiki mencari ilmu sebagai hamba Allah. Bukan sekadar menghafal secara mekanis, melainkan menyerap ilmu dengan ketenangan batin, adab mulia, dan penghayatan mendalam.',
     practices: [
-      'Pembiasaan Sholat Dhuha dan Sholat Berjamaah di Masjid',
-      'Tadabbur alam & mentadaburi ayat-ayat kauniyah',
-      'Kisah keteladanan Nabi & Sahabat yang menggugah jiwa',
-      'Doa dan adab harian islami yang terintegrasi di setiap aktivitas',
+      'Pembiasaan Sholat Dhuha, Tadabbur Al-Qur\'an, & Dzikir Pagi bersama',
+      'Mindful Reflection (refleksi berkala untuk memupuk kejujuran & evaluasi diri)',
+      'Menghubungkan setiap materi sains & tematik dengan kebesaran ciptaan Allah',
+      'Menciptakan iklim kelas yang tenang, aman secara psikologis, dan penuh empati',
     ],
     icon: '✨',
     color: 'emerald',
   },
   {
-    title: 'Fitrah Belajar & Nalar Kritis',
-    subtitle: 'Menjaga Rasa Ingin Tahu (Curiosity) yang Alami',
-    desc: 'Anak-anak pada dasarnya adalah pembelajar sejati yang haus eksplorasi. Kami menciptakan iklim kelas yang merangsang daya nalar kritis, eksperimen sains langsung, dan literasi tematik tanpa membebani mentalitas anak.',
+    title: 'Meaningful Learning (Pembelajaran Bermakna & Kontekstual)',
+    subtitle: 'Mengaitkan Pengetahuan dengan Realitas Kehidupan & Pemecahan Masalah',
+    desc: 'Setiap konsep dipelajari secara mendalam (deep inquiry), relevan dengan keseharian, dan aplikatif. Santri didorong memahami "mengapa" dan "bagaimana" suatu konsep bekerja, bukan sekadar "apa" definisi teks semata.',
     practices: [
-      'Pembelajaran Tematik Berbasis Proyek (Project-Based Learning)',
-      'Eksplorasi sains indoor dan outdoor di alam terbuka',
-      'Pojok literasi kelas & pembiasaan membaca buku berkualitas',
-      'Metode tanya-jawab dialogis (Socratic method) yang menghargai gagasan anak',
+      'Pembelajaran Berbasis Proyek Nyata (Project-Based Learning) & Sains Terapan',
+      'Eksplorasi eksperimen langsung di laboratorium alam terbuka sekolah',
+      'Penerapan literasi finansial & matematika kontekstual (Program Market Day Syar\'i)',
+      'Pengembangan nalar kritis dialogis (Higher Order Thinking Skills / HOTS)',
     ],
     icon: '🔬',
     color: 'teal',
   },
   {
-    title: 'Fitrah Bakat & Kepemimpinan',
-    subtitle: 'Mengenali Peran Keunikan Setiap Individu',
-    desc: 'Tidak ada anak yang bodoh. Setiap santri dianugerahi potensi unik yang kelak menjadi jalan kontribusinya bagi peradaban. Kami membantu orang tua dan anak memetakan bakat minatnya secara personal.',
+    title: 'Joyful Learning (Pembelajaran yang Menggembirakan)',
+    subtitle: 'Menjaga Rasa Ingin Tahu (Curiosity) Alami & Cinta Belajar Sepanjang Hayat',
+    desc: 'Suasana belajar dirancang membahagiakan, bebas dari tekanan berlebihan, dan membangkitkan gairah eksplorasi. Anak tidak merasa terpaksa belajar, melainkan menikmati setiap proses penemuan ilmu baru dengan antusias.',
     practices: [
-      'Pemetaan observasi bakat & kecerdasan majemuk (Multiple Intelligences)',
-      'Program unjuk karya dan panggung apresiasi santri',
-      'Market Day untuk melatih jiwa wirausaha dan muamalah syar\'i',
-      'Ekstrakurikuler minat: Tahfidz, Robotik, Panahan, Bela Diri, Seni Kaligrafi',
+      'Metode belajar gamifikasi, kuis interaktif, dan simulasi kreatif',
+      'Pojok literasi kelas & pembiasaan membaca buku berkualitas secara mandiri',
+      'Kegiatan belajar di alam (Outbound, jelajah sains, dan mini agro-farming)',
+      'Apresiasi tulus atas setiap usaha anak tanpa perbandingan negatif atau pelabelan',
     ],
-    icon: '🎯',
+    icon: '🎨',
     color: 'amber',
   },
   {
-    title: 'Fitrah Perkembangan & Seksualitas',
-    subtitle: 'Menjaga Identitas Gender, Kehormatan, dan Adab',
-    desc: 'Pendidikan fitrah seksualitas membimbing anak memahami identitasnya sebagai laki-laki atau perempuan sejati, menjaga aurat, menumbuhkan rasa malu (haya\'), serta adab pergaulan islami sesuai tahap usianya.',
+    title: 'Mastery & Collaboration (Penguasaan Mendalam & Kolaboratif)',
+    subtitle: 'Membangun Kompetensi Abad 21 & Karakter Pembina Peradaban',
+    desc: 'Pendidikan deep learning mengasah kecakapan kolaborasi, komunikasi, dan ketuntasan materi secara bertahap. Santri dilatih bekerja sama saling melengkapi, peduli sesama, dan berani tampil percaya diri memimpin kebaikan.',
     practices: [
-      'Penanaman identitas peran kelelakian dan keperempuanan islami',
-      'Edukasi perlindungan diri dan batasan aurat sejak dini',
-      'Pemisahan adab tempat wudhu dan aktivitas sesuai syariat',
-      'Pendampingan konselor ramah anak untuk kesehatan mental & emosi',
+      'Kerja kelompok kolaboratif, presentasi karya, dan musyawarah santri',
+      'Bimbingan Tahsin Tartil berulang & Tahfidz Mutqin dengan pendampingan personal',
+      'Penyaluran minat bakat: Robotik, Panahan, Seni Kaligrafi, & Muhadharah (Public Speaking)',
+      'Program kepemimpinan sosial dan kepedulian lingkungan sekitar',
     ],
-    icon: '🛡️',
+    icon: '🤝',
     color: 'sky',
   },
 ]
+
+// Alias untuk kompatibilitas
+export const fitrahPillars = deepLearningPillars
 
 // 4. TUJUAN PENDIDIKAN MEMBANGUN SEBUAH PERADABAN
 export const civilizationPoints = [
@@ -260,17 +265,17 @@ export const civilizationPoints = [
 export const articlesData: ArticleItem[] = [
   {
     id: 1,
-    title: 'Menumbuhkan Fitrah Keimanan Anak di Tengah Gempuran Era Digital',
-    category: 'Parenting Fitrah',
+    title: 'Menumbuhkan Pembelajaran Mendalam (Deep Learning) & Karakter Anak di Era Digital',
+    category: 'Edukasi & Karakter',
     author: 'Rasiti, S.Pd.',
     authorRole: 'Kepala Sekolah SDI BIM',
     date: '20 Oktober 2026',
     readTime: '4 menit baca',
-    summary: 'Bagaimana menumbuhkan ketertarikan anak kepada Allah Subhanahu wa Ta\'ala sebelum mengenalkan gawai digital dan gadget modern di rumah.',
-    tags: ['Parenting', 'Fitrah Keimanan', 'Pendidikan Anak'],
+    summary: 'Bagaimana menumbuhkan ketertarikan anak kepada Allah Subhanahu wa Ta\'ala dan daya nalar mendalam di tengah era gawai digital.',
+    tags: ['Parenting', 'Deep Learning', 'Pendidikan Karakter'],
     content: [
-      'Di era keterbukaan informasi digital saat ini, tantangan terbesar para orang tua bukan sekadar membatasi screen-time anak, melainkan bagaimana menanamkan "benteng batin" yang kokoh berupa fitrah keimanan.',
-      'Dalam konsep Pendidikan Berbasis Fitrah, anak pada usia pra-baligh (khususnya usia 0-7 dan 7-10 tahun) membutuhkan penanaman rasa cinta, keteladanan, dan visualisasi kebaikan Allah sebelum dibebani doktrin hukum yang menakutkan.',
+      'Di era keterbukaan informasi digital saat ini, tantangan terbesar para orang tua bukan sekadar membatasi screen-time anak, melainkan bagaimana menanamkan "benteng batin" yang kokoh berupa keimanan dan daya nalar mendalam.',
+      'Dalam pendekatan Pendidikan Berbasis Deep Learning (Mindful, Meaningful, & Joyful Learning), anak pada usia sekolah dasar membutuhkan penanaman makna, keteladanan, dan visualisasi kebaikan Allah sebelum dibebani tuntutan hafalan yang mekanis.',
       'Ajaklah ananda mengamati indahnya pergantian siang dan malam, ciptaan pepohonan di halaman rumah, dan nikmat sehat. Ketika rasa takjub kepada Sang Pencipta telah mekar di sanubari anak, ketaatan beribadah dan menjaga adab akan mengalir secara alami tanpa perlu paksaan.',
       'SDI Bina Insan Mandiri Purwokerto terus berkomitmen membersamai ayah bunda dalam menyelaraskan kurikulum di sekolah dengan iklim pendidikan ruhiyah di rumah.',
     ],

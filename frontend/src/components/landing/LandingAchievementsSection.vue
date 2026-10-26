@@ -86,7 +86,7 @@ import { achievementsData } from './landingData'
 
           <div class="p-6 rounded-3xl bg-teal-50/60 border border-teal-200/80 space-y-3 flex flex-col justify-between">
             <p class="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
-              "Pendidikan berbasis fitrah di SDI BIM benar-benar menghargai keunikan anak. Guru-gurunya sangat sabar dan komunikatif melalui Portal SIM-BIM, sehingga kami di rumah selalu selaras mendidik."
+              "Pendidikan berbasis deep learning di SDI BIM benar-benar menghargai cara belajar dan keunikan anak. Guru-gurunya sangat sabar dan komunikatif melalui Portal SIM-BIM, sehingga kami di rumah selalu selaras mendidik."
             </p>
             <div class="flex items-center gap-3 pt-2 border-t border-teal-200/60">
               <div class="w-10 h-10 rounded-full bg-teal-700 text-white font-bold flex items-center justify-center text-xs">

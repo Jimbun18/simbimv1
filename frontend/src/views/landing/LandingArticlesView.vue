@@ -49,7 +49,7 @@ const handlePortalAccess = () => {
             Artikel, Opini & Warta Sekolah
           </h1>
           <p class="text-sm sm:text-base text-emerald-100/90 max-w-3xl mt-3 leading-relaxed">
-            Wawasan seputar parenting berbasis fitrah, metode muroja'ah Al-Qur'an ramah anak, dan liputan aktivitas KBM tematik SDI Bina Insan Mandiri Purwokerto.
+            Wawasan seputar pembelajaran mendalam (deep learning), edukasi Al-Qur'an ramah anak, dan liputan aktivitas KBM tematik SDI Bina Insan Mandiri Purwokerto.
           </p>
         </div>
       </section>

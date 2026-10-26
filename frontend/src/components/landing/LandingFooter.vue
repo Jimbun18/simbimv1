@@ -43,7 +43,7 @@ const getPortalLabel = () => {
           </router-link>
 
           <p class="text-xs sm:text-sm text-emerald-100/80 leading-relaxed font-light">
-            Sekolah Dasar Islam unggulan berbasis fitrah yang berfokus membentuk generasi pembelajar bertauhid kokoh, berakhlak mulia, hafidz Al-Qur'an, dan berjiwa mandiri pembina peradaban.
+            Sekolah Dasar Islam unggulan berbasis deep learning yang berfokus membentuk generasi pembelajar bertauhid kokoh, berakhlak mulia, hafidz Al-Qur'an, dan berjiwa mandiri pembina peradaban.
           </p>
 
           <div class="space-y-2 text-xs text-emerald-200/90 pt-1">
@@ -78,7 +78,7 @@ const getPortalLabel = () => {
             </li>
             <li>
               <router-link to="/pendidikan" class="hover:text-amber-300 transition">
-                • 2. Pendidikan (Fitrah & Peradaban)
+                • 2. Pendidikan (Deep Learning & Peradaban)
               </router-link>
             </li>
             <li>
@@ -141,7 +141,7 @@ const getPortalLabel = () => {
           <span>•</span>
           <span>Purwokerto Selatan, Banyumas</span>
           <span>•</span>
-          <span class="text-amber-300 font-bold">Pendidikan Berbasis Fitrah</span>
+          <span class="text-amber-300 font-bold">Pendidikan Berbasis Deep Learning</span>
         </div>
       </div>
 
