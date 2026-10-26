@@ -139,7 +139,7 @@ const getPortalLabel = () => {
         <div class="flex items-center gap-4 text-[11px]">
           <span>NPSN: 70036695</span>
           <span>•</span>
-          <span>Akreditasi A</span>
+          <span>Purwokerto Selatan, Banyumas</span>
           <span>•</span>
           <span class="text-amber-300 font-bold">Pendidikan Berbasis Fitrah</span>
         </div>

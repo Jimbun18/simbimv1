@@ -294,7 +294,7 @@ const formattedClass = computed(() => {
                 {{ props.schoolProfile?.nama_sekolah || 'SEKOLAH DASAR ISLAM BINA INSAN MANDIRI PURWOKERTO' }}
               </h1>
               <p class="text-[10.5px] font-sans mt-0.5 font-semibold text-slate-800">
-                NPSN: {{ props.schoolProfile?.npsn || '70036695' }} &bull; NSS: {{ props.schoolProfile?.nss || '102030405060' }} &bull; Terakreditasi {{ props.schoolProfile?.akreditasi || 'A' }}
+                NPSN: {{ props.schoolProfile?.npsn || '70036695' }} &bull; NSS: {{ props.schoolProfile?.nss || '102030405060' }}
               </p>
               <p class="text-[10px] font-sans mt-0.5 text-slate-800">
                 {{ props.schoolProfile?.alamat || 'Jl. Wadas Kelir RT.04 RW.05 Kel. Karangklesem, Kec. Purwokerto Selatan, Kab. Banyumas 53144' }}
@@ -884,7 +884,7 @@ const formattedClass = computed(() => {
                 {{ props.schoolProfile?.nama_sekolah || 'SEKOLAH DASAR ISLAM BINA INSAN MANDIRI PURWOKERTO' }}
               </h1>
               <p class="text-[10.5px] font-sans mt-0.5 font-semibold text-slate-800">
-                NPSN: {{ props.schoolProfile?.npsn || '70036695' }} &bull; NSS: {{ props.schoolProfile?.nss || '102030405060' }} &bull; Terakreditasi {{ props.schoolProfile?.akreditasi || 'A' }}
+                NPSN: {{ props.schoolProfile?.npsn || '70036695' }} &bull; NSS: {{ props.schoolProfile?.nss || '102030405060' }}
               </p>
               <p class="text-[10px] font-sans mt-0.5 text-slate-800">
                 {{ props.schoolProfile?.alamat || 'Jl. Wadas Kelir RT.04 RW.05 Kel. Karangklesem, Kec. Purwokerto Selatan, Kab. Banyumas 53144' }}

@@ -79,7 +79,7 @@ watch(
               <strong>SDI Bina Insan Mandiri Purwokerto</strong> berdiri di bawah naungan <strong>Yayasan Bina Insan Mandiri</strong>. Berlokasi strategis dan asri di Jl. Wadas Kelir RT.04 RW.05 Kelurahan Karangklesem, Kecamatan Purwokerto Selatan, Kabupaten Banyumas.
             </p>
             <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
-              Sebagai sekolah dasar Islam swasta yang telah terakreditasi <strong>A (Unggul)</strong> oleh BAN-SM, kami memadukan Kurikulum Nasional, Kurikulum Berbasis Fitrah, dan Kurikulum Khas Al-Qur'an (Tahsin Tartil & Tahfidz Mutqin).
+              Sebagai sekolah dasar Islam unggulan, kami memadukan Kurikulum Nasional, Kurikulum Berbasis Fitrah, dan Kurikulum Khas Al-Qur'an (Tahsin Tartil & Tahfidz Mutqin).
             </p>
 
             <!-- Kartu Identitas Resmi -->
@@ -89,8 +89,8 @@ watch(
                 <div class="text-base font-black text-slate-800 font-mono">70036695</div>
               </div>
               <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <div class="text-[10px] uppercase font-bold text-slate-400">Akreditasi</div>
-                <div class="text-base font-black text-emerald-700">A (Unggul)</div>
+                <div class="text-[10px] uppercase font-bold text-slate-400">Kurikulum</div>
+                <div class="text-base font-black text-emerald-700">Fitrah & Tematik</div>
               </div>
               <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <div class="text-[10px] uppercase font-bold text-slate-400">Tahun Berdiri</div>

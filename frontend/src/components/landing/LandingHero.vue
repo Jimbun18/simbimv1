@@ -24,7 +24,7 @@ const emit = defineEmits<{
           
           <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-emerald-200 text-xs sm:text-sm font-semibold">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Sekolah Dasar Islam Unggulan • Akreditasi A</span>
+            <span>Sekolah Dasar Islam Unggulan • Purwokerto</span>
           </div>
 
           <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight sm:leading-tight">
@@ -78,8 +78,8 @@ const emit = defineEmits<{
               <div class="text-[11px] text-emerald-200 font-medium">Pendidik Berdedikasi</div>
             </div>
             <div class="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
-              <div class="text-2xl font-black text-rose-300">A</div>
-              <div class="text-[11px] text-emerald-200 font-medium">Akreditasi Unggul BAN-SM</div>
+              <div class="text-2xl font-black text-rose-300">Ramah</div>
+              <div class="text-[11px] text-emerald-200 font-medium">Lingkungan Belajar Anak</div>
             </div>
           </div>
 

@@ -40,7 +40,7 @@ const schoolProfile = ref<SchoolProfileData>({
   alamat: 'Jl. Wadas Kelir RT.04 RW.05 Kel. Karangklesem, Kec. Purwokerto Selatan, Kab. Banyumas 53144',
   npsn: '70036695',
   nss: '102030405060',
-  akreditasi: 'A',
+  akreditasi: '',
   telepon: '0281-635812',
   email: 'sdibim.pwt@gmail.com',
   website: 'https://sdibim.sch.id',

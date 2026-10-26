@@ -93,7 +93,7 @@ const handlePortalAccess = () => {
                 </div>
                 <h3 class="font-black text-base text-slate-900">Sejarah & Identitas</h3>
                 <p class="text-xs text-slate-600 leading-relaxed">
-                  Didirikan sejak 2012 di Karangklesem, Purwokerto Selatan di bawah naungan Yayasan Bina Insan Mandiri. Terakreditasi <strong>A (Unggul)</strong> oleh BAN-SM.
+                  Didirikan sejak 2012 di Karangklesem, Purwokerto Selatan di bawah naungan Yayasan Bina Insan Mandiri dengan kurikulum berbasis fitrah.
                 </p>
                 <div class="pt-2 text-[11px] font-mono text-emerald-700 font-semibold">
                   NPSN: 70036695 • Jenjang SD
