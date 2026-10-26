@@ -20,15 +20,10 @@ const emit = defineEmits<{
         alt="Santri SDI Bina Insan Mandiri Purwokerto" 
         class="w-full h-full object-cover object-center scale-105"
       />
-      <!-- Multi-layer Gradient Overlay untuk Kejelasan Teks & Keselarasan Warna -->
-      <div class="absolute inset-0 bg-gradient-to-r from-[#02261d]/95 via-[#03362a]/90 to-[#02261d]/80"></div>
-      <div class="absolute inset-0 bg-gradient-to-t from-[#02261d] via-transparent to-[#02261d]/70"></div>
+      <!-- Soft Subtle Overlay: Foto tetap tampak jelas, sisi teks diberi bayangan lembut transparan -->
+      <div class="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/50 to-slate-950/30"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-black/30"></div>
     </div>
-
-    <!-- Ambient Blur Lighting Blobs -->
-    <div class="absolute -top-24 -left-24 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none z-0"></div>
-    <div class="absolute top-1/2 -right-24 w-96 h-96 bg-teal-400/15 rounded-full blur-3xl pointer-events-none z-0"></div>
-    <div class="absolute -bottom-20 left-1/3 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none z-0"></div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
@@ -41,7 +36,7 @@ const emit = defineEmits<{
             <span>Sekolah Dasar Islam Unggulan • Purwokerto</span>
           </div>
 
-          <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight sm:leading-tight">
+          <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight sm:leading-tight drop-shadow-lg">
             Mewujudkan Generasi <br class="hidden sm:inline" />
             <span class="bg-gradient-to-r from-emerald-300 via-teal-200 to-amber-200 bg-clip-text text-transparent">
               Qur'ani & Unggul
@@ -49,7 +44,7 @@ const emit = defineEmits<{
             Berbasis Fitrah
           </h1>
 
-          <p class="text-sm sm:text-base md:text-lg text-emerald-100/90 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
+          <p class="text-sm sm:text-base md:text-lg text-slate-100 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed drop-shadow-md">
             Selamat datang di portal resmi <strong>SDI Bina Insan Mandiri Purwokerto</strong>. 
             Mendidik dengan cinta, menumbuhkan fitrah alami anak, dan membangun karakter peradaban islam yang kokoh, mandiri, dan berwawasan luas.
           </p>
@@ -68,30 +63,30 @@ const emit = defineEmits<{
 
             <button 
               @click="emit('open-portal')"
-              class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-emerald-600/60 hover:bg-emerald-600/80 text-white font-bold text-sm sm:text-base border border-emerald-400/30 backdrop-blur-md transition-all cursor-pointer"
+              class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm sm:text-base border border-emerald-400/40 shadow-lg shadow-emerald-950/30 transition-all cursor-pointer"
             >
               <span>{{ userPortalLabel }}</span>
-              <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
               </svg>
             </button>
           </div>
 
           <!-- Highlights Badges -->
-          <div class="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-white/10 text-left">
-            <div class="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
+          <div class="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-white/20 text-left">
+            <div class="p-3.5 rounded-xl bg-slate-950/60 border border-white/15 backdrop-blur-md shadow-md">
               <div class="text-2xl font-black text-amber-300">Fitrah</div>
               <div class="text-[11px] text-emerald-200 font-medium">Pilar Pendidikan Utama</div>
             </div>
-            <div class="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
+            <div class="p-3.5 rounded-xl bg-slate-950/60 border border-white/15 backdrop-blur-md shadow-md">
               <div class="text-2xl font-black text-emerald-300">3+ Juz</div>
               <div class="text-[11px] text-emerald-200 font-medium">Target Mutqin Qur'an</div>
             </div>
-            <div class="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
+            <div class="p-3.5 rounded-xl bg-slate-950/60 border border-white/15 backdrop-blur-md shadow-md">
               <div class="text-2xl font-black text-teal-300">100%</div>
               <div class="text-[11px] text-emerald-200 font-medium">Pendidik Berdedikasi</div>
             </div>
-            <div class="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
+            <div class="p-3.5 rounded-xl bg-slate-950/60 border border-white/15 backdrop-blur-md shadow-md">
               <div class="text-2xl font-black text-rose-300">Ramah</div>
               <div class="text-[11px] text-emerald-200 font-medium">Lingkungan Belajar Anak</div>
             </div>
