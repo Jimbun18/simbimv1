@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import heroBg from '../../assets/gradasi.jpeg'
+
 defineProps<{
   userPortalLabel: string
 }>()
@@ -10,11 +12,23 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <section id="hero" class="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-32 bg-gradient-to-b from-[#032e23] via-[#044737] to-[#02261d] text-white">
+  <section id="hero" class="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-32 text-white">
+    <!-- Background Image Foto Dokumentasi Santri SDI BIM -->
+    <div class="absolute inset-0 z-0">
+      <img 
+        :src="heroBg" 
+        alt="Santri SDI Bina Insan Mandiri Purwokerto" 
+        class="w-full h-full object-cover object-center scale-105"
+      />
+      <!-- Multi-layer Gradient Overlay untuk Kejelasan Teks & Keselarasan Warna -->
+      <div class="absolute inset-0 bg-gradient-to-r from-[#02261d]/95 via-[#03362a]/90 to-[#02261d]/80"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-[#02261d] via-transparent to-[#02261d]/70"></div>
+    </div>
+
     <!-- Ambient Blur Lighting Blobs -->
-    <div class="absolute -top-24 -left-24 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute top-1/2 -right-24 w-96 h-96 bg-teal-400/15 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute -bottom-20 left-1/3 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -top-24 -left-24 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none z-0"></div>
+    <div class="absolute top-1/2 -right-24 w-96 h-96 bg-teal-400/15 rounded-full blur-3xl pointer-events-none z-0"></div>
+    <div class="absolute -bottom-20 left-1/3 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none z-0"></div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
