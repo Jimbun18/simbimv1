@@ -117,17 +117,6 @@ simbim/
 - [Peta Relasi Antar-Menu & Modul (PlantUML)](docs/MENU_MODULE_FLOW.puml) — Alur Kerja Antar-Menu SIM-BIM
 - [Pertanyaan Terbuka](docs/OPEN_QUESTIONS.md)
 
-## Akun Demo
-
-| Role | Username | Password |
-|------|----------|----------|
-| Kepala Sekolah | kepala.sekolah | SimBim2026! |
-| Staf Admin | staf.admin | SimBim2026! |
-| Guru | guru.demo | SimBim2026! |
-| Wali Murid | wali.demo | SimBim2026! |
-
-> **Catatan:** Akun demo dibuat oleh seeder. Semua akun wajib ganti password
-> saat login pertama.
 
 ## Lisensi
 
