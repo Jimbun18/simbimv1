@@ -13,6 +13,7 @@ import ScheduleForm from '../components/classes-schedules/ScheduleForm.vue';
 import TimeSlotTab from '../components/classes-schedules/TimeSlotTab.vue';
 import RoomTab from '../components/classes-schedules/RoomTab.vue';
 import AcademicYearTab from '../components/classes-schedules/AcademicYearTab.vue';
+import CalendarTab from '../components/classes-schedules/CalendarTab.vue';
 
 const route = useRoute();
 
@@ -30,6 +31,7 @@ const classTabRef = ref<InstanceType<typeof ClassTab> | null>(null);
 const assignmentTabRef = ref<InstanceType<typeof TeacherAssignmentTab> | null>(null);
 const roomTabRef = ref<InstanceType<typeof RoomTab> | null>(null);
 const academicYearTabRef = ref<InstanceType<typeof AcademicYearTab> | null>(null);
+const calendarTabRef = ref<InstanceType<typeof CalendarTab> | null>(null);
 
 // Class Handlers
 const openCreateClassForm = () => {
@@ -106,7 +108,8 @@ onMounted(() => {
               activeTab === 'schedules' ? 'Jadwal Mingguan KBM' :
               activeTab === 'slots' ? 'Jam Pelajaran (Time Slots)' :
               activeTab === 'rooms' ? 'Ruang Kelas & Fasilitas' :
-              activeTab === 'academic_years' ? 'Tahun Ajaran & Kenaikan Kelas' : 'Kelas, Ruangan & Jadwal KBM'
+              activeTab === 'academic_years' ? 'Tahun Ajaran & Kenaikan Kelas' :
+              activeTab === 'calendar' ? 'Kalender Akademik & Hari Libur' : 'Kelas, Ruangan & Jadwal KBM'
             }}
           </h1>
           <p class="text-xs text-gray-500 mt-0.5">
@@ -117,7 +120,8 @@ onMounted(() => {
               activeTab === 'schedules' ? 'Kelola dan pantau susunan jadwal kegiatan belajar mengajar (KBM) mingguan.' :
               activeTab === 'slots' ? 'Kelola alokasi waktu sesi dan jam pelajaran kegiatan belajar mengajar.' :
               activeTab === 'rooms' ? 'Kelola data ruangan kelas dan fasilitas pembelajaran.' :
-              activeTab === 'academic_years' ? 'Kelola status tahun ajaran aktif, pergantian semester, penutupan periode, dan kenaikan kelas siswa secara massal.' : 'Kelola rombel kelas aktif, alokasi wali kelas, jam pelajaran, dan jadwal kegiatan belajar mengajar.'
+              activeTab === 'academic_years' ? 'Kelola status tahun ajaran aktif, pergantian semester, penutupan periode, dan kenaikan kelas siswa secara massal.' :
+              activeTab === 'calendar' ? 'Kelola jadwal kalender akademik, hari libur nasional/sekolah, dan perhitungan hari efektif belajar.' : 'Kelola rombel kelas aktif, alokasi wali kelas, jam pelajaran, dan jadwal kegiatan belajar mengajar.'
             }}
           </p>
         </div>
@@ -148,45 +152,63 @@ onMounted(() => {
           <button
             v-if="activeTab === 'classes'"
             @click="openCreateClassForm"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-md shadow-purple-600/20 transition cursor-pointer active:scale-95"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer active:scale-95"
           >
             + Tambah Rombel Kelas
           </button>
           <button
             v-else-if="activeTab === 'subjects'"
             @click="openCreateSubjectForm"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-md shadow-purple-600/20 transition cursor-pointer active:scale-95"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer active:scale-95"
           >
             + Tambah Pelajaran / Tema
           </button>
           <button
             v-else-if="activeTab === 'assignments'"
             @click="assignmentTabRef?.openCreateAssignmentModal()"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-md shadow-purple-600/20 transition cursor-pointer active:scale-95"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer active:scale-95"
           >
             + Tambah Pembagian Mengajar
           </button>
           <button
             v-else-if="activeTab === 'schedules'"
             @click="openCreateScheduleForm"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-md shadow-purple-600/20 transition cursor-pointer active:scale-95"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer active:scale-95"
           >
             + Tambah Jadwal KBM
           </button>
           <button
             v-else-if="activeTab === 'academic_years'"
             @click="academicYearTabRef?.openCreateYearModal()"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-md shadow-purple-600/20 transition cursor-pointer active:scale-95"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer active:scale-95"
           >
             + Buat Tahun Ajaran Baru
           </button>
           <button
             v-else-if="activeTab === 'rooms'"
             @click="roomTabRef?.openCreateRoomModal()"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-md shadow-purple-600/20 transition cursor-pointer active:scale-95"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer active:scale-95"
           >
             + Tambah Ruang Kelas
           </button>
+          <template v-else-if="activeTab === 'calendar'">
+            <button
+              @click="calendarTabRef?.openSeedModal()"
+              class="inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-xl border border-indigo-200 transition cursor-pointer active:scale-95"
+              title="Generate Otomatis Hari Libur Nasional & Agenda Semester"
+            >
+              <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Template Libur</span>
+            </button>
+            <button
+              @click="calendarTabRef?.openCreateModal()"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer active:scale-95"
+            >
+              + Tambah Agenda / Libur
+            </button>
+          </template>
         </div>
       </div>
 
@@ -227,6 +249,11 @@ onMounted(() => {
       <AcademicYearTab
         v-else-if="activeTab === 'academic_years'"
         ref="academicYearTabRef"
+      />
+
+      <CalendarTab
+        v-else-if="activeTab === 'calendar'"
+        ref="calendarTabRef"
       />
     </div>
 

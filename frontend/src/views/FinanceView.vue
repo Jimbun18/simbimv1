@@ -498,16 +498,25 @@ onMounted(async () => {
         </div>
         <div class="flex items-center gap-2.5">
           <button 
+            v-if="activeTab === 'invoices' || activeTab === 'payments'"
             @click="switchTab('batch')"
             class="bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 active:scale-95 cursor-pointer"
           >
             <span>+ Generate SPP Massal</span>
           </button>
           <button 
+            v-else-if="activeTab === 'cashbook'"
             @click="openCashForm"
-            class="bg-emerald-900/60 hover:bg-emerald-900/80 text-white border border-emerald-400/30 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 active:scale-95 cursor-pointer"
+            class="bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 active:scale-95 cursor-pointer"
           >
-            <span>+ Catat Kas</span>
+            <span>+ Catat Transaksi Kas</span>
+          </button>
+          <button 
+            v-else-if="activeTab === 'fee_types'"
+            @click="openFeeTypeForm()"
+            class="bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 active:scale-95 cursor-pointer"
+          >
+            <span>+ Tambah Jenis Biaya</span>
           </button>
         </div>
       </div>

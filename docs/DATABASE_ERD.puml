@@ -1,0 +1,1111 @@
+@startuml database_erd
+!theme plain
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam packageStyle rectangle
+skinparam package {
+  BorderColor #90A4AE
+  FontName Arial
+  FontSize 13
+  FontStyle bold
+}
+skinparam entity {
+  BackgroundColor white
+  BorderColor #455A64
+  FontName Arial
+  FontSize 11
+  HeaderBackgroundColor #ECEFF1
+}
+
+title 🗄️ SIM-BIM Purwokerto — Entity Relationship Diagram (ERD)
+
+package "01. Autentikasi & Sistem" #E8EAF6 {
+  entity "users" as users {
+    * id : BIGINT <<PK>>
+    --
+    # role_id : BIGINT <<FK>>
+    ..
+    * nama : VARCHAR
+    * username : VARCHAR
+    email : VARCHAR
+    no_hp : VARCHAR
+    * password : VARCHAR
+    * status : VARCHAR
+    * must_change_password : TINYINT
+    * login_attempts : TINYINT
+    locked_until : TIMESTAMP
+    last_login_at : TIMESTAMP
+    last_login_ip : VARCHAR
+    foto_path : VARCHAR
+    remember_token : VARCHAR
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+  }
+
+  entity "roles" as roles {
+    * id : BIGINT <<PK>>
+    --
+    * nama : VARCHAR
+    * guard_name : VARCHAR
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+  }
+
+  entity "activity_logs" as activity_logs {
+    * id : BIGINT <<PK>>
+    --
+    # user_id : BIGINT <<FK>>
+    ..
+    * aksi : VARCHAR
+    * modul : VARCHAR
+    target_type : VARCHAR
+    target_id : BIGINT
+    data_sebelum : JSON
+    data_sesudah : JSON
+    ip : VARCHAR
+    user_agent : TEXT
+    keterangan : VARCHAR
+    * created_at : TIMESTAMP
+  }
+
+  entity "notifications" as notifications {
+    * id : BIGINT <<PK>>
+    --
+    # user_id : BIGINT <<FK>>
+    ..
+    * judul : VARCHAR
+    * isi : TEXT
+    * tipe : VARCHAR
+    target_url : VARCHAR
+    data : JSON
+    * dibaca : TINYINT
+    dibaca_pada : TIMESTAMP
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+  }
+
+  entity "announcements" as announcements {
+    * id : BIGINT <<PK>>
+    --
+    # created_by : BIGINT <<FK>>
+    # updated_by : BIGINT <<FK>>
+    ..
+    * judul : VARCHAR
+    * isi : TEXT
+    * kategori : VARCHAR
+    * target_role : VARCHAR
+    lampiran_path : VARCHAR
+    * tgl_terbit : DATE
+    tgl_berakhir : DATE
+    * is_aktif : TINYINT
+    * is_pinned : TINYINT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+  }
+
+  entity "settings" as settings {
+    * key : VARCHAR <<PK>>
+    --
+    value : TEXT
+    * tipe : VARCHAR
+    * grup : VARCHAR
+    deskripsi : VARCHAR
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+  }
+
+  entity "school_profile" as school_profile {
+    * id : BIGINT <<PK>>
+    --
+    # kepala_sekolah_id : BIGINT <<FK>>
+    ..
+    * nama_sekolah : VARCHAR
+    npsn : CHAR
+    nss : VARCHAR
+    * jenjang : VARCHAR
+    status_sekolah : VARCHAR
+    yayasan : VARCHAR
+    * alamat_jalan : VARCHAR
+    rt : VARCHAR
+    rw : VARCHAR
+    desa_kelurahan : VARCHAR
+    kecamatan : VARCHAR
+    * kab_kota : VARCHAR
+    * provinsi : VARCHAR
+    kode_pos : CHAR
+    telepon : VARCHAR
+    email : VARCHAR
+    website : VARCHAR
+    akreditasi : VARCHAR
+    tahun_akreditasi : YEAR
+    tahun_berdiri : YEAR
+    logo_path : VARCHAR
+    latitude : DECIMAL
+    longitude : DECIMAL
+    radius_geofence_m : SMALLINT
+    jam_masuk_default : TIME
+    jam_pulang_default : TIME
+    toleransi_terlambat_menit : TINYINT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+}
+
+package "02. Kesiswaan & Orang Tua" #E0F2F1 {
+  entity "students" as students {
+    * id : BIGINT <<PK>>
+    --
+    # agama : BIGINT <<FK>>
+    # transportasi : BIGINT <<FK>>
+    # class_id : BIGINT <<FK>>
+    ..
+    * nis : VARCHAR
+    nisn : CHAR
+    nik : CHAR
+    no_kk : CHAR
+    no_akta_lahir : VARCHAR
+    * nama_lengkap : VARCHAR
+    nama_panggilan : VARCHAR
+    * jenis_kelamin : CHAR
+    * tempat_lahir : VARCHAR
+    * tgl_lahir : DATE
+    * kewarganegaraan : VARCHAR
+    anak_ke : TINYINT
+    jumlah_saudara : TINYINT
+    bahasa_sehari_hari : VARCHAR
+    * alamat_jalan : VARCHAR
+    rt : VARCHAR
+    rw : VARCHAR
+    dusun : VARCHAR
+    desa_kelurahan : VARCHAR
+    kecamatan : VARCHAR
+    * kab_kota : VARCHAR
+    provinsi : VARCHAR
+    kode_pos : CHAR
+    latitude : DECIMAL
+    longitude : DECIMAL
+    tinggal_bersama : VARCHAR
+    jarak_ke_sekolah_km : DECIMAL
+    waktu_tempuh_menit : SMALLINT
+    no_hp_siswa : VARCHAR
+    telepon : VARCHAR
+    email : VARCHAR
+    tinggi_cm : DECIMAL
+    berat_kg : DECIMAL
+    lingkar_kepala : DECIMAL
+    golongan_darah : VARCHAR
+    riwayat_penyakit : TEXT
+    alergi : TEXT
+    kebutuhan_khusus : TEXT
+    asal_sekolah_tk : VARCHAR
+    skhun : VARCHAR
+    penerima_kps : VARCHAR
+    no_kps : VARCHAR
+    no_peserta_un : VARCHAR
+    no_seri_ijazah : VARCHAR
+    penerima_kip : VARCHAR
+    nomor_kip : VARCHAR
+    nama_di_kip : VARCHAR
+    nomor_kks : VARCHAR
+    bank : VARCHAR
+    nomor_rekening_bank : VARCHAR
+    rekening_atas_nama : VARCHAR
+    layak_pip : VARCHAR
+    alasan_layak_pip : TEXT
+    jenis_pendaftaran : VARCHAR
+    * tgl_masuk : DATE
+    * tahun_masuk : YEAR
+    kelas_saat_masuk : TINYINT
+    * status : VARCHAR
+    foto_path : VARCHAR
+    catatan : TEXT
+    import_batch_id : BIGINT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "guardians" as guardians {
+    * id : BIGINT <<PK>>
+    --
+    # user_id : BIGINT <<FK>>
+    # agama : BIGINT <<FK>>
+    # pendidikan_terakhir : BIGINT <<FK>>
+    # pekerjaan : BIGINT <<FK>>
+    # penghasilan_bulanan : BIGINT <<FK>>
+    ..
+    * hubungan : VARCHAR
+    * nama_lengkap : VARCHAR
+    nik : CHAR
+    tempat_lahir : VARCHAR
+    tgl_lahir : DATE
+    status_hidup : VARCHAR
+    * no_hp : VARCHAR
+    no_whatsapp : VARCHAR
+    email : VARCHAR
+    alamat_jalan : VARCHAR
+    rt : VARCHAR
+    rw : VARCHAR
+    desa_kelurahan : VARCHAR
+    kecamatan : VARCHAR
+    kab_kota : VARCHAR
+    provinsi : VARCHAR
+    kode_pos : CHAR
+    foto_path : VARCHAR
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "student_guardian" as student_guardian {
+    * id : BIGINT <<PK>>
+    --
+    # student_id : BIGINT <<FK>>
+    # guardian_id : BIGINT <<FK>>
+    ..
+    * hubungan : VARCHAR
+    * is_kontak_utama : TINYINT
+    * boleh_lihat_keuangan : TINYINT
+    * boleh_jemput : TINYINT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+  }
+
+  entity "student_enrollments" as student_enrollments {
+    * id : BIGINT <<PK>>
+    --
+    # student_id : BIGINT <<FK>>
+    # class_id : BIGINT <<FK>>
+    # academic_year_id : BIGINT <<FK>>
+    ..
+    * tgl_masuk_kelas : DATE
+    tgl_keluar_kelas : DATE
+    * status_kelas : VARCHAR
+    nomor_absen : SMALLINT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "student_status_history" as student_status_history {
+    * id : BIGINT <<PK>>
+    --
+    # student_id : BIGINT <<FK>>
+    # dicatat_oleh : BIGINT <<FK>>
+    ..
+    * jenis : VARCHAR
+    * tanggal : DATE
+    sekolah_asal_tujuan : VARCHAR
+    alasan : TEXT
+    no_surat : VARCHAR
+    dokumen_path : VARCHAR
+    * created_at : TIMESTAMP
+  }
+
+}
+
+package "03. Kepegawaian (Guru & Staf)" #FFF3E0 {
+  entity "teachers" as teachers {
+    * id : BIGINT <<PK>>
+    --
+    # user_id : BIGINT <<FK>>
+    # agama : BIGINT <<FK>>
+    # pendidikan_terakhir : BIGINT <<FK>>
+    ..
+    nip : VARCHAR
+    nuptk : CHAR
+    * nik : CHAR
+    * nama_lengkap : VARCHAR
+    gelar_depan : VARCHAR
+    gelar_belakang : VARCHAR
+    * jenis_kelamin : CHAR
+    * tempat_lahir : VARCHAR
+    * tgl_lahir : DATE
+    status_pernikahan : VARCHAR
+    * alamat_jalan : VARCHAR
+    rt : VARCHAR
+    rw : VARCHAR
+    desa_kelurahan : VARCHAR
+    kecamatan : VARCHAR
+    * kab_kota : VARCHAR
+    provinsi : VARCHAR
+    kode_pos : CHAR
+    * no_hp : VARCHAR
+    email : VARCHAR
+    kontak_darurat_nama : VARCHAR
+    kontak_darurat_hp : VARCHAR
+    kontak_darurat_hubungan : VARCHAR
+    * jenis_ptk : VARCHAR
+    * status_kepegawaian : VARCHAR
+    * tgl_mulai_tugas : DATE
+    tgl_akhir_tugas : DATE
+    jabatan : VARCHAR
+    tugas_tambahan : VARCHAR
+    jam_mengajar_per_minggu : SMALLINT
+    * status : VARCHAR
+    jurusan_prodi : VARCHAR
+    institusi : VARCHAR
+    tahun_lulus : YEAR
+    status_sertifikasi : VARCHAR
+    no_sertifikat_pendidik : VARCHAR
+    tahun_sertifikasi : YEAR
+    npwp : VARCHAR
+    nama_bank : VARCHAR
+    no_rekening : VARCHAR
+    atas_nama : VARCHAR
+    foto_path : VARCHAR
+    tanda_tangan_path : VARCHAR
+    import_batch_id : BIGINT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "staff" as staff {
+    * id : BIGINT <<PK>>
+    --
+    # user_id : BIGINT <<FK>>
+    # agama : BIGINT <<FK>>
+    # pendidikan_terakhir : BIGINT <<FK>>
+    ..
+    * nik : CHAR
+    * nama_lengkap : VARCHAR
+    * jenis_kelamin : CHAR
+    * tempat_lahir : VARCHAR
+    * tgl_lahir : DATE
+    * alamat_jalan : VARCHAR
+    rt : VARCHAR
+    rw : VARCHAR
+    desa_kelurahan : VARCHAR
+    kecamatan : VARCHAR
+    kab_kota : VARCHAR
+    provinsi : VARCHAR
+    kode_pos : CHAR
+    * no_hp : VARCHAR
+    email : VARCHAR
+    * jabatan : VARCHAR
+    status_kepegawaian : VARCHAR
+    * tgl_mulai_tugas : DATE
+    * status : VARCHAR
+    foto_path : VARCHAR
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "teacher_documents" as teacher_documents {
+    * id : BIGINT <<PK>>
+    --
+    # teacher_id : BIGINT <<FK>>
+    ..
+    * jenis : VARCHAR
+    * nama_dokumen : VARCHAR
+    * file_path : VARCHAR
+    tgl_terbit : DATE
+    tgl_kedaluwarsa : DATE
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "teacher_attendance" as teacher_attendance {
+    * id : BIGINT <<PK>>
+    --
+    # teacher_id : BIGINT <<FK>>
+    # staff_id : BIGINT <<FK>>
+    # disetujui_oleh : BIGINT <<FK>>
+    ..
+    * tanggal : DATE
+    jam_masuk : TIME
+    jam_keluar : TIME
+    * status : VARCHAR
+    lat : DECIMAL
+    lng : DECIMAL
+    lat_keluar : DECIMAL
+    lng_keluar : DECIMAL
+    jarak_masuk_m : INT
+    jarak_keluar_m : INT
+    foto_masuk : VARCHAR
+    foto_pulang : VARCHAR
+    * is_terlambat : TINYINT
+    * menit_keterlambatan : INT
+    surat_izin_path : VARCHAR
+    * status_persetujuan : VARCHAR
+    alasan_koreksi : TEXT
+    keterangan : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+}
+
+package "04. Akademik, Kelas & Jadwal" #E8F5E9 {
+  entity "academic_years" as academic_years {
+    * id : BIGINT <<PK>>
+    --
+    * nama : VARCHAR
+    * tgl_mulai : DATE
+    * tgl_selesai : DATE
+    * status : ENUM
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "semesters" as semesters {
+    * id : BIGINT <<PK>>
+    --
+    # academic_year_id : BIGINT <<FK>>
+    # tutup_by : BIGINT <<FK>>
+    # reopen_approved_by : BIGINT <<FK>>
+    ..
+    * semester : ENUM
+    * tgl_mulai : DATE
+    * tgl_selesai : DATE
+    * status : ENUM
+    tutup_at : TIMESTAMP
+    reopen_at : TIMESTAMP
+    reopen_until : TIMESTAMP
+    reopen_reason : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "school_calendars" as school_calendars {
+    * id : BIGINT <<PK>>
+    --
+    # academic_year_id : BIGINT <<FK>>
+    # semester_id : BIGINT <<FK>>
+    # created_by : BIGINT <<FK>>
+    # updated_by : BIGINT <<FK>>
+    ..
+    * tanggal_mulai : DATE
+    * tanggal_selesai : DATE
+    * judul : VARCHAR
+    deskripsi : TEXT
+    * tipe : VARCHAR
+    * is_libur : TINYINT
+    warna : VARCHAR
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+  }
+
+  entity "rooms" as rooms {
+    * id : BIGINT <<PK>>
+    --
+    * kode : VARCHAR
+    * nama : VARCHAR
+    * jenis : VARCHAR
+    gedung_lantai : VARCHAR
+    kapasitas : SMALLINT
+    kondisi : VARCHAR
+    asset_id : BIGINT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "classes" as classes {
+    * id : BIGINT <<PK>>
+    --
+    # academic_year_id : BIGINT <<FK>>
+    # wali_kelas_id : BIGINT <<FK>>
+    # room_id : BIGINT <<FK>>
+    ..
+    * kode : VARCHAR
+    * nama : VARCHAR
+    * tingkat : TINYINT
+    paralel : VARCHAR
+    kapasitas : SMALLINT
+    * status : VARCHAR
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "subjects" as subjects {
+    * id : BIGINT <<PK>>
+    --
+    * kode : VARCHAR
+    * nama : VARCHAR
+    * is_tematik : TINYINT
+    tema_nomor : TINYINT
+    muatan_pelajaran : JSON
+    deskripsi : TEXT
+    * kelompok : VARCHAR
+    tingkat_berlaku : VARCHAR
+    jam_per_minggu : TINYINT
+    kkm : TINYINT
+    * status : VARCHAR
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "time_slots" as time_slots {
+    * id : BIGINT <<PK>>
+    --
+    * nama : VARCHAR
+    * jenis : VARCHAR
+    * jam_mulai : TIME
+    * jam_selesai : TIME
+    * urutan : TINYINT
+    * hari : VARCHAR
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "teacher_assignments" as teacher_assignments {
+    * id : BIGINT <<PK>>
+    --
+    # teacher_id : BIGINT <<FK>>
+    # subject_id : BIGINT <<FK>>
+    # class_id : BIGINT <<FK>>
+    # academic_year_id : BIGINT <<FK>>
+    # semester_id : BIGINT <<FK>>
+    ..
+    jam_per_minggu : TINYINT
+    keterangan : VARCHAR
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "schedules" as schedules {
+    * id : BIGINT <<PK>>
+    --
+    # academic_year_id : BIGINT <<FK>>
+    # semester_id : BIGINT <<FK>>
+    # class_id : BIGINT <<FK>>
+    # subject_id : BIGINT <<FK>>
+    # teacher_id : BIGINT <<FK>>
+    # room_id : BIGINT <<FK>>
+    # time_slot_id : BIGINT <<FK>>
+    ..
+    judul_kegiatan : VARCHAR
+    * tipe_kegiatan : VARCHAR
+    catatan : VARCHAR
+    * hari : VARCHAR
+    * status : VARCHAR
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+}
+
+package "05. KBM Harian & Presensi" #F3E5F5 {
+  entity "daily_activities" as daily_activities {
+    * id : BIGINT <<PK>>
+    --
+    # class_id : BIGINT <<FK>>
+    # teacher_id : BIGINT <<FK>>
+    ..
+    * tanggal : DATE
+    * judul : VARCHAR
+    * deskripsi : TEXT
+    * kategori : VARCHAR
+    photo_path : VARCHAR
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "teaching_evidence" as teaching_evidence {
+    * id : BIGINT <<PK>>
+    --
+    # schedule_id : BIGINT <<FK>>
+    # teacher_id : BIGINT <<FK>>
+    ..
+    * tanggal : DATE
+    * photo_path : VARCHAR
+    materi_ajar : VARCHAR
+    catatan : TEXT
+    lat : DECIMAL
+    lng : DECIMAL
+    captured_at : TIMESTAMP
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    created_by : BIGINT
+  }
+
+  entity "student_attendance" as student_attendance {
+    * id : BIGINT <<PK>>
+    --
+    # student_id : BIGINT <<FK>>
+    # schedule_id : BIGINT <<FK>>
+    # class_id : BIGINT <<FK>>
+    # dicatat_oleh : BIGINT <<FK>>
+    ..
+    * tanggal : DATE
+    * status : VARCHAR
+    keterangan : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    updated_by : BIGINT
+  }
+
+  entity "learning_progress" as learning_progress {
+    * id : BIGINT <<PK>>
+    --
+    # student_id : BIGINT <<FK>>
+    # teacher_id : BIGINT <<FK>>
+    # class_id : BIGINT <<FK>>
+    # subject_id : BIGINT <<FK>>
+    ..
+    * tanggal : DATE
+    * kategori : VARCHAR
+    * capaian : VARCHAR
+    catatan : TEXT
+    nilai : VARCHAR
+    photo_path : VARCHAR
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+}
+
+package "06. Penilaian & Rapor Siswa" #E1F5FE {
+  entity "report_cards" as report_cards {
+    * id : BIGINT <<PK>>
+    --
+    # student_id : BIGINT <<FK>>
+    # class_id : BIGINT <<FK>>
+    # academic_year_id : BIGINT <<FK>>
+    # semester_id : BIGINT <<FK>>
+    # submitted_by : BIGINT <<FK>>
+    # validated_by : BIGINT <<FK>>
+    # revised_by : BIGINT <<FK>>
+    # created_by : BIGINT <<FK>>
+    # updated_by : BIGINT <<FK>>
+    ..
+    * jenis_rapor : VARCHAR
+    * semester : VARCHAR
+    periode : VARCHAR
+    * fase : VARCHAR
+    tempat_tanggal : VARCHAR
+    tanggal_rapor : DATE
+    wali_kelas_nama : VARCHAR
+    wali_kelas_nip : VARCHAR
+    kepala_sekolah_nama : VARCHAR
+    kepala_sekolah_nip : VARCHAR
+    kokurikuler_tema : VARCHAR
+    kokurikuler_dimensi : VARCHAR
+    kokurikuler_target : VARCHAR
+    kokurikuler_capaian : VARCHAR
+    kokurikuler_deskripsi : TEXT
+    * sakit : SMALLINT
+    * izin : SMALLINT
+    * alpa : SMALLINT
+    catatan_wali_kelas : TEXT
+    tanggapan_orang_tua : TEXT
+    * status : VARCHAR
+    submitted_at : TIMESTAMP
+    validated_at : TIMESTAMP
+    validation_notes : TEXT
+    * version : SMALLINT
+    revised_at : TIMESTAMP
+    revision_notes : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+  }
+
+  entity "report_card_grades" as report_card_grades {
+    * id : BIGINT <<PK>>
+    --
+    # report_card_id : BIGINT <<FK>>
+    # subject_id : BIGINT <<FK>>
+    ..
+    * nama_mapel : VARCHAR
+    * kelompok : VARCHAR
+    tema : VARCHAR
+    aspek : VARCHAR
+    sub_aspek : VARCHAR
+    nilai_akhir : DECIMAL
+    predikat : VARCHAR
+    capaian_kompetensi : TEXT
+    * urutan : SMALLINT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+  }
+
+  entity "report_card_learning_objectives" as report_card_learning_objectives {
+    * id : BIGINT <<PK>>
+    --
+    # subject_id : BIGINT <<FK>>
+    # created_by : BIGINT <<FK>>
+    # updated_by : BIGINT <<FK>>
+    ..
+    * nama_mapel : VARCHAR
+    tingkat : TINYINT
+    semester : VARCHAR
+    * kode_tp : VARCHAR
+    * deskripsi_tp : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+  }
+
+  entity "report_card_extracurriculars" as report_card_extracurriculars {
+    * id : BIGINT <<PK>>
+    --
+    # report_card_id : BIGINT <<FK>>
+    ..
+    * kegiatan : VARCHAR
+    * predikat : VARCHAR
+    keterangan : VARCHAR
+    * urutan : SMALLINT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+  }
+
+  entity "report_card_revisions" as report_card_revisions {
+    * id : BIGINT <<PK>>
+    --
+    # report_card_id : BIGINT <<FK>>
+    # revised_by : BIGINT <<FK>>
+    ..
+    * version : SMALLINT
+    * snapshot_data : JSON
+    revised_at : TIMESTAMP
+    revision_notes : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+  }
+
+}
+
+package "07. Keuangan & Tagihan SPP" #FFFDE7 {
+  entity "fee_types" as fee_types {
+    * id : BIGINT <<PK>>
+    --
+    * kode : VARCHAR
+    * nama : VARCHAR
+    * nominal : DECIMAL
+    * periode : VARCHAR
+    * is_aktif : TINYINT
+    keterangan : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "invoices" as invoices {
+    * id : BIGINT <<PK>>
+    --
+    # student_id : BIGINT <<FK>>
+    # fee_type_id : BIGINT <<FK>>
+    # academic_year_id : BIGINT <<FK>>
+    ..
+    * no_tagihan : VARCHAR
+    * periode : VARCHAR
+    * jumlah : DECIMAL
+    * jumlah_dibayar : DECIMAL
+    * sisa : DECIMAL
+    * status : VARCHAR
+    * jatuh_tempo : DATE
+    keterangan : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "payments" as payments {
+    * id : BIGINT <<PK>>
+    --
+    # invoice_id : BIGINT <<FK>>
+    # dicatat_oleh : BIGINT <<FK>>
+    ..
+    * no_kuitansi : VARCHAR
+    * tanggal : DATE
+    * jumlah : DECIMAL
+    * metode : VARCHAR
+    bukti_path : VARCHAR
+    catatan : TEXT
+    * is_batal : TINYINT
+    alasan_batal : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+  }
+
+  entity "finance_transactions" as finance_transactions {
+    * id : BIGINT <<PK>>
+    --
+    # payment_id : BIGINT <<FK>>
+    # dicatat_oleh : BIGINT <<FK>>
+    ..
+    * no_transaksi : VARCHAR
+    * tipe : VARCHAR
+    * kategori : VARCHAR
+    * jumlah : DECIMAL
+    * tanggal : DATE
+    * keterangan : TEXT
+    lampiran_path : VARCHAR
+    * is_pembalik : TINYINT
+    referensi_transaksi_id : BIGINT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+  }
+
+}
+
+package "08. Sarana Prasarana (Sarpras)" #FBE9E7 {
+  entity "assets" as assets {
+    * id : BIGINT <<PK>>
+    --
+    # room_id : BIGINT <<FK>>
+    ..
+    * kode : VARCHAR
+    * nama : VARCHAR
+    * kategori : VARCHAR
+    * lokasi : VARCHAR
+    tahun_perolehan : INT
+    * nilai : DECIMAL
+    * kondisi : VARCHAR
+    * jumlah : INT
+    * satuan : VARCHAR
+    foto_path : VARCHAR
+    keterangan : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    deleted_at : TIMESTAMP
+    created_by : BIGINT
+    updated_by : BIGINT
+  }
+
+  entity "asset_loans" as asset_loans {
+    * id : BIGINT <<PK>>
+    --
+    # asset_id : BIGINT <<FK>>
+    # peminjam_user_id : BIGINT <<FK>>
+    # created_by : BIGINT <<FK>>
+    ..
+    * peminjam_nama : VARCHAR
+    * tgl_pinjam : DATE
+    * tgl_rencana_kembali : DATE
+    tgl_kembali_aktual : DATE
+    * status : VARCHAR
+    keperluan : TEXT
+    * kondisi_sebelum : VARCHAR
+    kondisi_sesudah : VARCHAR
+    catatan : TEXT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+  }
+
+  entity "asset_maintenance" as asset_maintenance {
+    * id : BIGINT <<PK>>
+    --
+    # asset_id : BIGINT <<FK>>
+    # created_by : BIGINT <<FK>>
+    ..
+    * tanggal : DATE
+    * deskripsi : TEXT
+    * biaya : DECIMAL
+    pelaksana : VARCHAR
+    * kondisi_sesudah : VARCHAR
+    bukti_path : VARCHAR
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+  }
+
+}
+
+package "09. Master Referensi" #ECEFF1 {
+  entity "ref_education" as ref_education {
+    * id : BIGINT <<PK>>
+    --
+    * nama : VARCHAR
+    * urutan : SMALLINT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+  }
+
+  entity "ref_income_ranges" as ref_income_ranges {
+    * id : BIGINT <<PK>>
+    --
+    * nama : VARCHAR
+    * urutan : SMALLINT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+  }
+
+  entity "ref_occupations" as ref_occupations {
+    * id : BIGINT <<PK>>
+    --
+    * nama : VARCHAR
+    * urutan : SMALLINT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+  }
+
+  entity "ref_religions" as ref_religions {
+    * id : BIGINT <<PK>>
+    --
+    * nama : VARCHAR
+    * urutan : SMALLINT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+  }
+
+  entity "ref_transport" as ref_transport {
+    * id : BIGINT <<PK>>
+    --
+    * nama : VARCHAR
+    * urutan : SMALLINT
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+  }
+
+}
+
+' ==========================================================
+' RELASI FOREIGN KEY (RELATIONSHIPS)
+' ==========================================================
+
+users ||--o{ activity_logs : "user_id"
+users ||--o{ announcements : "created_by"
+users ||--o{ announcements : "updated_by"
+assets ||--o{ asset_loans : "asset_id"
+users ||--o{ asset_loans : "created_by"
+users ||--o{ asset_loans : "peminjam_user_id"
+assets ||--o{ asset_maintenance : "asset_id"
+users ||--o{ asset_maintenance : "created_by"
+rooms ||--o{ assets : "room_id"
+academic_years ||--o{ classes : "academic_year_id"
+rooms ||--o{ classes : "room_id"
+teachers ||--o{ classes : "wali_kelas_id"
+classes ||--o{ daily_activities : "class_id"
+teachers ||--o{ daily_activities : "teacher_id"
+users ||--o{ finance_transactions : "dicatat_oleh"
+payments ||--o{ finance_transactions : "payment_id"
+ref_religions ||--o{ guardians : "agama"
+ref_occupations ||--o{ guardians : "pekerjaan"
+ref_education ||--o{ guardians : "pendidikan_terakhir"
+ref_income_ranges ||--o{ guardians : "penghasilan_bulanan"
+users ||--o{ guardians : "user_id"
+academic_years ||--o{ invoices : "academic_year_id"
+fee_types ||--o{ invoices : "fee_type_id"
+students ||--o{ invoices : "student_id"
+classes ||--o{ learning_progress : "class_id"
+students ||--o{ learning_progress : "student_id"
+subjects ||--o{ learning_progress : "subject_id"
+teachers ||--o{ learning_progress : "teacher_id"
+users ||--o{ notifications : "user_id"
+users ||--o{ payments : "dicatat_oleh"
+invoices ||--o{ payments : "invoice_id"
+report_cards ||--o{ report_card_extracurriculars : "report_card_id"
+report_cards ||--o{ report_card_grades : "report_card_id"
+subjects ||--o{ report_card_grades : "subject_id"
+users ||--o{ report_card_learning_objectives : "created_by"
+subjects ||--o{ report_card_learning_objectives : "subject_id"
+users ||--o{ report_card_learning_objectives : "updated_by"
+report_cards ||--o{ report_card_revisions : "report_card_id"
+users ||--o{ report_card_revisions : "revised_by"
+academic_years ||--o{ report_cards : "academic_year_id"
+classes ||--o{ report_cards : "class_id"
+users ||--o{ report_cards : "created_by"
+users ||--o{ report_cards : "revised_by"
+semesters ||--o{ report_cards : "semester_id"
+students ||--o{ report_cards : "student_id"
+users ||--o{ report_cards : "submitted_by"
+users ||--o{ report_cards : "updated_by"
+users ||--o{ report_cards : "validated_by"
+academic_years ||--o{ schedules : "academic_year_id"
+classes ||--o{ schedules : "class_id"
+rooms ||--o{ schedules : "room_id"
+semesters ||--o{ schedules : "semester_id"
+subjects ||--o{ schedules : "subject_id"
+teachers ||--o{ schedules : "teacher_id"
+time_slots ||--o{ schedules : "time_slot_id"
+academic_years ||--o{ school_calendars : "academic_year_id"
+users ||--o{ school_calendars : "created_by"
+semesters ||--o{ school_calendars : "semester_id"
+users ||--o{ school_calendars : "updated_by"
+teachers ||--o{ school_profile : "kepala_sekolah_id"
+academic_years ||--o{ semesters : "academic_year_id"
+users ||--o{ semesters : "reopen_approved_by"
+users ||--o{ semesters : "tutup_by"
+ref_religions ||--o{ staff : "agama"
+ref_education ||--o{ staff : "pendidikan_terakhir"
+users ||--o{ staff : "user_id"
+classes ||--o{ student_attendance : "class_id"
+users ||--o{ student_attendance : "dicatat_oleh"
+schedules ||--o{ student_attendance : "schedule_id"
+students ||--o{ student_attendance : "student_id"
+academic_years ||--o{ student_enrollments : "academic_year_id"
+classes ||--o{ student_enrollments : "class_id"
+students ||--o{ student_enrollments : "student_id"
+guardians ||--o{ student_guardian : "guardian_id"
+students ||--o{ student_guardian : "student_id"
+users ||--o{ student_status_history : "dicatat_oleh"
+students ||--o{ student_status_history : "student_id"
+ref_religions ||--o{ students : "agama"
+classes ||--o{ students : "class_id"
+ref_transport ||--o{ students : "transportasi"
+academic_years ||--o{ teacher_assignments : "academic_year_id"
+classes ||--o{ teacher_assignments : "class_id"
+semesters ||--o{ teacher_assignments : "semester_id"
+subjects ||--o{ teacher_assignments : "subject_id"
+teachers ||--o{ teacher_assignments : "teacher_id"
+users ||--o{ teacher_attendance : "disetujui_oleh"
+staff ||--o{ teacher_attendance : "staff_id"
+teachers ||--o{ teacher_attendance : "teacher_id"
+teachers ||--o{ teacher_documents : "teacher_id"
+ref_religions ||--o{ teachers : "agama"
+ref_education ||--o{ teachers : "pendidikan_terakhir"
+users ||--o{ teachers : "user_id"
+schedules ||--o{ teaching_evidence : "schedule_id"
+teachers ||--o{ teaching_evidence : "teacher_id"
+roles ||--o{ users : "role_id"
+
+@enduml

@@ -15,17 +15,11 @@ const emit = defineEmits<{
 
 <template>
   <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs p-6 space-y-4">
-    <div class="flex justify-between items-center border-b border-slate-100 pb-4">
+    <div class="border-b border-slate-100 pb-4">
       <div>
         <h3 class="font-extrabold text-base text-slate-900">Master Tarif & Jenis Biaya</h3>
         <p class="text-xs text-slate-500">Daftar tarif resmi SPP bulanan, gedung, seragam, kegiatan dll.</p>
       </div>
-      <button 
-        @click="emit('add-fee-type')"
-        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer"
-      >
-        + Tambah Jenis Biaya
-      </button>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <div v-for="f in feeTypes" :key="f.id" class="p-4 border border-slate-200 rounded-2xl bg-slate-50 space-y-2 hover:bg-white hover:shadow-xs transition">

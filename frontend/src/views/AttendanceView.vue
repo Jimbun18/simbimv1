@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../services/api'
+import { showError } from '../services/swal'
 import type { TeacherAttendance, SchoolConfig } from '../components/attendance/types'
 import { calculateDistance } from '../components/attendance/types'
 import GeofenceValidationCard from '../components/attendance/GeofenceValidationCard.vue'
@@ -175,7 +176,7 @@ const submitLeave = async (formData: FormData) => {
       fetchHistory()
     }
   } catch (err: any) {
-    alert(err.response?.data?.message || 'Gagal mengajukan izin/sakit.')
+    showError('Permohonan Gagal', err.response?.data?.message || 'Gagal mengajukan izin/sakit.')
   } finally {
     submittingLeave.value = false
   }
@@ -326,6 +327,32 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <!-- BANNER HARI LIBUR KALENDER / AKHIR PEKAN -->
+    <div
+      v-if="todayData?.is_holiday"
+      class="bg-amber-500/10 border-2 border-amber-500/40 rounded-2xl p-4 sm:p-5 text-amber-950 flex items-start gap-4 shadow-xs"
+    >
+      <div class="w-11 h-11 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-2xl shrink-0">
+        🏖️
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-900 border border-amber-300">
+            {{ todayData?.holiday_info?.is_sunday ? 'Hari Minggu' : 'Hari Libur Kalender' }}
+          </span>
+          <span class="text-xs text-amber-800 font-bold">
+            Presensi & KBM Ditutup
+          </span>
+        </div>
+        <h3 class="text-sm sm:text-base font-bold text-amber-950 mt-1">
+          {{ todayData?.holiday_reason || 'Hari ini adalah hari libur sekolah.' }}
+        </h3>
+        <p class="text-xs text-amber-800/90 mt-0.5">
+          Pada hari libur atau akhir pekan, pendidik tidak diwajibkan melakukan presensi datang/pulang dan tidak dikenakan pemotongan kehadiran / alpa.
+        </p>
+      </div>
+    </div>
+
     <!-- 2. MIDDLE TWO-COLUMN GRID -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
       <!-- COLUMN 1: VALIDASI GEOFENCE RADIUS -->
@@ -348,6 +375,8 @@ onUnmounted(() => {
         :submitting="submitting"
         :gps-loading="gpsLoading"
         :photo-preview="photoPreview"
+        :is-holiday="todayData?.is_holiday"
+        :holiday-reason="todayData?.holiday_reason"
         @check-in="submitCheckIn"
         @check-out="submitCheckOut"
         @photo-selected="onPhotoSelected"

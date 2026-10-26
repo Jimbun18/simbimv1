@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\ReferenceController;
 use App\Http\Controllers\Api\ReportCardController;
 use App\Http\Controllers\Api\RoomController;
 use App\Http\Controllers\Api\ScheduleController;
+use App\Http\Controllers\Api\SchoolCalendarController;
 use App\Http\Controllers\Api\SchoolProfileController;
 use App\Http\Controllers\Api\SemesterController;
 use App\Http\Controllers\Api\SettingController;
@@ -144,8 +145,17 @@ Route::prefix('v1')->group(function () {
         Route::get('/payments/{id}', [PaymentController::class, 'show']);
         Route::get('/payments/{id}/receipt', [PaymentController::class, 'receipt']);
 
+        // School Calendar & Holidays (All Authenticated Roles)
+        Route::get('/calendar', [SchoolCalendarController::class, 'index']);
+        Route::get('/calendar/check-date', [SchoolCalendarController::class, 'checkDate']);
+
         // Admin Only (Kepala Sekolah & Staf Administrasi)
         Route::middleware('role:kepala_sekolah,staf_admin')->group(function () {
+            // School Calendar Management (Admin)
+            Route::post('/calendar', [SchoolCalendarController::class, 'store']);
+            Route::put('/calendar/{id}', [SchoolCalendarController::class, 'update']);
+            Route::delete('/calendar/{id}', [SchoolCalendarController::class, 'destroy']);
+            Route::post('/calendar/seed-template', [SchoolCalendarController::class, 'seedTemplate']);
             // School Profile & Academic Year
             Route::put('/school-profile', [SchoolProfileController::class, 'update']);
             Route::post('/academic-years', [AcademicYearController::class, 'store']);

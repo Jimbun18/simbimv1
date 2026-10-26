@@ -14,9 +14,13 @@ class PeriodLockService
      * Memvalidasi apakah suatu tanggal berada di dalam rentang semester yang valid dan tidak terkunci.
      * @throws ValidationException
      */
-    public static function validateDate(string|\DateTimeInterface $date): Semester
+    public static function validateDate(string|\DateTimeInterface $date, bool $checkHoliday = false, string $context = 'Operasi'): Semester
     {
         $d = is_string($date) ? substr($date, 0, 10) : $date->format('Y-m-d');
+
+        if ($checkHoliday) {
+            self::validateNotHoliday($d, $context);
+        }
 
         $semester = Semester::findByDate($d);
 
@@ -33,6 +37,21 @@ class PeriodLockService
         }
 
         return $semester;
+    }
+
+    /**
+     * Memvalidasi apakah suatu tanggal bukan hari libur (bukan hari Minggu dan bukan hari libur terdaftar di kalender).
+     * @throws ValidationException
+     */
+    public static function validateNotHoliday(string|\DateTimeInterface $date, string $context = 'Presensi'): array
+    {
+        $holiday = \App\Models\SchoolCalendar::checkHoliday($date);
+        if ($holiday['is_holiday']) {
+            throw ValidationException::withMessages([
+                'tanggal' => ["{$context} ditutup. Tanggal tersebut adalah {$holiday['name']}."]
+            ]);
+        }
+        return $holiday;
     }
 
     /**

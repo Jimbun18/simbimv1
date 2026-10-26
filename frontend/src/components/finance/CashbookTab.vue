@@ -59,12 +59,6 @@ const filteredTransactions = computed(() => {
             class="w-full border border-slate-200 bg-slate-50 rounded-xl px-3 py-1.5 text-xs text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
           />
         </div>
-        <button 
-          @click="emit('open-cash-form')" 
-          class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs transition self-end cursor-pointer"
-        >
-          + Catat Kas
-        </button>
       </div>
     </div>
 

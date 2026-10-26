@@ -93,6 +93,21 @@ const newYearForm = ref({
   status: 'rencana',
 });
 
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return '-';
+  const clean = dateStr.substring(0, 10);
+  try {
+    const [y, m, d] = clean.split('-');
+    if (y && m && d) {
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      return `${parseInt(d, 10)} ${monthNames[parseInt(m, 10) - 1] || m} ${y}`;
+    }
+    return clean;
+  } catch {
+    return clean;
+  }
+};
+
 const openCreateYearModal = () => {
   newYearForm.value = {
     nama: '',
@@ -226,7 +241,7 @@ defineExpose({
   <div class="space-y-6">
     <!-- Panel 1: Master Tahun Ajaran & Semester Aktif -->
     <div class="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs space-y-5">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+      <div class="border-b border-slate-100 pb-4">
         <div>
           <h2 class="text-base font-black text-slate-900 flex items-center gap-2">
             <span>🗓️</span>
@@ -236,13 +251,6 @@ defineExpose({
             Pengaturan manual pergantian semester kalender sekolah dan aktivasi tahun ajaran baru.
           </p>
         </div>
-        <button
-          @click="openCreateYearModal"
-          type="button"
-          class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
-        >
-          <span>+ Buat Tahun Ajaran</span>
-        </button>
       </div>
 
       <!-- Cards List of Academic Years -->
@@ -275,8 +283,8 @@ defineExpose({
               </span>
             </div>
 
-            <div class="text-xs text-slate-500">
-              Periode: {{ ay.tgl_mulai }} s.d. {{ ay.tgl_selesai }}
+            <div class="text-xs text-slate-500 font-medium">
+              Periode: {{ formatDate(ay.tgl_mulai) }} s.d. {{ formatDate(ay.tgl_selesai) }}
             </div>
 
             <!-- Semesters in this year -->

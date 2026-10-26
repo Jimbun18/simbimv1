@@ -1,0 +1,107 @@
+@startuml erd_akademik_jadwal
+!theme plain
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 6
+hide circle
+
+title 📚 ERD Modul Akademik, Kelas & Jadwal Pelajaran
+
+entity "academic_years" as academic_years {
+  * id : BIGINT <<PK>>
+  --
+  * nama : VARCHAR(20)
+  * tgl_mulai : DATE
+  * tgl_selesai : DATE
+  * status : ENUM('rencana','aktif','selesai')
+}
+
+entity "semesters" as semesters {
+  * id : BIGINT <<PK>>
+  --
+  # academic_year_id : BIGINT <<FK>>
+  * semester : ENUM('gasal','genap')
+  * status : ENUM('aktif','terkunci')
+}
+
+entity "teachers" as teachers {
+  * id : BIGINT <<PK>>
+  --
+  * nip : VARCHAR(30)
+  * nama_lengkap : VARCHAR(150)
+}
+
+entity "rooms" as rooms {
+  * id : BIGINT <<PK>>
+  --
+  * nama_ruang : VARCHAR(50)
+  * kapasitas : INT
+}
+
+entity "classes" as classes {
+  * id : BIGINT <<PK>>
+  --
+  # academic_year_id : BIGINT <<FK>>
+  # wali_kelas_id : BIGINT <<FK>>
+  # room_id : BIGINT <<FK>>
+  * nama : VARCHAR(50)
+  * tingkat : TINYINT
+}
+
+entity "subjects" as subjects {
+  * id : BIGINT <<PK>>
+  --
+  * kode : VARCHAR(20)
+  * nama : VARCHAR(100)
+  * kelompok : VARCHAR(50)
+}
+
+entity "time_slots" as time_slots {
+  * id : BIGINT <<PK>>
+  --
+  * jam_ke : TINYINT
+  * jam_mulai : TIME
+  * jam_selesai : TIME
+  * is_istirahat : TINYINT(1)
+}
+
+entity "teacher_assignments" as teacher_assignments {
+  * id : BIGINT <<PK>>
+  --
+  # teacher_id : BIGINT <<FK>>
+  # subject_id : BIGINT <<FK>>
+  # class_id : BIGINT <<FK>>
+  # academic_year_id : BIGINT <<FK>>
+  # semester_id : BIGINT <<FK>>
+  jam_per_minggu : TINYINT
+}
+
+entity "schedules" as schedules {
+  * id : BIGINT <<PK>>
+  --
+  # class_id : BIGINT <<FK>>
+  # subject_id : BIGINT <<FK>>
+  # teacher_id : BIGINT <<FK>>
+  # room_id : BIGINT <<FK>>
+  # time_slot_id : BIGINT <<FK>>
+  # academic_year_id : BIGINT <<FK>>
+  # semester_id : BIGINT <<FK>>
+  * hari : ENUM('Senin','Selasa','Rabu','Kamis','Jumat','Sabtu')
+}
+
+academic_years ||--o{ semesters : "memiliki"
+academic_years ||--o{ classes : "tahun berjalan"
+teachers ||--o{ classes : "wali_kelas"
+rooms ||--o{ classes : "ruangan"
+
+classes ||--o{ teacher_assignments : "plot pengampu"
+teachers ||--o{ teacher_assignments : "guru"
+subjects ||--o{ teacher_assignments : "mapel"
+
+classes ||--o{ schedules : "jadwal kelas"
+teachers ||--o{ schedules : "guru pengajar"
+subjects ||--o{ schedules : "mata pelajaran"
+rooms ||--o{ schedules : "ruang kelas"
+time_slots ||--o{ schedules : "jam pelajaran"
+
+@enduml

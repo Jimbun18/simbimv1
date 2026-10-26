@@ -129,6 +129,19 @@ class TeachingEvidenceController extends Controller
                 ], 422);
             }
 
+            // Validasi: Apakah hari ini adalah hari libur kalender atau hari Minggu?
+            $holiday = \App\Models\SchoolCalendar::checkHoliday($tanggal);
+            if ($holiday['is_holiday']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Pengunggahan bukti KBM ditutup. Hari ini adalah {$holiday['name']}.",
+                    'data' => [
+                        'is_holiday' => true,
+                        'holiday_name' => $holiday['name'],
+                    ],
+                ], 422);
+            }
+
             // Pastikan tanggal pengunggahan adalah hari ini
             if ($targetDate->toDateString() !== now()->toDateString()) {
                 return response()->json([
@@ -136,6 +149,47 @@ class TeachingEvidenceController extends Controller
                     'message' => 'Bukti KBM dan jurnal hanya dapat diunggah pada hari pelaksanaan KBM (Hari Ini).',
                     'data' => null,
                 ], 422);
+            }
+
+            // Validasi: Pembatasan waktu sesuai jam pelajaran di jadwal
+            $relatedSchedules = Schedule::where('teacher_id', $schedule->teacher_id)
+                ->where('class_id', $schedule->class_id)
+                ->where('subject_id', $schedule->subject_id)
+                ->where('hari', $schedule->hari)
+                ->with('timeSlot')
+                ->get();
+
+            $minStart = null;
+            $maxEnd = null;
+
+            foreach ($relatedSchedules as $rel) {
+                if ($rel->timeSlot) {
+                    $start = substr($rel->timeSlot->jam_mulai, 0, 5);
+                    $end = substr($rel->timeSlot->jam_selesai, 0, 5);
+                    if (!$minStart || $start < $minStart) $minStart = $start;
+                    if (!$maxEnd || $end > $maxEnd) $maxEnd = $end;
+                }
+            }
+
+            if ($minStart && $maxEnd) {
+                $nowTime = now()->format('H:i');
+                $endCarbon = \Carbon\Carbon::createFromFormat('H:i', $maxEnd)->addMinutes(15)->format('H:i');
+
+                if ($nowTime < $minStart) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Jam pelajaran belum dimulai. Pengunggahan bukti KBM dan jurnal hanya dapat dilakukan saat jam pelajaran berlangsung ({$minStart} - {$maxEnd} WIB).",
+                        'data' => null,
+                    ], 422);
+                }
+
+                if ($nowTime > $endCarbon) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Waktu pengunggahan telah berakhir. Pengunggahan bukti KBM dan jurnal dibatasi hanya saat jam pelajaran sedang berlangsung ({$minStart} - {$maxEnd} WIB).",
+                        'data' => null,
+                    ], 422);
+                }
             }
         }
 

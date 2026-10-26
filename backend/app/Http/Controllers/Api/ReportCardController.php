@@ -88,106 +88,128 @@ class ReportCardController extends Controller
      * 17 Butir Laporan Perkembangan Penguatan Karakter & Life Skill (Abrisam 2).
      */
     public const DEFAULT_CHARACTER_ITEMS = [
+        // 1. Aspek Sikap (9 Butir)
         [
-            'aspek' => 'Aspek Sikap: Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
+            'aspek' => 'Aspek Sikap',
+            'kelompok_karakter' => 'Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
             'sub_aspek' => 'Motivasi diri (meyakinkan kita bahwa kita mampu, berpikir positif, visioner)',
-            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam membuat keputusan demi perkembangan dirinya dan senantiasa berpikir positif.',
+            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam membuat keputusan demi perkembangan dirinya.',
             'predikat' => 'B',
         ],
         [
-            'aspek' => 'Aspek Sikap: Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
+            'aspek' => 'Aspek Sikap',
+            'kelompok_karakter' => 'Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
             'sub_aspek' => 'Mengendalikan emosi (mengelola emosi, mengendalikan diri, dan hati)',
-            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam mengucapkan 4 kata ajaib (tolong, maaf, permisi, dan terima kasih).',
+            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam mengucapkan 4 kata ajaib (tolong, maaf, permisi, dan terima kasih)',
             'predikat' => 'A',
         ],
         [
-            'aspek' => 'Aspek Sikap: Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
+            'aspek' => 'Aspek Sikap',
+            'kelompok_karakter' => 'Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
             'sub_aspek' => 'Empati, kepedulian pada lingkungan sosial dan lingkungan alam',
-            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam menjaga kebersihan kelas dan lingkungan sekolah, seperti menjalankan piket dan membuang sampah pada tempatnya.',
+            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam menjaga kebersihan kelas dan lingkungan sekolah, seperti menjalankan piket sesuai jadwal dan membuang sampah pada tempatnya.',
             'predikat' => 'A',
         ],
         [
-            'aspek' => 'Aspek Sikap: Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
+            'aspek' => 'Aspek Sikap',
+            'kelompok_karakter' => 'Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
             'sub_aspek' => 'Membangun fisik dan mental yang kuat',
             'default_capaian' => 'Alhamdulillah ananda sudah sangat baik dalam keberaniannya untuk berkata tidak terhadap hal-hal yang tidak disukai.',
             'predikat' => 'B',
         ],
         [
-            'aspek' => 'Aspek Sikap: Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
+            'aspek' => 'Aspek Sikap',
+            'kelompok_karakter' => 'Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
             'sub_aspek' => 'Akhlakul Karimah (memiliki perilaku dan sikap yang baik/Islami)',
-            'default_capaian' => 'Alhamdulillah ananda sudah sangat baik dalam berjabat tangan dengan ustadz dan ustadzah, menerapkan adab makan dan minum, serta adab keluar masuk kamar mandi.',
+            'default_capaian' => 'Alhamdulillah ananda sudah sangat baik dalam berjabat tangan dengan ustadz dan ustadzah, menerapkan adab makan dan minum, serta menerapkan adab keluar masuk kamar mandi.',
             'predikat' => 'A',
         ],
         [
-            'aspek' => 'Aspek Sikap: Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
+            'aspek' => 'Aspek Sikap',
+            'kelompok_karakter' => 'Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
             'sub_aspek' => 'Disiplin Diri (Self Discipline - melakukan tanpa diperintah)',
-            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam mengikuti upacara dan tertib mengikuti pelajaran di kelas.',
+            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam mengikuti upacara dan tertib mengikuti pelajaran.',
             'predikat' => 'B',
         ],
         [
-            'aspek' => 'Aspek Sikap: Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
+            'aspek' => 'Aspek Sikap',
+            'kelompok_karakter' => 'Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
             'sub_aspek' => 'Manajemen waktu (mengelola waktu, scheduling)',
             'default_capaian' => 'Alhamdulillah ananda sudah baik dalam menyelesaikan tugas sesuai dengan waktu yang ditentukan.',
             'predikat' => 'A',
         ],
         [
-            'aspek' => 'Aspek Sikap: Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
-            'sub_aspek' => 'Konsisten (istiqomah dalam ibadah dan kebaikan)',
-            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam melaksanakan shalat lima waktu dengan tepat waktu dan berjamaah di sekolah.',
+            'aspek' => 'Aspek Sikap',
+            'kelompok_karakter' => 'Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
+            'sub_aspek' => 'Konsisten (istiqomah)',
+            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam melaksanakan shalat lima waktu dengan tepat waktu, seperti mengerjakan shalat Dzuhur berjamaah pada saat di sekolah',
             'predikat' => 'B',
         ],
         [
-            'aspek' => 'Aspek Sikap: Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
-            'sub_aspek' => 'Fleksibilitas (kemampuan beradaptasi dengan lingkungan)',
-            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam berbaur dengan teman, seperti berjabat tangan dan memberi salam saat berpapasan.',
+            'aspek' => 'Aspek Sikap',
+            'kelompok_karakter' => 'Emosi & Karakter yang Kuat (Emotional & Spiritual Quotient)',
+            'sub_aspek' => 'Fleksibilitas (kemampuan beradaptasi)',
+            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam berbaur dengan teman, seperti berjabat tangan dan menyapa/memberi salam pada saat berpapasan dengan teman.',
             'predikat' => 'B',
         ],
+
+        // 2. Aspek Pengetahuan (7 Butir)
         [
-            'aspek' => 'Aspek Pengetahuan: Belajar Efektif (Effective Learning)',
-            'sub_aspek' => 'Pembelajaran efektif (belajar di mana saja, kapan saja, dan dengan siapa saja)',
+            'aspek' => 'Aspek Pengetahuan',
+            'kelompok_karakter' => 'Belajar Efektif (Effective Learning)',
+            'sub_aspek' => 'Pembelajaran efektif (belajar di mana saja, kapan saja, dan dengan siapa saja; semua adalah ilmu)',
             'default_capaian' => 'Alhamdulillah ananda sudah baik dalam belajar berkelompok besar dan kecil, seperti pada saat di halaqah maupun pembelajaran tema.',
             'predikat' => 'A',
         ],
         [
-            'aspek' => 'Aspek Pengetahuan: Belajar Efektif (Effective Learning)',
+            'aspek' => 'Aspek Pengetahuan',
+            'kelompok_karakter' => 'Belajar Efektif (Effective Learning)',
             'sub_aspek' => 'Membaca buku (membiasakan untuk membaca buku; jendela ilmu)',
-            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam menceritakan kembali buku cerita yang dibacanya dengan antusias.',
+            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam menceritakan kembali buku cerita yang dibacanya, seperti pada saat pembelajaran kisah Fatimah Az-Zahra binti Rasulullah.',
             'predikat' => 'A',
         ],
         [
-            'aspek' => 'Aspek Pengetahuan: Belajar Efektif (Effective Learning)',
-            'sub_aspek' => 'Berfikir kritis (literasi, analisis, dan tindak lanjut)',
-            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam mengidentifikasi dan mengolah informasi serta aktif menjawab pertanyaan.',
+            'aspek' => 'Aspek Pengetahuan',
+            'kelompok_karakter' => 'Belajar Efektif (Effective Learning)',
+            'sub_aspek' => 'Berfikir kritis (banyak literasi dan referensi; observasi, analisis, evaluasi, dan tindak lanjut)',
+            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam mengidentifikasi dan mengolah informasi dan gagasan, seperti pada saat ada pertanyaan dan Ananda mampu menjawabnya.',
             'predikat' => 'A',
         ],
         [
-            'aspek' => 'Aspek Pengetahuan: Belajar Efektif (Effective Learning)',
-            'sub_aspek' => 'Komunikasi (Communication - cara komunikasi yang efektif)',
-            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam menjadi pendengar yang baik dan memberikan apresiasi serta nasihat yang baik kepada teman.',
+            'aspek' => 'Aspek Pengetahuan',
+            'kelompok_karakter' => 'Komunikasi (Communication)',
+            'sub_aspek' => 'Cara komunikasi yang efektif (mampu berkomunikasi dengan baik)',
+            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam menjadi pendengar yang baik dan memberikan apresiasi terhadap teman, seperti menghibur temannya pada saat sedih dan dapat memberikan nasihat yang baik kepada teman.',
             'predikat' => 'A',
         ],
         [
-            'aspek' => 'Aspek Pengetahuan: Belajar Efektif (Effective Learning)',
-            'sub_aspek' => 'Persuasi (meyakinkan orang lain, presentasi, dan bersikap jujur)',
-            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam bersikap jujur serta berani mengutarakan pendapat.',
+            'aspek' => 'Aspek Pengetahuan',
+            'kelompok_karakter' => 'Komunikasi (Communication)',
+            'sub_aspek' => 'Persuasi (meyakinkan orang lain/presentasi)',
+            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam bersikap jujur.',
             'predikat' => 'B',
         ],
         [
-            'aspek' => 'Aspek Pengetahuan: Belajar Efektif (Effective Learning)',
-            'sub_aspek' => 'Membangun networking (silaturahmi dan bersosialisasi)',
-            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam keterlibatan aktivitas kelas/pembelajaran dan menjalankan peran kepengurusan.',
+            'aspek' => 'Aspek Pengetahuan',
+            'kelompok_karakter' => 'Komunikasi (Communication)',
+            'sub_aspek' => 'Membangun networking (silaturahmi, membangun hubungan dan bersosialisasi)',
+            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam keterlibatan dalam aktivitas kelas/pembelajaran, seperti menjalankan peran sebagai pengurus kelas.',
             'predikat' => 'B',
         ],
         [
-            'aspek' => 'Aspek Pengetahuan: Belajar Efektif (Effective Learning)',
-            'sub_aspek' => 'Belajar bahasa asing (berkomunikasi dalam bahasa dunia)',
-            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam perbendaharaan kosa kata bahasa Inggris, Arab, dan bahasa Jawa.',
+            'aspek' => 'Aspek Pengetahuan',
+            'kelompok_karakter' => 'Komunikasi (Communication)',
+            'sub_aspek' => 'Belajar bahasa asing (berkomunikasi dan bersosialisasi dengan banyak orang dan banyak negara)',
+            'default_capaian' => 'Alhamdulillah ananda sudah baik dalam pembendaharaan kosa kata bahasa Inggris, Arab, dan bahasa Jawa (Anggota keluarga, bilangan 1-10)',
             'predikat' => 'A',
         ],
+
+        // 3. Aspek Keterampilan (1 Butir)
         [
-            'aspek' => 'Aspek Keterampilan: Penguasaan Teknologi & Keterampilan Hidup (Life Skill)',
-            'sub_aspek' => 'Kecakapan Hidup (bertanam, berkebun, merawat tanaman, memasak)',
-            'default_capaian' => 'Alhamdulillah ananda sudah sangat baik dalam melakukan kegiatan berkebun, mengenal berbagai tanaman dan cara merawatnya.',
+            'aspek' => 'Aspek Keterampilan',
+            'kelompok_karakter' => 'Penguasaan Teknologi dan Keterampilan Hidup (Technology Mastery and Life Skill)',
+            'sub_aspek' => 'Kecakapan Hidup (bertanam, berkebun, beternak, memasak, dan membuat peralatan sederhana)',
+            'default_capaian' => 'Alhamdulillah ananda sudah sangat baik dalam melakukan kegiatan berkebun, mengenal berbagai tanamanan dan cara merawatnya.',
             'predikat' => 'A',
         ],
     ];
@@ -451,6 +473,7 @@ class ReportCardController extends Controller
                 ReportCardGrade::create([
                     'report_card_id' => $rc->id,
                     'aspek' => $item['aspek'],
+                    'tema' => $item['kelompok_karakter'] ?? null,
                     'sub_aspek' => $item['sub_aspek'],
                     'nama_mapel' => $item['sub_aspek'],
                     'kelompok' => 'Karakter & Life Skill',
@@ -553,10 +576,13 @@ class ReportCardController extends Controller
 
                 $attCounts = StudentAttendance::where('student_id', $student->id)
                     ->where('class_id', $classId)
+                    ->when($semModel?->tgl_mulai && $semModel?->tgl_selesai, function ($q) use ($semModel) {
+                        $q->whereBetween('tanggal', [$semModel->tgl_mulai, $semModel->tgl_selesai]);
+                    })
                     ->selectRaw("
-                        COUNT(CASE WHEN status = 'sakit' THEN 1 END) as sakit,
-                        COUNT(CASE WHEN status = 'izin' THEN 1 END) as izin,
-                        COUNT(CASE WHEN status = 'alpa' THEN 1 END) as alpa
+                        COUNT(DISTINCT CASE WHEN status = 'sakit' THEN tanggal END) as sakit,
+                        COUNT(DISTINCT CASE WHEN status = 'izin' THEN tanggal END) as izin,
+                        COUNT(DISTINCT CASE WHEN status = 'alpa' THEN tanggal END) as alpa
                     ")->first();
 
                 if (!$rc) {
@@ -607,10 +633,13 @@ class ReportCardController extends Controller
             DB::commit();
 
             ActivityLogService::log(
-                'Inisialisasi Rapor Kelas',
-                "Menginisialisasi rapor ({$jenisRapor}) kelas {$schoolClass->nama} semester {$semester} ({$createdCount} dibuat, {$updatedCount} diperbarui)",
+                'Inisialisasi',
+                'Rapor',
                 'ReportCard',
-                $classId
+                $classId,
+                null,
+                null,
+                "Menginisialisasi rapor ({$jenisRapor}) kelas {$schoolClass->nama} semester {$semester} ({$createdCount} dibuat, {$updatedCount} diperbarui)"
             );
 
             return response()->json([
@@ -656,11 +685,28 @@ class ReportCardController extends Controller
             'data' => [
                 'report_card' => $reportCard,
                 'school_profile' => $schoolProfile ? [
-                    'nama_sekolah' => $schoolProfile->nama_sekolah ?? 'SD Islam Bina Insan Mandiri Purwokerto',
+                    'nama_sekolah' => $schoolProfile->nama_sekolah ?? 'SDI Bina Insan Mandiri Purwokerto',
+                    'yayasan' => $schoolProfile->yayasan ?? 'Yayasan Bina Insan Mandiri',
                     'npsn' => $schoolProfile->npsn ?? '70036695',
-                    'alamat' => $schoolProfile->alamat_lengkap ?? 'Jl. Wadas Kelir RT.04 RW.05 Kel. Karangklesem Kec. Purwokerto Selatan Kab. Banyumas Kode pos 53144',
-                    'logo_path' => $schoolProfile->logo_path,
-                ] : null,
+                    'nss' => $schoolProfile->nss ?? '102030405060',
+                    'akreditasi' => $schoolProfile->akreditasi ?? 'A',
+                    'alamat' => $schoolProfile->alamat_lengkap ?? 'Jl. Wadas Kelir RT.04 RW.05 Kel. Karangklesem, Kec. Purwokerto Selatan, Kab. Banyumas 53144',
+                    'telepon' => $schoolProfile->telepon ?? '0281-635812',
+                    'email' => $schoolProfile->email ?? 'sdibim.pwt@gmail.com',
+                    'website' => $schoolProfile->website ?? 'https://sdibim.sch.id',
+                    'logo_path' => $schoolProfile->logo_path ?: '/logo.png',
+                ] : [
+                    'nama_sekolah' => 'SDI Bina Insan Mandiri Purwokerto',
+                    'yayasan' => 'Yayasan Bina Insan Mandiri',
+                    'npsn' => '70036695',
+                    'nss' => '102030405060',
+                    'akreditasi' => 'A',
+                    'alamat' => 'Jl. Wadas Kelir RT.04 RW.05 Kel. Karangklesem, Kec. Purwokerto Selatan, Kab. Banyumas 53144',
+                    'telepon' => '0281-635812',
+                    'email' => 'sdibim.pwt@gmail.com',
+                    'website' => 'https://sdibim.sch.id',
+                    'logo_path' => '/logo.png',
+                ],
             ],
         ]);
     }
@@ -711,10 +757,13 @@ class ReportCardController extends Controller
 
             $attCounts = StudentAttendance::where('student_id', $student->id)
                 ->where('class_id', $classId)
+                ->when($semModel?->tgl_mulai && $semModel?->tgl_selesai, function ($q) use ($semModel) {
+                    $q->whereBetween('tanggal', [$semModel->tgl_mulai, $semModel->tgl_selesai]);
+                })
                 ->selectRaw("
-                    COUNT(CASE WHEN status = 'sakit' THEN 1 END) as sakit,
-                    COUNT(CASE WHEN status = 'izin' THEN 1 END) as izin,
-                    COUNT(CASE WHEN status = 'alpa' THEN 1 END) as alpa
+                    COUNT(DISTINCT CASE WHEN status = 'sakit' THEN tanggal END) as sakit,
+                    COUNT(DISTINCT CASE WHEN status = 'izin' THEN tanggal END) as izin,
+                    COUNT(DISTINCT CASE WHEN status = 'alpa' THEN tanggal END) as alpa
                 ")->first();
 
             $rc = ReportCard::create([
@@ -748,9 +797,37 @@ class ReportCardController extends Controller
             $rc->load(['grades', 'extracurriculars', 'student', 'schoolClass', 'academicYear', 'submitter', 'validator']);
         }
 
+        $schoolProfile = SchoolProfile::with('headmaster')->first();
+        $schoolProfileData = $schoolProfile ? [
+            'nama_sekolah' => $schoolProfile->nama_sekolah ?? 'SDI Bina Insan Mandiri Purwokerto',
+            'yayasan' => $schoolProfile->yayasan ?? 'Yayasan Bina Insan Mandiri',
+            'npsn' => $schoolProfile->npsn ?? '70036695',
+            'nss' => $schoolProfile->nss ?? '102030405060',
+            'akreditasi' => $schoolProfile->akreditasi ?? 'A',
+            'alamat' => $schoolProfile->alamat_lengkap ?? 'Jl. Wadas Kelir RT.04 RW.05 Kel. Karangklesem, Kec. Purwokerto Selatan, Kab. Banyumas 53144',
+            'telepon' => $schoolProfile->telepon ?? '0281-635812',
+            'email' => $schoolProfile->email ?? 'sdibim.pwt@gmail.com',
+            'website' => $schoolProfile->website ?? 'https://sdibim.sch.id',
+            'logo_path' => $schoolProfile->logo_path ?: '/logo.png',
+        ] : [
+            'nama_sekolah' => 'SDI Bina Insan Mandiri Purwokerto',
+            'yayasan' => 'Yayasan Bina Insan Mandiri',
+            'npsn' => '70036695',
+            'nss' => '102030405060',
+            'akreditasi' => 'A',
+            'alamat' => 'Jl. Wadas Kelir RT.04 RW.05 Kel. Karangklesem, Kec. Purwokerto Selatan, Kab. Banyumas 53144',
+            'telepon' => '0281-635812',
+            'email' => 'sdibim.pwt@gmail.com',
+            'website' => 'https://sdibim.sch.id',
+            'logo_path' => '/logo.png',
+        ];
+
         return response()->json([
             'success' => true,
-            'data' => $rc,
+            'data' => [
+                'report_card' => $rc,
+                'school_profile' => $schoolProfileData,
+            ],
         ]);
     }
 
@@ -948,10 +1025,13 @@ class ReportCardController extends Controller
             $reportCard->load(['grades', 'extracurriculars', 'student', 'submitter', 'validator']);
 
             ActivityLogService::log(
-                'Update Rapor Siswa',
-                "Memperbarui rapor siswa {$reportCard->student->nama_lengkap} ({$reportCard->jenis_rapor}, Status: {$reportCard->status})",
+                'Update',
+                'Rapor',
                 'ReportCard',
-                $reportCard->id
+                $reportCard->id,
+                null,
+                null,
+                "Memperbarui rapor siswa {$reportCard->student->nama_lengkap} ({$reportCard->jenis_rapor}, Status: {$reportCard->status})"
             );
 
             return response()->json([
@@ -983,6 +1063,44 @@ class ReportCardController extends Controller
             ], 422);
         }
 
+        // Validasi: Pengajuan ke KS hanya dapat dilakukan jika seluruh rapor seluruh siswa yang diampu sudah diisi lengkap
+        $activeStudents = Student::where('class_id', $reportCard->class_id)
+            ->where('status', 'aktif')
+            ->get(['id', 'nama_lengkap']);
+
+        $classReportCards = ReportCard::with('grades')
+            ->where('class_id', $reportCard->class_id)
+            ->where('academic_year_id', $reportCard->academic_year_id)
+            ->where('semester', $reportCard->semester)
+            ->where('jenis_rapor', $reportCard->jenis_rapor)
+            ->when($reportCard->periode, fn($q) => $q->where('periode', $reportCard->periode))
+            ->get()
+            ->keyBy('student_id');
+
+        $incompleteCount = 0;
+        foreach ($activeStudents as $st) {
+            $rc = $classReportCards->get($st->id);
+            if (!$rc) {
+                $incompleteCount++;
+                continue;
+            }
+            $totalGrades = $rc->grades->count();
+            $filledGrades = $rc->grades->filter(function ($g) {
+                return ($g->nilai_akhir !== null && $g->nilai_akhir !== '') || (!empty($g->predikat) && $g->predikat !== '-');
+            })->count();
+
+            if ($totalGrades === 0 || $filledGrades < $totalGrades) {
+                $incompleteCount++;
+            }
+        }
+
+        if ($incompleteCount > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "Pengajuan ke Kepala Sekolah hanya dapat dilakukan jika seluruh rapor seluruh siswa yang diampu sudah diisi lengkap. Masih ada {$incompleteCount} siswa yang belum lengkap.",
+            ], 422);
+        }
+
         $reportCard->update([
             'status' => 'menunggu_validasi',
             'submitted_at' => now(),
@@ -990,10 +1108,13 @@ class ReportCardController extends Controller
         ]);
 
         ActivityLogService::log(
-            'Ajukan Validasi Rapor',
-            "Wali Kelas mengajukan validasi rapor {$reportCard->student->nama_lengkap} ({$reportCard->jenis_rapor}) ke Kepala Sekolah",
+            'Ajukan Validasi',
+            'Rapor',
             'ReportCard',
-            $reportCard->id
+            $reportCard->id,
+            null,
+            null,
+            "Wali Kelas mengajukan validasi rapor {$reportCard->student->nama_lengkap} ({$reportCard->jenis_rapor}) ke Kepala Sekolah"
         );
 
         return response()->json([
@@ -1024,6 +1145,61 @@ class ReportCardController extends Controller
         $jenisRapor = $validated['jenis_rapor'] ?? 'kurikulum_merdeka';
         $periode = $validated['periode'] ?? null;
 
+        // Validasi: Seluruh siswa aktif di kelas harus sudah memiliki rapor dan seluruh penilaian terisi lengkap
+        $activeStudents = Student::where('class_id', $classId)
+            ->where('status', 'aktif')
+            ->orderBy('nama_lengkap', 'asc')
+            ->get(['id', 'nama_lengkap']);
+
+        if ($activeStudents->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada siswa aktif di kelas ini.',
+            ], 422);
+        }
+
+        $reportCards = ReportCard::with('grades')
+            ->where('class_id', $classId)
+            ->where('academic_year_id', $academicYearId)
+            ->where('semester', $semester)
+            ->where('jenis_rapor', $jenisRapor)
+            ->when($periode, fn($q) => $q->where('periode', $periode))
+            ->get()
+            ->keyBy('student_id');
+
+        $incompleteStudents = [];
+        foreach ($activeStudents as $student) {
+            $rc = $reportCards->get($student->id);
+            if (!$rc) {
+                $incompleteStudents[] = "{$student->nama_lengkap} (Belum dibuatkan draf)";
+                continue;
+            }
+
+            $totalGrades = $rc->grades->count();
+            $filledGrades = $rc->grades->filter(function ($g) {
+                return ($g->nilai_akhir !== null && $g->nilai_akhir !== '') || (!empty($g->predikat) && $g->predikat !== '-');
+            })->count();
+
+            if ($totalGrades === 0 || $filledGrades < $totalGrades) {
+                $incompleteStudents[] = "{$student->nama_lengkap} (Baru terisi {$filledGrades}/{$totalGrades} penilaian)";
+            }
+        }
+
+        if (!empty($incompleteStudents)) {
+            $countIncomplete = count($incompleteStudents);
+            $totalStudents = $activeStudents->count();
+            $preview = implode(', ', array_slice($incompleteStudents, 0, 3));
+            if ($countIncomplete > 3) {
+                $preview .= ', dan ' . ($countIncomplete - 3) . ' siswa lainnya';
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => "Pengajuan ke Kepala Sekolah hanya dapat dilakukan jika seluruh rapor seluruh siswa yang diampu sudah diisi lengkap. Masih ada {$countIncomplete} dari {$totalStudents} siswa yang belum lengkap ({$preview}).",
+                'incomplete_students' => $incompleteStudents,
+            ], 422);
+        }
+
         $query = ReportCard::where('class_id', $classId)
             ->where('academic_year_id', $academicYearId)
             ->where('semester', $semester)
@@ -1041,15 +1217,18 @@ class ReportCardController extends Controller
         ]);
 
         ActivityLogService::log(
-            'Ajukan Validasi Rapor Kelas',
-            "Wali Kelas mengajukan {$updatedCount} rapor kelas {$classId} ({$jenisRapor}) ke Kepala Sekolah",
+            'Ajukan Validasi Kelas',
+            'Rapor',
             'ReportCard',
-            $classId
+            $classId,
+            null,
+            null,
+            "Wali Kelas mengajukan {$updatedCount} rapor kelas {$classId} ({$jenisRapor}) ke Kepala Sekolah"
         );
 
         return response()->json([
             'success' => true,
-            'message' => "{$updatedCount} rapor berhasil diajukan untuk validasi Kepala Sekolah.",
+            'message' => "Seluruh rapor siswa ({$updatedCount} siswa) berhasil diajukan untuk validasi Kepala Sekolah.",
             'data' => ['submitted_count' => $updatedCount],
         ]);
     }
@@ -1071,10 +1250,13 @@ class ReportCardController extends Controller
         ]);
 
         ActivityLogService::log(
-            'Validasi Rapor Siswa',
-            "Kepala Sekolah memvalidasi dan menyetujui rapor {$reportCard->student->nama_lengkap} ({$reportCard->jenis_rapor})",
+            'Validasi',
+            'Rapor',
             'ReportCard',
-            $reportCard->id
+            $reportCard->id,
+            null,
+            null,
+            "Kepala Sekolah memvalidasi dan menyetujui rapor {$reportCard->student->nama_lengkap} ({$reportCard->jenis_rapor})"
         );
 
         return response()->json([
@@ -1122,10 +1304,13 @@ class ReportCardController extends Controller
         ]);
 
         ActivityLogService::log(
-            'Validasi Rapor Kelas Massal',
-            "Kepala Sekolah memvalidasi massal {$count} rapor kelas {$classId} ({$jenisRapor})",
+            'Validasi Massal',
+            'Rapor',
             'ReportCard',
-            $classId
+            $classId,
+            null,
+            null,
+            "Kepala Sekolah memvalidasi massal {$count} rapor kelas {$classId} ({$jenisRapor})"
         );
 
         return response()->json([
@@ -1155,10 +1340,13 @@ class ReportCardController extends Controller
         ]);
 
         ActivityLogService::log(
-            'Minta Revisi Rapor',
-            "Kepala Sekolah mengembalikan rapor {$reportCard->student->nama_lengkap} untuk direvisi: {$request->input('notes')}",
+            'Minta Revisi',
+            'Rapor',
             'ReportCard',
-            $reportCard->id
+            $reportCard->id,
+            null,
+            null,
+            "Kepala Sekolah mengembalikan rapor {$reportCard->student->nama_lengkap} untuk direvisi: {$request->input('notes')}"
         );
 
         return response()->json([
@@ -1178,12 +1366,16 @@ class ReportCardController extends Controller
 
         PeriodLockService::validateSemesterNotLocked($reportCard->semester_id);
 
+        $semModel = $reportCard->semesterRel;
         $attCounts = StudentAttendance::where('student_id', $reportCard->student_id)
             ->where('class_id', $reportCard->class_id)
+            ->when($semModel?->tgl_mulai && $semModel?->tgl_selesai, function ($q) use ($semModel) {
+                $q->whereBetween('tanggal', [$semModel->tgl_mulai, $semModel->tgl_selesai]);
+            })
             ->selectRaw("
-                COUNT(CASE WHEN status = 'sakit' THEN 1 END) as sakit,
-                COUNT(CASE WHEN status = 'izin' THEN 1 END) as izin,
-                COUNT(CASE WHEN status = 'alpa' THEN 1 END) as alpa
+                COUNT(DISTINCT CASE WHEN status = 'sakit' THEN tanggal END) as sakit,
+                COUNT(DISTINCT CASE WHEN status = 'izin' THEN tanggal END) as izin,
+                COUNT(DISTINCT CASE WHEN status = 'alpa' THEN tanggal END) as alpa
             ")->first();
 
         $reportCard->update([

@@ -1,0 +1,68 @@
+@startuml erd_keuangan_spp
+!theme plain
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 6
+hide circle
+
+title 💰 ERD Modul Keuangan, Tagihan SPP & Buku Kas
+
+entity "fee_types" as fee_types {
+  * id : BIGINT <<PK>>
+  --
+  * kode : VARCHAR(20)
+  * nama : VARCHAR(100)
+  nominal_standar : DECIMAL(12,2)
+  * tipe : ENUM('bulanan','sekali_bayar','sukarela')
+}
+
+entity "students" as students {
+  * id : BIGINT <<PK>>
+  --
+  * nama_lengkap : VARCHAR(150)
+  * nis : VARCHAR(20)
+}
+
+entity "invoices" as invoices {
+  * id : BIGINT <<PK>>
+  --
+  * nomor_invoice : VARCHAR(50) <<UK>>
+  # student_id : BIGINT <<FK>>
+  # fee_type_id : BIGINT <<FK>>
+  # academic_year_id : BIGINT <<FK>>
+  bulan : TINYINT
+  * jumlah_tagihan : DECIMAL(12,2)
+  * jumlah_dibayar : DECIMAL(12,2)
+  * sisa_tagihan : DECIMAL(12,2)
+  * status : ENUM('belum_lunas','lunas','sebagian','batal')
+  * jatuh_tempo : DATE
+}
+
+entity "payments" as payments {
+  * id : BIGINT <<PK>>
+  --
+  * nomor_kuitansi : VARCHAR(50) <<UK>>
+  # invoice_id : BIGINT <<FK>>
+  * tanggal_bayar : DATE
+  * jumlah_bayar : DECIMAL(12,2)
+  * metode_bayar : ENUM('tunai','transfer')
+  # dicatat_oleh : BIGINT <<FK>>
+}
+
+entity "finance_transactions" as finance_transactions {
+  * id : BIGINT <<PK>>
+  --
+  # payment_id : BIGINT <<FK>>
+  * tanggal : DATE
+  * tipe : ENUM('masuk','keluar')
+  * kategori : VARCHAR(50)
+  * nominal : DECIMAL(12,2)
+  keterangan : TEXT
+}
+
+fee_types ||--o{ invoices : "tarif biaya"
+students ||--o{ invoices : "ditagihkan kepada"
+invoices ||--o{ payments : "dibayar dengan kuitansi"
+payments ||--o| finance_transactions : "otomatis dicatat ke buku kas"
+
+@enduml

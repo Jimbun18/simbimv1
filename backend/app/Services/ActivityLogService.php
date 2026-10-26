@@ -24,20 +24,25 @@ class ActivityLogService
         ?array $dataSesudah = null,
         ?string $keterangan = null,
         ?int $userId = null
-    ): ActivityLog {
-        return ActivityLog::create([
-            'user_id' => $userId ?? Auth::id(),
-            'aksi' => $aksi,
-            'modul' => $modul,
-            'target_type' => $targetType,
-            'target_id' => $targetId,
-            'data_sebelum' => $dataSebelum ? static::cleanData($dataSebelum) : null,
-            'data_sesudah' => $dataSesudah ? static::cleanData($dataSesudah) : null,
-            'ip' => Request::ip(),
-            'user_agent' => Request::userAgent(),
-            'keterangan' => $keterangan,
-            'created_at' => now(),
-        ]);
+    ): ?ActivityLog {
+        try {
+            return ActivityLog::create([
+                'user_id' => $userId ?? Auth::id(),
+                'aksi' => mb_substr($aksi, 0, 50),
+                'modul' => mb_substr($modul, 0, 50),
+                'target_type' => $targetType ? mb_substr($targetType, 0, 100) : null,
+                'target_id' => $targetId,
+                'data_sebelum' => $dataSebelum ? static::cleanData($dataSebelum) : null,
+                'data_sesudah' => $dataSesudah ? static::cleanData($dataSesudah) : null,
+                'ip' => Request::ip(),
+                'user_agent' => Request::userAgent(),
+                'keterangan' => $keterangan ? mb_substr($keterangan, 0, 255) : null,
+                'created_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('ActivityLogService::log gagal dicatat: ' . $e->getMessage());
+            return null;
+        }
     }
 
     private static function cleanData(array $data): array

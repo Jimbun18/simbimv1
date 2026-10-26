@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import api from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
 import type { MergedScheduleItem } from './types'
-import { isTodaySchedule } from './types'
+import { isTodaySchedule, getScheduleTimeStatus } from './types'
 
 const props = defineProps<{
   activeSchedule: MergedScheduleItem
@@ -84,6 +84,19 @@ const submitKbmEvidence = async () => {
     emit('notify', {
       title: 'Pengunggahan Tidak Diizinkan',
       message: `Bukti KBM dan jurnal hanya dapat disimpan pada hari yang sesuai dengan jadwal (${props.activeSchedule.hari.toUpperCase()}).`,
+      type: 'error',
+    })
+    return
+  }
+
+  // Validasi: Pembatasan waktu sesuai jam pelajaran di jadwal
+  const timeStatus = getScheduleTimeStatus(props.activeSchedule, attendanceDate.value)
+  if (timeStatus !== 'sedang_berlangsung' && !existingEvidence.value && !auth.isAdmin) {
+    emit('notify', {
+      title: 'Di Luar Jam Pelajaran',
+      message: timeStatus === 'belum_mulai'
+        ? `Pengunggahan bukti KBM belum dibuka. Jadwal baru dimulai pukul ${props.activeSchedule.jam_mulai_efektif} WIB.`
+        : `Waktu pengunggahan telah ditutup. Pengunggahan dibatasi hanya saat jam pelajaran sedang berlangsung (${props.activeSchedule.jam_mulai_efektif} - ${props.activeSchedule.jam_selesai_efektif} WIB).`,
       type: 'error',
     })
     return

@@ -111,9 +111,11 @@ simbim/
 ## Dokumentasi
 
 - [PRD](docs/PRD.md) — Product Requirements Document
+- [Flowcharts & Alur Sistem](docs/FLOWCHARTS.md)
+- [Relasi Database & ERD](docs/DATABASE_RELATIONSHIPS.md) — Diagram Relasi Antar-Tabel & Panduan phpMyAdmin
+- [Kode PlantUML ERD (Database)](docs/DATABASE_ERD_SIMPLE.puml) — Diagram Relasi Database
+- [Peta Relasi Antar-Menu & Modul (PlantUML)](docs/MENU_MODULE_FLOW.puml) — Alur Kerja Antar-Menu SIM-BIM
 - [Pertanyaan Terbuka](docs/OPEN_QUESTIONS.md)
-- [ERD](docs/ERD.md) — Entity Relationship Diagram *(segera)*
-- [API Catalog](docs/API.md) *(segera)*
 
 ## Akun Demo
 

@@ -20,6 +20,24 @@ test('unauthenticated request to report card endpoint is denied with 401', funct
 });
 
 test('guru and wali are denied access to report card with 403', function () {
+    $ay = AcademicYear::create([
+        'nama' => '2025/2026',
+        'semester' => 'ganjil',
+        'tgl_mulai' => '2025-07-15',
+        'tgl_selesai' => '2025-12-20',
+        'is_aktif' => true,
+    ]);
+
+    $class = SchoolClass::create([
+        'academic_year_id' => $ay->id,
+        'kode' => '1A',
+        'nama' => 'Kelas 1A',
+        'tingkat' => 1,
+        'paralel' => 'A',
+        'kapasitas' => 28,
+        'status' => 'aktif',
+    ]);
+
     $roleGuru = Role::where('nama', Role::GURU)->first();
     $guru = User::create([
         'nama' => 'Guru Test',
@@ -31,7 +49,7 @@ test('guru and wali are denied access to report card with 403', function () {
     $tokenGuru = $guru->createToken('test')->plainTextToken;
 
     $responseGuru = $this->withHeader('Authorization', "Bearer {$tokenGuru}")
-        ->getJson('/api/v1/report-cards?class_id=1');
+        ->getJson("/api/v1/report-cards?class_id={$class->id}");
 
     $responseGuru->assertForbidden();
 
@@ -46,7 +64,7 @@ test('guru and wali are denied access to report card with 403', function () {
     $tokenWali = $wali->createToken('test')->plainTextToken;
 
     $responseWali = $this->withHeader('Authorization', "Bearer {$tokenWali}")
-        ->getJson('/api/v1/report-cards?class_id=1');
+        ->getJson("/api/v1/report-cards?class_id={$class->id}");
 
     $responseWali->assertForbidden();
 });

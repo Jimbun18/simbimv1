@@ -428,6 +428,7 @@
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import api from '../services/api';
+import { showConfirm } from '../services/swal';
 
 const auth = useAuthStore();
 const activeTab = ref<'biodata' | 'kepegawaian' | 'wali' | 'security'>('biodata');
@@ -523,7 +524,12 @@ const uploadAvatar = async (file: File) => {
 };
 
 const removeAvatar = async () => {
-  if (!confirm('Apakah Anda yakin ingin menghapus foto profil ini?')) return;
+  const confirmed = await showConfirm(
+    'Hapus Foto Profil',
+    'Apakah Anda yakin ingin menghapus foto profil ini?',
+    'Ya, Hapus'
+  );
+  if (!confirmed) return;
   uploadingAvatar.value = true;
   try {
     const res = await api.delete('/me/photo');

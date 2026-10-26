@@ -1,0 +1,77 @@
+@startuml erd_rapor_siswa
+!theme plain
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 6
+hide circle
+
+title 📑 ERD Modul Penilaian & Rapor Siswa Multi-Format
+
+entity "students" as students {
+  * id : BIGINT <<PK>>
+  --
+  * nama_lengkap : VARCHAR(150)
+  * nis : VARCHAR(20)
+}
+
+entity "classes" as classes {
+  * id : BIGINT <<PK>>
+  --
+  * nama : VARCHAR(50)
+  * tingkat : TINYINT
+}
+
+entity "report_cards" as report_cards {
+  * id : BIGINT <<PK>>
+  --
+  # student_id : BIGINT <<FK>>
+  # class_id : BIGINT <<FK>>
+  # academic_year_id : BIGINT <<FK>>
+  # semester_id : BIGINT <<FK>>
+  * jenis_rapor : ENUM('kurikulum_merdeka','triwulan_tematik','karakter_lifeskill')
+  * periode : VARCHAR(50)
+  * status : ENUM('draft','menunggu_validasi','final','perlu_revisi')
+  sakit : SMALLINT
+  izin : SMALLINT
+  alpa : SMALLINT
+  catatan_wali_kelas : TEXT
+  # submitted_by : BIGINT <<FK>>
+  # validated_by : BIGINT <<FK>>
+}
+
+entity "report_card_grades" as report_card_grades {
+  * id : BIGINT <<PK>>
+  --
+  # report_card_id : BIGINT <<FK>>
+  # subject_id : BIGINT <<FK>>
+  nama_mapel_kustom : VARCHAR(100)
+  nilai_akhir : DECIMAL(5,2)
+  predikat : VARCHAR(5)
+  capaian_kompetensi : TEXT
+}
+
+entity "report_card_extracurriculars" as report_card_extracurriculars {
+  * id : BIGINT <<PK>>
+  --
+  # report_card_id : BIGINT <<FK>>
+  kegiatan : VARCHAR(100)
+  predikat : VARCHAR(20)
+  keterangan : TEXT
+}
+
+entity "report_card_revisions" as report_card_revisions {
+  * id : BIGINT <<PK>>
+  --
+  # report_card_id : BIGINT <<FK>>
+  # revised_by : BIGINT <<FK>>
+  catatan_revisi : TEXT
+  created_at : TIMESTAMP
+}
+
+students ||--o{ report_cards : "memiliki rapor"
+classes ||--o{ report_cards : "kelas penilaian"
+report_cards ||--o{ report_card_grades : "detail nilai mapel/tema"
+report_cards ||--o{ report_card_extracurriculars : "nilai ekskul"
+report_cards ||--o{ report_card_revisions : "catatan revisi KS"
+
+@enduml

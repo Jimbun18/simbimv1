@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
+import { showConfirm, showWarning } from '../../services/swal';
 import type { ReportCardDetail, SubjectGrade } from './types';
 
 const props = defineProps<{
@@ -20,9 +21,27 @@ const activeReportCard = ref<ReportCardDetail>(JSON.parse(JSON.stringify(props.r
 
 const activeEditorTab = ref<'grades' | 'koku' | 'ekstra' | 'notes'>('grades');
 const saving = ref(false);
-const submittingValidation = ref(false);
 const validatingReport = ref(false);
 const syncing = ref(false);
+
+// Deteksi apakah rapor saat ini adalah Triwulan 1 atau Triwulan 3 (Karakter & Life Skill)
+const isTriwulan1Or3 = computed(() => {
+  const p = (activeReportCard.value?.periode || '').toLowerCase().trim();
+  return (
+    activeReportCard.value?.jenis_rapor === 'karakter_lifeskill' ||
+    p.includes('triwulan 1') ||
+    p.includes('triwulan i') ||
+    p.includes('triwulan_1') ||
+    p.includes('triwulan 3') ||
+    p.includes('triwulan iii') ||
+    p.includes('triwulan_3')
+  );
+});
+
+// Fitur Catatan Wali & Pengesahan hanya aktif di luar Triwulan 1 & 3 (misal Kurikulum Merdeka Semester)
+const showNotesTab = computed(() => {
+  return !isTriwulan1Or3.value && activeReportCard.value?.jenis_rapor !== 'karakter_lifeskill';
+});
 
 // Modal Revisi
 const showRevisionModal = ref(false);
@@ -38,6 +57,24 @@ const calculatePredicate = (score?: number | null | string): string => {
   return 'D';
 };
 
+// Computed stats for the report card
+const averageScore = computed(() => {
+  if (!activeReportCard.value?.grades) return 0;
+  const valid = activeReportCard.value.grades.filter(
+    (g) => g.nilai_akhir !== null && g.nilai_akhir !== undefined && g.nilai_akhir !== '' && !isNaN(Number(g.nilai_akhir))
+  );
+  if (valid.length === 0) return 0;
+  const sum = valid.reduce((acc, g) => acc + Number(g.nilai_akhir), 0);
+  return Math.round((sum / valid.length) * 10) / 10;
+});
+
+const filledGradesCount = computed(() => {
+  if (!activeReportCard.value?.grades) return 0;
+  return activeReportCard.value.grades.filter(
+    (g) => (g.nilai_akhir !== null && g.nilai_akhir !== undefined && g.nilai_akhir !== '') || (g.predikat && g.predikat !== '-')
+  ).length;
+});
+
 // Group grades by Aspek for Karakter & Life Skill
 const groupedCharacterGrades = computed(() => {
   if (!activeReportCard.value?.grades) return {};
@@ -51,7 +88,7 @@ const groupedCharacterGrades = computed(() => {
 });
 
 // Save Report Card
-const saveReportCard = async (statusOverride?: 'draft' | 'menunggu_validasi' | 'final' | 'perlu_revisi') => {
+const saveReportCard = async (navigateBack = true, statusOverride?: 'draft' | 'menunggu_validasi' | 'final' | 'perlu_revisi') => {
   if (!activeReportCard.value) return;
   saving.value = true;
   try {
@@ -70,6 +107,9 @@ const saveReportCard = async (statusOverride?: 'draft' | 'menunggu_validasi' | '
       activeReportCard.value = JSON.parse(JSON.stringify(res.data.data));
       emit('notify', res.data.message || 'Rapor berhasil disimpan.', 'success');
       emit('saved', activeReportCard.value);
+      if (navigateBack) {
+        emit('back');
+      }
     }
   } catch (err: any) {
     emit('notify', 'Gagal menyimpan rapor: ' + (err.response?.data?.message || err.message), 'error');
@@ -78,28 +118,14 @@ const saveReportCard = async (statusOverride?: 'draft' | 'menunggu_validasi' | '
   }
 };
 
-// Submit single report card for validation (Wali Kelas -> KS)
-const submitSingleForValidation = async (id: number) => {
-  if (!confirm('Ajukan rapor ini ke Kepala Sekolah untuk validasi resmi?')) return;
-  submittingValidation.value = true;
-  try {
-    const res = await api.post(`/report-cards/${id}/submit`);
-    if (res.data.success) {
-      emit('notify', res.data.message, 'success');
-      activeReportCard.value.status = 'menunggu_validasi';
-      activeReportCard.value.submitted_at = res.data.data.submitted_at;
-      emit('saved', activeReportCard.value);
-    }
-  } catch (err: any) {
-    emit('notify', 'Gagal mengajukan rapor: ' + (err.response?.data?.message || err.message), 'error');
-  } finally {
-    submittingValidation.value = false;
-  }
-};
-
 // Validate & Approve single report card (KS)
 const handleValidateSingle = async (id: number) => {
-  if (!confirm('Validasi dan setujui rapor ini sebagai dokumen resmi (Final)?')) return;
+  const confirmed = await showConfirm(
+    'Validasi Rapor',
+    'Validasi dan setujui rapor ini sebagai dokumen resmi (Final)?',
+    'Ya, Setujui'
+  );
+  if (!confirmed) return;
   validatingReport.value = true;
   try {
     const res = await api.post(`/report-cards/${id}/validate`);
@@ -124,7 +150,7 @@ const openRevisionModal = () => {
 
 const handleSendRevision = async () => {
   if (!activeReportCard.value || !revisionNoteInput.value.trim()) {
-    alert('Harap masukkan catatan revisi untuk Wali Kelas.');
+    await showWarning('Catatan Wajib Diisi', 'Harap masukkan catatan revisi untuk Wali Kelas.');
     return;
   }
 
@@ -179,8 +205,13 @@ const addGradeRow = () => {
   });
 };
 
-const removeGradeRow = (index: number) => {
-  if (confirm('Hapus mata pelajaran/aspek ini dari rapor?')) {
+const removeGradeRow = async (index: number) => {
+  const confirmed = await showConfirm(
+    'Hapus Aspek / Mapel',
+    'Hapus mata pelajaran/aspek ini dari rapor?',
+    'Ya, Hapus'
+  );
+  if (confirmed) {
     activeReportCard.value.grades.splice(index, 1);
   }
 };
@@ -201,7 +232,7 @@ const removeExtracurricularRow = (index: number) => {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+  <div class="space-y-6">
     <!-- EDITOR HEADER CARD -->
     <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -233,6 +264,22 @@ const removeExtracurricularRow = (index: number) => {
             <span>Periode: <strong class="text-slate-800">{{ activeReportCard.periode || activeReportCard.semester }}</strong></span>
             <span v-if="activeReportCard.submitter">Diajukan: <strong class="text-slate-800">{{ activeReportCard.submitter.nama }}</strong></span>
             <span v-if="activeReportCard.validator">Divalidasi: <strong class="text-slate-800">{{ activeReportCard.validator.nama }}</strong></span>
+          </div>
+
+          <!-- STATS OVERVIEW CHIPS -->
+          <div class="flex items-center gap-3 mt-3 flex-wrap">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+              <span class="text-slate-500 font-medium">Nilai Rata-rata:</span>
+              <strong class="text-slate-900 font-black text-sm">{{ averageScore || '-' }}</strong>
+            </div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+              <span class="text-slate-500 font-medium">Kelengkapan Nilai:</span>
+              <strong class="text-emerald-700 font-bold">{{ filledGradesCount }} / {{ activeReportCard.grades?.length || 0 }} mapel</strong>
+            </div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+              <span class="text-slate-500 font-medium">Presensi:</span>
+              <span class="font-semibold text-slate-700">S:<strong>{{ activeReportCard.sakit }}</strong> I:<strong>{{ activeReportCard.izin }}</strong> A:<strong>{{ activeReportCard.alpa }}</strong></span>
+            </div>
           </div>
 
           <!-- Catatan revisi alert -->
@@ -273,18 +320,17 @@ const removeExtracurricularRow = (index: number) => {
 
         <!-- ACTIONS IN EDITOR -->
         <div class="flex items-center gap-2 flex-wrap">
-          <!-- WALI KELAS AJUKAN -->
+          <!-- BACK / CANCEL BUTTON -->
           <button
-            v-if="activeReportCard.status === 'draft' || activeReportCard.status === 'perlu_revisi'"
-            @click="submitSingleForValidation(activeReportCard.id)"
-            :disabled="saving || submittingValidation"
-            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            type="button"
+            @click="emit('back')"
+            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
           >
-            <span>🚀</span>
-            <span>Ajukan ke KS</span>
+            <span>←</span>
+            <span>Kembali ke Daftar</span>
           </button>
 
-          <!-- KS VALIDASI & REVISI -->
+          <!-- KS VALIDASI & REVISI (KHUSUS ADMIN / KEPALA SEKOLAH) -->
           <template v-if="auth.isAdmin">
             <button
               v-if="activeReportCard.status !== 'final'"
@@ -304,26 +350,19 @@ const removeExtracurricularRow = (index: number) => {
             </button>
           </template>
 
-          <!-- SAVE BUTTON -->
+          <!-- SAVE & BACK BUTTON -->
           <button
-            @click="saveReportCard()"
+            type="button"
+            @click="saveReportCard(true)"
             :disabled="saving"
-            class="px-4 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            class="px-4.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <svg v-if="saving" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span>{{ saving ? 'Menyimpan...' : 'Simpan Draf' }}</span>
-          </button>
-
-          <!-- PRINT BUTTON -->
-          <button
-            @click="emit('print', activeReportCard.student_id, activeReportCard.id)"
-            class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <span>🖨️</span>
-            <span>Cetak</span>
+            <span v-else>💾</span>
+            <span>{{ saving ? 'Menyimpan...' : 'Simpan & Kembali ke Daftar' }}</span>
           </button>
         </div>
       </div>
@@ -364,6 +403,7 @@ const removeExtracurricularRow = (index: number) => {
       </button>
 
       <button
+        v-if="showNotesTab"
         type="button"
         @click="activeEditorTab = 'notes'"
         class="px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer"
@@ -424,6 +464,7 @@ const removeExtracurricularRow = (index: number) => {
                 <span class="text-xs font-bold text-slate-500">Nilai:</span>
                 <input
                   v-model.number="g.nilai_akhir"
+                  @input="g.predikat = calculatePredicate(g.nilai_akhir)"
                   type="number"
                   min="0"
                   max="100"
@@ -431,6 +472,18 @@ const removeExtracurricularRow = (index: number) => {
                   placeholder="0-100"
                   class="w-20 text-center font-bold text-xs bg-white border border-slate-200 rounded-xl py-1.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                 />
+                <span
+                  v-if="g.predikat || calculatePredicate(g.nilai_akhir) !== '-'"
+                  class="text-[10px] font-black px-2 py-0.5 rounded-md uppercase"
+                  :class="{
+                    'bg-emerald-100 text-emerald-800 border border-emerald-200': (g.predikat || calculatePredicate(g.nilai_akhir)) === 'A',
+                    'bg-blue-100 text-blue-800 border border-blue-200': (g.predikat || calculatePredicate(g.nilai_akhir)) === 'B',
+                    'bg-amber-100 text-amber-800 border border-amber-200': (g.predikat || calculatePredicate(g.nilai_akhir)) === 'C',
+                    'bg-rose-100 text-rose-800 border border-rose-200': (g.predikat || calculatePredicate(g.nilai_akhir)) === 'D',
+                  }"
+                >
+                  {{ g.predikat || calculatePredicate(g.nilai_akhir) }}
+                </span>
                 <button
                   type="button"
                   @click="removeGradeRow(idx)"
@@ -786,7 +839,7 @@ const removeExtracurricularRow = (index: number) => {
     </div>
 
     <!-- TAB 4: CATATAN WALI KELAS & PENGESAHAN -->
-    <div v-show="activeEditorTab === 'notes'" class="space-y-6">
+    <div v-if="showNotesTab" v-show="activeEditorTab === 'notes'" class="space-y-6">
       <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-6">
         <div class="border-b border-slate-100 pb-4">
           <h3 class="font-extrabold text-base text-slate-900">Catatan Wali Kelas & Lembar Pengesahan</h3>
@@ -795,12 +848,39 @@ const removeExtracurricularRow = (index: number) => {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="md:col-span-2">
-            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Catatan Wali Kelas</label>
+            <div class="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Catatan Wali Kelas</label>
+              <!-- Quick template buttons -->
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-[10px] font-bold text-slate-400">Template Cepat:</span>
+                <button
+                  type="button"
+                  @click="activeReportCard.catatan_wali_kelas = `Alhamdulillah, ananda ${activeReportCard.student?.nama_lengkap || ''} menunjukkan perkembangan belajar dan adab yang sangat baik. Pertahankan prestasimu dan senantiasa bersemangat dalam menuntut ilmu. Baarakallahu fiik.`"
+                  class="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-md border border-emerald-200 font-semibold cursor-pointer"
+                >
+                  ✨ Berprestasi
+                </button>
+                <button
+                  type="button"
+                  @click="activeReportCard.catatan_wali_kelas = `Alhamdulillah ananda ${activeReportCard.student?.nama_lengkap || ''} aktif dan tekun dalam pembelajaran. Tingkatkan terus minat literasi dan kedisiplinan belajar. Semoga Allah mudahkan langkahmu.`"
+                  class="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-md border border-blue-200 font-semibold cursor-pointer"
+                >
+                  📚 Tekun Belajar
+                </button>
+                <button
+                  type="button"
+                  @click="activeReportCard.catatan_wali_kelas = `Ananda ${activeReportCard.student?.nama_lengkap || ''} memiliki potensi yang baik. Dengan fokus dan bimbingan lebih dalam belajar, insya Allah ananda dapat meraih capaian yang lebih optimal.`"
+                  class="text-[10px] px-2 py-0.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-md border border-amber-200 font-semibold cursor-pointer"
+                >
+                  💪 Motivasi Peningkatan
+                </button>
+              </div>
+            </div>
             <textarea
               v-model="activeReportCard.catatan_wali_kelas"
               rows="3"
               placeholder="Pesan bimbingan dan motivasi untuk ananda..."
-              class="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none"
+              class="w-full bg-slate-50/50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
             ></textarea>
           </div>
 

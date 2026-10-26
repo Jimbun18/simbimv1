@@ -22,6 +22,7 @@ const schedules = ref<ScheduleItem[]>([])
 const teachersList = ref<Teacher[]>([])
 const activeDate = ref<string>(new Date().toISOString().split('T')[0])
 const todayHomeroomStatus = ref<any>(null)
+const todayHolidayInfo = ref<any>(null)
 
 // Child Form Targets
 const activeSchedule = ref<MergedScheduleItem | null>(null)
@@ -50,6 +51,20 @@ const handleNotify = (payloadOrTitle: any, message?: string, type: 'success' | '
   }
 }
 
+// Check Holiday Status
+const checkHolidayStatus = async () => {
+  try {
+    const res = await api.get('/calendar/check-date', {
+      params: { date: activeDate.value }
+    })
+    if (res.data.success) {
+      todayHolidayInfo.value = res.data.data
+    }
+  } catch (err) {
+    console.error('Gagal mengecek hari libur:', err)
+  }
+}
+
 // Midnight & Interval Timers for Automatic Date Rollover
 let midnightTimer: any = null
 let intervalCheckTimer: any = null
@@ -65,6 +80,7 @@ const updateCurrentDate = () => {
     activeDate.value = newDateStr
     loadSchedules()
     checkTodayHomeroomStatus()
+    checkHolidayStatus()
   }
 }
 
@@ -99,6 +115,7 @@ const loadSchedules = async () => {
   try {
     const params: any = {
       tanggal: activeDate.value,
+      all: 'true',
     }
 
     if (auth.isGuru && !auth.isAdmin) {
@@ -182,6 +199,7 @@ onMounted(async () => {
   await loadTeachers()
   await loadSchedules()
   await checkTodayHomeroomStatus()
+  await checkHolidayStatus()
 
   if (route.query.mode === 'homeroom' && (auth.isWaliKelas || auth.isAdmin)) {
     openHomeroomAttendance()
@@ -252,6 +270,7 @@ onUnmounted(() => {
       :schedules="schedules"
       :teachers-list="teachersList"
       :today-homeroom-status="todayHomeroomStatus"
+      :today-holiday="todayHolidayInfo"
       :active-date="activeDate"
       :loading="loading"
       @open-kbm="openKbmEvidenceForm"

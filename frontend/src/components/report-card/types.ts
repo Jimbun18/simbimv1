@@ -11,6 +11,19 @@ export interface SubjectGrade {
   urutan?: number;
 }
 
+export interface SchoolProfileData {
+  nama_sekolah?: string;
+  yayasan?: string;
+  npsn?: string;
+  nss?: string;
+  alamat?: string;
+  telepon?: string;
+  email?: string;
+  website?: string;
+  akreditasi?: string;
+  logo_path?: string | null;
+}
+
 export interface Extracurricular {
   id?: number;
   kegiatan: string;
@@ -57,6 +70,12 @@ export interface ReportCardDetail {
     nis: string;
     nisn: string;
     nama_lengkap: string;
+    nama_panggilan?: string | null;
+    school_class?: {
+      id: number;
+      nama: string;
+      tingkat: number;
+    } | null;
     jenis_kelamin: string;
     tempat_lahir?: string;
     tgl_lahir?: string;

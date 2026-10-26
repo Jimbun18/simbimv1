@@ -39,6 +39,7 @@ class TeacherAttendanceController extends Controller
         }
 
         $today = now()->toDateString();
+        $holiday = \App\Models\SchoolCalendar::checkHoliday($today);
         $attendance = null;
 
         if ($teacher || $staff) {
@@ -61,6 +62,12 @@ class TeacherAttendanceController extends Controller
                 'attendance' => $attendance,
                 'has_checked_in' => $attendance !== null && $attendance->jam_masuk !== null,
                 'has_checked_out' => $attendance !== null && $attendance->jam_keluar !== null,
+                'holiday' => [
+                    'is_holiday' => $holiday['is_holiday'],
+                    'is_sunday' => $holiday['is_sunday'],
+                    'name' => $holiday['name'],
+                    'type' => $holiday['type'],
+                ],
                 'school_config' => [
                     'latitude' => $profile?->latitude,
                     'longitude' => $profile?->longitude,
@@ -87,6 +94,21 @@ class TeacherAttendanceController extends Controller
                 'message' => 'Akun Anda tidak terdaftar sebagai Guru maupun Tenaga Kependidikan.',
                 'data' => null,
             ], 403);
+        }
+
+        $today = now()->toDateString();
+
+        // Validasi: Apakah hari ini adalah hari libur kalender atau hari Minggu?
+        $holiday = \App\Models\SchoolCalendar::checkHoliday($today);
+        if ($holiday['is_holiday']) {
+            return response()->json([
+                'success' => false,
+                'message' => "Presensi mandiri guru ditutup. Hari ini adalah {$holiday['name']}.",
+                'data' => [
+                    'is_holiday' => true,
+                    'holiday_name' => $holiday['name'],
+                ],
+            ], 422);
         }
 
         $requirePhoto = (bool) Setting::get('require_selfie_teacher', true);
@@ -793,14 +815,8 @@ class TeacherAttendanceController extends Controller
     {
         $start = Carbon::parse($startDate);
         $end = Carbon::parse($endDate);
-        $workDays = 0;
-        $curr = $start->copy();
-        while ($curr->lte($end)) {
-            if ($curr->dayOfWeek !== Carbon::SUNDAY) {
-                $workDays++;
-            }
-            $curr->addDay();
-        }
+        // Hitung Hari Efektif Belajar/Kerja (mengabaikan hari Minggu & hari libur kalender akademik)
+        $workDays = \App\Models\SchoolCalendar::countEffectiveWorkDays($startDate, $endDate);
         $workDays = max(1, $workDays);
 
         $teachersQuery = \App\Models\Teacher::select('id', 'nip', 'nik', 'nama_lengkap', 'jenis_ptk', 'foto_path');

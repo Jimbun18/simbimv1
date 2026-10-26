@@ -505,16 +505,24 @@ defineExpose({
                     <button 
                       type="button"
                       @click="approveLeave(att.id, 'disetujui')"
-                      class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] px-2.5 py-1 rounded-lg font-bold shadow-xs cursor-pointer"
+                      class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1 rounded-lg font-semibold shadow-xs cursor-pointer transition"
+                      title="Setujui Izin / Cuti"
                     >
-                      Setujui
+                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Setujui</span>
                     </button>
                     <button 
                       type="button"
                       @click="approveLeave(att.id, 'ditolak')"
-                      class="bg-rose-600 hover:bg-rose-700 text-white text-[10px] px-2.5 py-1 rounded-lg font-bold shadow-xs cursor-pointer"
+                      class="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs px-2.5 py-1 rounded-lg font-semibold cursor-pointer transition"
+                      title="Tolak Izin / Cuti"
                     >
-                      Tolak
+                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span>Tolak</span>
                     </button>
                   </div>
                   <span v-else-if="att.status === 'belum_absen'" class="text-[11px] text-slate-400 font-medium">

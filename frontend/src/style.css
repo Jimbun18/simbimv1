@@ -21,3 +21,65 @@
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
+/* ============================================================
+   GLOBAL PRINT STYLES FOR SIM-BIM (RAPOR, KWITANSI, JADWAL)
+   ============================================================ */
+@media print {
+  /* Sembunyikan seluruh UI navigasi sistem saat mencetak */
+  aside,
+  nav,
+  header,
+  .no-print,
+  .print-hidden,
+  .print\:hidden,
+  button:not(.allow-print),
+  .fixed:not(.print-allow) {
+    display: none !important;
+  }
+
+  /* Reset layout dasar agar dokumen mengisi lembar kertas secara murni */
+  html,
+  body,
+  #app,
+  main {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Aturan standar ukuran kertas dan batas tepi */
+  @page {
+    size: A4 portrait;
+    margin: 8mm 12mm 8mm 12mm;
+  }
+
+  /* Kontrol pemisah halaman */
+  .page-break {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  .no-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .a4-page {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+

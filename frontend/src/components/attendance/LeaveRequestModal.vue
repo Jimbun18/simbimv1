@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { showWarning } from '../../services/swal'
 import type { LeaveForm } from './types'
 
 defineProps<{
@@ -29,7 +30,7 @@ const onLeaveFileChange = (e: Event) => {
 
 const handleSubmit = () => {
   if (!leaveForm.value.keterangan.trim()) {
-    alert('Silakan tuliskan alasan permohonan izin/sakit.')
+    showWarning('Alasan Wajib Diisi', 'Silakan tuliskan alasan permohonan izin/sakit.')
     return
   }
 

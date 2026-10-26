@@ -1,0 +1,354 @@
+@startuml database_erd_simple
+!theme plain
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 6
+skinparam ranksep 40
+skinparam nodesep 30
+hide circle
+
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #374151
+  FontName "Segoe UI", Arial, sans-serif
+  FontSize 11
+  HeaderBackgroundColor #F3F4F6
+}
+
+title 🗄️ SIM-BIM — Diagram Relasi Database Inti (High-Level Conceptual ERD)
+
+' ==========================================================
+' ENTITAS UTAMA (HANYA KOLOM KUNCI AGAR RINGKAS & MUDAH DIBACA)
+' ==========================================================
+
+package "Autentikasi & Akun" #EEF2FF {
+  entity "roles" as roles {
+    * id : BIGINT <<PK>>
+    --
+    * nama : VARCHAR
+  }
+
+  entity "users" as users {
+    * id : BIGINT <<PK>>
+    --
+    # role_id : BIGINT <<FK>>
+    * name : VARCHAR
+    * username : VARCHAR
+    * status : VARCHAR
+  }
+}
+
+package "Kepegawaian" #FFF7ED {
+  entity "teachers" as teachers {
+    * id : BIGINT <<PK>>
+    --
+    # user_id : BIGINT <<FK>>
+    * nip : VARCHAR
+    * nama_lengkap : VARCHAR
+  }
+
+  entity "staff" as staff {
+    * id : BIGINT <<PK>>
+    --
+    # user_id : BIGINT <<FK>>
+    * nama_lengkap : VARCHAR
+  }
+}
+
+package "Akademik & Rombel" #ECFDF5 {
+  entity "academic_years" as academic_years {
+    * id : BIGINT <<PK>>
+    --
+    * nama : VARCHAR
+    * status : VARCHAR
+  }
+
+  entity "semesters" as semesters {
+    * id : BIGINT <<PK>>
+    --
+    # academic_year_id : BIGINT <<FK>>
+    * semester : ENUM(Gasal, Genap)
+  }
+
+  entity "rooms" as rooms {
+    * id : BIGINT <<PK>>
+    --
+    * nama_ruang : VARCHAR
+  }
+
+  entity "classes" as classes {
+    * id : BIGINT <<PK>>
+    --
+    # academic_year_id : BIGINT <<FK>>
+    # wali_kelas_id : BIGINT <<FK>>
+    # room_id : BIGINT <<FK>>
+    * nama : VARCHAR
+    * tingkat : TINYINT
+  }
+
+  entity "subjects" as subjects {
+    * id : BIGINT <<PK>>
+    --
+    * kode : VARCHAR
+    * nama : VARCHAR
+    * kelompok : VARCHAR
+  }
+
+  entity "time_slots" as time_slots {
+    * id : BIGINT <<PK>>
+    --
+    * jam_ke : TINYINT
+    * jam_mulai : TIME
+    * jam_selesai : TIME
+  }
+
+  entity "schedules" as schedules {
+    * id : BIGINT <<PK>>
+    --
+    # class_id : BIGINT <<FK>>
+    # subject_id : BIGINT <<FK>>
+    # teacher_id : BIGINT <<FK>>
+    # time_slot_id : BIGINT <<FK>>
+    # room_id : BIGINT <<FK>>
+    # academic_year_id : BIGINT <<FK>>
+    * hari : ENUM
+  }
+}
+
+package "Kesiswaan & Orang Tua" #F0FDFA {
+  entity "students" as students {
+    * id : BIGINT <<PK>>
+    --
+    # class_id : BIGINT <<FK>>
+    * nis : VARCHAR
+    * nama_lengkap : VARCHAR
+    * status : VARCHAR
+  }
+
+  entity "guardians" as guardians {
+    * id : BIGINT <<PK>>
+    --
+    # user_id : BIGINT <<FK>>
+    * nama_lengkap : VARCHAR
+    * no_hp : VARCHAR
+  }
+
+  entity "student_guardian" as student_guardian {
+    * id : BIGINT <<PK>>
+    --
+    # student_id : BIGINT <<FK>>
+    # guardian_id : BIGINT <<FK>>
+    * hubungan : VARCHAR
+    * is_kontak_utama : TINYINT
+  }
+
+  entity "student_enrollments" as student_enrollments {
+    * id : BIGINT <<PK>>
+    --
+    # student_id : BIGINT <<FK>>
+    # class_id : BIGINT <<FK>>
+    # academic_year_id : BIGINT <<FK>>
+    * status_kelas : VARCHAR
+  }
+}
+
+package "KBM & Presensi" #FAF5FF {
+  entity "daily_activities" as daily_activities {
+    * id : BIGINT <<PK>>
+    --
+    # class_id : BIGINT <<FK>>
+    # teacher_id : BIGINT <<FK>>
+    * tanggal : DATE
+    * judul_aktivitas : VARCHAR
+  }
+
+  entity "student_attendance" as student_attendance {
+    * id : BIGINT <<PK>>
+    --
+    # student_id : BIGINT <<FK>>
+    # class_id : BIGINT <<FK>>
+    # schedule_id : BIGINT <<FK>>
+    * tanggal : DATE
+    * status : ENUM(hadir, sakit, izin, alpa)
+  }
+
+  entity "learning_progress" as learning_progress {
+    * id : BIGINT <<PK>>
+    --
+    # student_id : BIGINT <<FK>>
+    # subject_id : BIGINT <<FK>>
+    # teacher_id : BIGINT <<FK>>
+    * tanggal : DATE
+    * capaian : VARCHAR
+  }
+}
+
+package "Penilaian & Rapor" #F0F9FF {
+  entity "report_cards" as report_cards {
+    * id : BIGINT <<PK>>
+    --
+    # student_id : BIGINT <<FK>>
+    # class_id : BIGINT <<FK>>
+    # academic_year_id : BIGINT <<FK>>
+    * jenis_rapor : ENUM
+    * periode : VARCHAR
+    * status : ENUM
+  }
+
+  entity "report_card_grades" as report_card_grades {
+    * id : BIGINT <<PK>>
+    --
+    # report_card_id : BIGINT <<FK>>
+    # subject_id : BIGINT <<FK>>
+    nilai_akhir : DECIMAL
+    predikat : VARCHAR
+  }
+
+  entity "report_card_extracurriculars" as report_card_extracurriculars {
+    * id : BIGINT <<PK>>
+    --
+    # report_card_id : BIGINT <<FK>>
+    kegiatan : VARCHAR
+    predikat : VARCHAR
+  }
+
+  entity "report_card_revisions" as report_card_revisions {
+    * id : BIGINT <<PK>>
+    --
+    # report_card_id : BIGINT <<FK>>
+    catatan_revisi : TEXT
+  }
+}
+
+package "Keuangan & SPP" #FEFCE8 {
+  entity "fee_types" as fee_types {
+    * id : BIGINT <<PK>>
+    --
+    * kode : VARCHAR
+    * nama : VARCHAR
+    nominal_standar : DECIMAL
+  }
+
+  entity "invoices" as invoices {
+    * id : BIGINT <<PK>>
+    --
+    # student_id : BIGINT <<FK>>
+    # fee_type_id : BIGINT <<FK>>
+    # academic_year_id : BIGINT <<FK>>
+    * nomor_invoice : VARCHAR
+    * jumlah_tagihan : DECIMAL
+    * sisa_tagihan : DECIMAL
+    * status : ENUM
+  }
+
+  entity "payments" as payments {
+    * id : BIGINT <<PK>>
+    --
+    # invoice_id : BIGINT <<FK>>
+    * nomor_kuitansi : VARCHAR
+    * tanggal_bayar : DATE
+    * jumlah_bayar : DECIMAL
+  }
+
+  entity "finance_transactions" as finance_transactions {
+    * id : BIGINT <<PK>>
+    --
+    # payment_id : BIGINT <<FK>>
+    * tanggal : DATE
+    * tipe : ENUM(masuk, keluar)
+    * kategori : VARCHAR
+    * nominal : DECIMAL
+  }
+}
+
+package "Sarana Prasarana" #FFF1F2 {
+  entity "assets" as assets {
+    * id : BIGINT <<PK>>
+    --
+    # room_id : BIGINT <<FK>>
+    * kode_barang : VARCHAR
+    * nama_barang : VARCHAR
+    * kondisi : ENUM
+  }
+
+  entity "asset_loans" as asset_loans {
+    * id : BIGINT <<PK>>
+    --
+    # asset_id : BIGINT <<FK>>
+    * tanggal_pinjam : DATE
+    * status : ENUM
+  }
+
+  entity "asset_maintenance" as asset_maintenance {
+    * id : BIGINT <<PK>>
+    --
+    # asset_id : BIGINT <<FK>>
+    * tanggal_perbaikan : DATE
+    * status : ENUM
+  }
+}
+
+' ==========================================================
+' RELASI INTI (HANYA RELASI BISNIS FUNGSIONAL)
+' ==========================================================
+
+' 1. User & Akun
+roles ||--o{ users : "role_id"
+users ||--o| teachers : "user_id"
+users ||--o| staff : "user_id"
+users ||--o| guardians : "user_id"
+
+' 2. Struktur Akademik & Kelas
+academic_years ||--o{ semesters : "academic_year_id"
+academic_years ||--o{ classes : "academic_year_id"
+teachers ||--o{ classes : "wali_kelas_id"
+rooms ||--o{ classes : "room_id"
+
+' 3. Kesiswaan
+classes ||--o{ students : "class_id"
+students ||--o{ student_guardian : "student_id"
+guardians ||--o{ student_guardian : "guardian_id"
+classes ||--o{ student_enrollments : "class_id"
+students ||--o{ student_enrollments : "student_id"
+academic_years ||--o{ student_enrollments : "academic_year_id"
+
+' 4. Jadwal KBM
+classes ||--o{ schedules : "class_id"
+teachers ||--o{ schedules : "teacher_id"
+subjects ||--o{ schedules : "subject_id"
+time_slots ||--o{ schedules : "time_slot_id"
+rooms ||--o{ schedules : "room_id"
+academic_years ||--o{ schedules : "academic_year_id"
+
+' 5. KBM Harian & Kehadiran
+classes ||--o{ daily_activities : "class_id"
+teachers ||--o{ daily_activities : "teacher_id"
+schedules ||--o{ student_attendance : "schedule_id"
+students ||--o{ student_attendance : "student_id"
+classes ||--o{ student_attendance : "class_id"
+students ||--o{ learning_progress : "student_id"
+teachers ||--o{ learning_progress : "teacher_id"
+subjects ||--o{ learning_progress : "subject_id"
+
+' 6. Rapor Siswa
+students ||--o{ report_cards : "student_id"
+classes ||--o{ report_cards : "class_id"
+academic_years ||--o{ report_cards : "academic_year_id"
+report_cards ||--o{ report_card_grades : "report_card_id"
+subjects ||--o{ report_card_grades : "subject_id"
+report_cards ||--o{ report_card_extracurriculars : "report_card_id"
+report_cards ||--o{ report_card_revisions : "report_card_id"
+
+' 7. Keuangan
+fee_types ||--o{ invoices : "fee_type_id"
+students ||--o{ invoices : "student_id"
+academic_years ||--o{ invoices : "academic_year_id"
+invoices ||--o{ payments : "invoice_id"
+payments ||--o| finance_transactions : "payment_id"
+
+' 8. Sarpras
+rooms ||--o{ assets : "room_id"
+assets ||--o{ asset_loans : "asset_id"
+assets ||--o{ asset_maintenance : "asset_id"
+
+@enduml

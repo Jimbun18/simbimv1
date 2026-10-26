@@ -108,20 +108,53 @@
       </button>
     </div>
 
-    <div v-if="scheduleViewMode === 'matrix'" class="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl flex items-center justify-between text-xs text-amber-900 no-print">
+    <div v-if="scheduleViewMode === 'matrix'" class="p-3 bg-amber-50/80 border border-amber-200/80 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs text-amber-900 no-print">
       <div class="flex items-center gap-2">
         <span class="text-base">🖱️</span>
-        <span><strong>Tips Cepat:</strong> Klik pada setiap kotak jadwal di bawah untuk mengubah materi tema, guru pengampu, atau jam pelajaran.</span>
+        <span class="font-medium"><strong>Tips:</strong> Klik kotak jadwal untuk ubah tema, guru, atau atur jam (1x35, 2x35, 3x35).</span>
       </div>
-      <span class="font-mono text-[11px] font-bold text-purple-700 bg-white/80 px-2 py-0.5 rounded border border-amber-200">
-        {{ selectedClass?.nama }}
-      </span>
+      <div class="flex items-center gap-2">
+        <!-- Toggle 2x35 Mode -->
+        <button
+          type="button"
+          @click="modeSlot2x35 = !modeSlot2x35"
+          :class="modeSlot2x35 ? 'bg-amber-600 text-white shadow-sm' : 'bg-white text-gray-700 border border-amber-300 hover:bg-amber-100/50'"
+          class="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer active:scale-95"
+          title="Alihkan tampilan gabungan 2x35 atau rincian 1x35 per slot"
+        >
+          <span>{{ modeSlot2x35 ? '⚡ Format 2x35 (Ringkas)' : '📋 Format 1x35 (Rinci)' }}</span>
+        </button>
+
+        <!-- Toggle Fit Layar -->
+        <button
+          type="button"
+          @click="tableScale = tableScale === 'compact' ? 'normal' : 'compact'"
+          :class="tableScale === 'compact' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-gray-700 border border-purple-200 hover:bg-purple-50'"
+          class="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer active:scale-95"
+          title="Ubah skala tabel agar pas layar atau ukuran normal"
+        >
+          <span>{{ tableScale === 'compact' ? '🔍 Fit Layar (Ramping)' : '📐 Ukuran Normal' }}</span>
+        </button>
+
+        <!-- Cetak -->
+        <button
+          type="button"
+          @click="printSchedule"
+          class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 transition flex items-center gap-1 cursor-pointer shadow-sm active:scale-95"
+        >
+          <span>🖨️ Cetak</span>
+        </button>
+
+        <span class="font-mono text-[11px] font-bold text-purple-700 bg-white/90 px-2.5 py-1 rounded-xl border border-amber-200">
+          {{ selectedClass?.nama }}
+        </span>
+      </div>
     </div>
 
     <!-- VIEW A: MATRIKS GRID RESMI 10-KOLOM -->
-    <div v-if="scheduleViewMode === 'matrix'" class="bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-sm print-area">
+    <div v-if="scheduleViewMode === 'matrix'" class="bg-white p-3 sm:p-5 rounded-2xl border border-gray-200 shadow-sm print-area">
       <!-- Timetable Header Title (Always printed) -->
-      <div class="text-center mb-4">
+      <div class="text-center mb-3">
         <h2 class="text-sm sm:text-base md:text-lg font-black text-gray-900 tracking-wider uppercase">
           JADWAL PELAJARAN {{ selectedClass?.nama?.toUpperCase() || 'KELAS' }}
         </h2>
@@ -132,85 +165,88 @@
 
       <!-- The 10-Column Timetable Table -->
       <div class="overflow-x-auto">
-        <table class="w-full border-collapse border border-amber-800 text-xs table-fixed min-w-[950px] select-none">
+        <table
+          class="w-full border-collapse border border-amber-800 table-fixed select-none"
+          :class="tableScale === 'compact' ? 'text-[10.5px] min-w-0' : 'text-xs min-w-[950px]'"
+        >
           <colgroup>
-            <col style="width: 55px;" />
-            <col style="width: 88px;" />
-            <col style="width: 130px;" />
-            <col style="width: 88px;" />
-            <col style="width: 125px;" />
-            <col style="width: 125px;" />
-            <col style="width: 125px;" />
-            <col style="width: 125px;" />
-            <col style="width: 88px;" />
-            <col style="width: 145px;" />
+            <col style="width: 3.5%;" />
+            <col style="width: 7%;" />
+            <col style="width: 13.5%;" />
+            <col style="width: 7%;" />
+            <col style="width: 13%;" />
+            <col style="width: 13%;" />
+            <col style="width: 13%;" />
+            <col style="width: 13%;" />
+            <col style="width: 6.5%;" />
+            <col style="width: 10.5%;" />
           </colgroup>
 
           <thead>
-            <tr class="bg-[#d97706] text-black font-extrabold uppercase text-[11px] sm:text-xs">
-              <th class="border border-amber-800 py-2 px-1 text-center font-black">JP</th>
-              <th class="border border-amber-800 py-2 px-1 text-center font-black">JAM</th>
-              <th class="border border-amber-800 py-2 px-2 text-center font-black">SENIN</th>
-              <th class="border border-amber-800 py-2 px-1 text-center font-black">JAM</th>
-              <th class="border border-amber-800 py-2 px-2 text-center font-black">SELASA</th>
-              <th class="border border-amber-800 py-2 px-2 text-center font-black">RABU</th>
-              <th class="border border-amber-800 py-2 px-2 text-center font-black">KAMIS</th>
-              <th class="border border-amber-800 py-2 px-2 text-center font-black">JUM'AT</th>
-              <th class="border border-amber-800 py-2 px-1 text-center font-black">JAM</th>
-              <th class="border border-amber-800 py-2 px-2 text-center font-black">SABTU</th>
+            <tr class="bg-[#d97706] text-black font-extrabold uppercase text-[10.5px] sm:text-xs">
+              <th class="border border-amber-800 py-1.5 px-0.5 text-center font-black">JP</th>
+              <th class="border border-amber-800 py-1.5 px-0.5 text-center font-black">JAM</th>
+              <th class="border border-amber-800 py-1.5 px-1 text-center font-black">SENIN</th>
+              <th class="border border-amber-800 py-1.5 px-0.5 text-center font-black">JAM</th>
+              <th class="border border-amber-800 py-1.5 px-1 text-center font-black">SELASA</th>
+              <th class="border border-amber-800 py-1.5 px-1 text-center font-black">RABU</th>
+              <th class="border border-amber-800 py-1.5 px-1 text-center font-black">KAMIS</th>
+              <th class="border border-amber-800 py-1.5 px-1 text-center font-black">JUM'AT</th>
+              <th class="border border-amber-800 py-1.5 px-0.5 text-center font-black">JAM</th>
+              <th class="border border-amber-800 py-1.5 px-1 text-center font-black">SABTU</th>
             </tr>
           </thead>
 
           <tbody>
             <!-- ROW 1: 06.30 - 07.05 -->
             <tr>
-              <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-2">1 x 35</td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 1, '06.30 - 07.05') }}</td>
-              <td @click="openQuickSet('senin', 1)" :class="cellStyleClass('senin', 1)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 1)">
+              <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-1.5">1 x 35</td>
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 1, '06.30 - 07.05') }}</td>
+              <td @click="openQuickSet('senin', 1)" :class="cellStyleClass('senin', 1)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 1)">
                 <CellContent :hari="'senin'" :urutan="1" fallback="LENTERA" />
               </td>
-              <td rowspan="2" class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap align-middle">
+              <td rowspan="2" class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap align-middle">
                 {{ formatSlotTime('selasa', 1, '06.30 - 07.50') }}
               </td>
-              <td @click="openQuickSet('selasa', 1)" :class="cellStyleClass('selasa', 1)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 1)">
+              <td @click="openQuickSet('selasa', 1)" :class="cellStyleClass('selasa', 1)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 1)">
                 <CellContent :hari="'selasa'" :urutan="1" fallback="LENTERA" />
               </td>
-              <td @click="openQuickSet('rabu', 1)" :class="cellStyleClass('rabu', 1)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 1)">
+              <td @click="openQuickSet('rabu', 1)" :class="cellStyleClass('rabu', 1)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 1)">
                 <CellContent :hari="'rabu'" :urutan="1" fallback="LENTERA" />
               </td>
-              <td @click="openQuickSet('kamis', 1)" :class="cellStyleClass('kamis', 1)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 1)">
+              <td @click="openQuickSet('kamis', 1)" :class="cellStyleClass('kamis', 1)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 1)">
                 <CellContent :hari="'kamis'" :urutan="1" fallback="LENTERA" />
               </td>
-              <td @click="openQuickSet('jumat', 1)" :class="cellStyleClass('jumat', 1)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 1)">
+              <td @click="openQuickSet('jumat', 1)" :class="cellStyleClass('jumat', 1)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 1)">
                 <CellContent :hari="'jumat'" :urutan="1" fallback="LENTERA" />
               </td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap">{{ formatSlotTime('sabtu', 1, '07.00 - 07.30') }}</td>
-              <td @click="openQuickSet('sabtu', 1)" :class="cellStyleClass('sabtu', 1)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('sabtu', 1)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('sabtu', 1, '07.00 - 07.30') }}</td>
+              <td @click="openQuickSet('sabtu', 1)" :class="cellStyleClass('sabtu', 1)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('sabtu', 1)">
                 <CellContent :hari="'sabtu'" :urutan="1" fallback="Dzikir+ Senam" />
               </td>
             </tr>
 
             <!-- ROW 2: 07.05 - 07.40 -->
             <tr>
-              <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-2">1 x 35</td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 2, '07.05 - 07.40') }}</td>
-              <td @click="openQuickSet('senin', 2)" :class="cellStyleClass('senin', 2)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 2)">
+              <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-1.5">1 x 35</td>
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 2, '07.05 - 07.40') }}</td>
+              <td @click="openQuickSet('senin', 2)" :class="cellStyleClass('senin', 2)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 2)">
                 <CellContent :hari="'senin'" :urutan="2" fallback="Upacara" />
               </td>
-              <td @click="openQuickSet('selasa', 2)" :class="cellStyleClass('selasa', 2)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 2)">
+              <td @click="openQuickSet('selasa', 2)" :class="cellStyleClass('selasa', 2)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 2)">
                 <CellContent :hari="'selasa'" :urutan="2" fallback="LENTERA" />
               </td>
-              <td @click="openQuickSet('rabu', 2)" :class="cellStyleClass('rabu', 2)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 2)">
+              <td @click="openQuickSet('rabu', 2)" :class="cellStyleClass('rabu', 2)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 2)">
                 <CellContent :hari="'rabu'" :urutan="2" fallback="LENTERA" />
               </td>
-              <td @click="openQuickSet('kamis', 2)" :class="cellStyleClass('kamis', 2)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 2)">
+              <td @click="openQuickSet('kamis', 2)" :class="cellStyleClass('kamis', 2)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 2)">
                 <CellContent :hari="'kamis'" :urutan="2" fallback="LENTERA" />
               </td>
-              <td @click="openQuickSet('jumat', 2)" :class="cellStyleClass('jumat', 2)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 2)">
+              <td @click="openQuickSet('jumat', 2)" :class="cellStyleClass('jumat', 2)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 2)">
                 <CellContent :hari="'jumat'" :urutan="2" fallback="LENTERA" />
               </td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap">{{ formatSlotTime('sabtu', 2, '07.30 - 08.30') }}</td>
-              <td @click="openQuickSet('sabtu', 2)" :class="cellStyleClass('sabtu', 2)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('sabtu', 2)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('sabtu', 2, '07.30 - 08.30') }}</td>
+              <td @click="openQuickSet('sabtu', 2)" :class="cellStyleClass('sabtu', 2)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('sabtu', 2)">
                 <CellContent :hari="'sabtu'" :urutan="2" fallback="Ekstrakulikuler Pilihan" />
               </td>
             </tr>
@@ -218,128 +254,155 @@
             <!-- ROW 3: Asmaul Husna -->
             <tr>
               <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/20 text-gray-400 py-1.5">-</td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 3, '07.40 - 08.00') }}</td>
-              <td @click="openQuickSet('senin', 3)" :class="cellStyleClass('senin', 3)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 3)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 3, '07.40 - 08.00') }}</td>
+              <td @click="openQuickSet('senin', 3)" :class="cellStyleClass('senin', 3)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 3)">
                 <CellContent :hari="'senin'" :urutan="3" fallback="Asmaul Husna" />
               </td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[11px] whitespace-nowrap">{{ formatSlotTime('selasa', 3, '07.50 - 08.00') }}</td>
-              <td @click="openQuickSet('selasa', 3)" :class="cellStyleClass('selasa', 3)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 3)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('selasa', 3, '07.50 - 08.00') }}</td>
+              <td @click="openQuickSet('selasa', 3)" :class="cellStyleClass('selasa', 3)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 3)">
                 <CellContent :hari="'selasa'" :urutan="3" fallback="Asmaul Husna" />
               </td>
-              <td @click="openQuickSet('rabu', 3)" :class="cellStyleClass('rabu', 3)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 3)">
+              <td @click="openQuickSet('rabu', 3)" :class="cellStyleClass('rabu', 3)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 3)">
                 <CellContent :hari="'rabu'" :urutan="3" fallback="Asmaul Husna" />
               </td>
-              <td @click="openQuickSet('kamis', 3)" :class="cellStyleClass('kamis', 3)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 3)">
+              <td @click="openQuickSet('kamis', 3)" :class="cellStyleClass('kamis', 3)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 3)">
                 <CellContent :hari="'kamis'" :urutan="3" fallback="Asmaul Husna" />
               </td>
-              <td @click="openQuickSet('jumat', 3)" :class="cellStyleClass('jumat', 3)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 3)">
+              <td @click="openQuickSet('jumat', 3)" :class="cellStyleClass('jumat', 3)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 3)">
                 <CellContent :hari="'jumat'" :urutan="3" fallback="Asmaul Husna" />
               </td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[11px] whitespace-nowrap">{{ formatSlotTime('sabtu', 3, '08.25 - 08.30') }}</td>
-              <td @click="openQuickSet('sabtu', 3)" :class="cellStyleClass('sabtu', 3)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('sabtu', 3)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('sabtu', 3, '08.25 - 08.30') }}</td>
+              <td @click="openQuickSet('sabtu', 3)" :class="cellStyleClass('sabtu', 3)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('sabtu', 3)">
                 <CellContent :hari="'sabtu'" :urutan="3" fallback="Asmaul Husna" />
               </td>
             </tr>
 
-            <!-- ROW 4: 08.00 - 08.35 -->
-            <tr>
-              <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-2">1 X 35</td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 4, '08.00 - 08.35') }}</td>
-              <td @click="openQuickSet('senin', 4)" :class="cellStyleClass('senin', 4)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 4)">
+            <!-- ROW 4 & 5: SESI PAGI (COMBINED 2x35 OR DETAILED 1x35) -->
+            <tr v-if="modeSlot2x35">
+              <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-1.5 font-sans">2 x 35</td>
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 4, '08.00 - 09.10') }}</td>
+              <td @click="openQuickSet('senin', 4)" :class="cellStyleClass('senin', 4)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 4)">
                 <CellContent :hari="'senin'" :urutan="4" fallback="TEMA 3" />
               </td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap">{{ formatSlotTime('selasa', 4, '08.00 - 09.10') }}</td>
-              <td @click="openQuickSet('selasa', 4)" :class="cellStyleClass('selasa', 4)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 4)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('selasa', 4, '08.00 - 09.10') }}</td>
+              <td @click="openQuickSet('selasa', 4)" :class="cellStyleClass('selasa', 4)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 4)">
                 <CellContent :hari="'selasa'" :urutan="4" fallback="TEMA 1" />
               </td>
-              <td @click="openQuickSet('rabu', 4)" :class="cellStyleClass('rabu', 4)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 4)">
+              <td @click="openQuickSet('rabu', 4)" :class="cellStyleClass('rabu', 4)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 4)">
                 <CellContent :hari="'rabu'" :urutan="4" fallback="TEMA 4" />
               </td>
-              <td @click="openQuickSet('kamis', 4)" :class="cellStyleClass('kamis', 4)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 4)">
+              <td @click="openQuickSet('kamis', 4)" :class="cellStyleClass('kamis', 4)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 4)">
                 <CellContent :hari="'kamis'" :urutan="4" fallback="TEMA 5" />
               </td>
-              <td @click="openQuickSet('jumat', 4)" :class="cellStyleClass('jumat', 4)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 4)">
+              <td @click="openQuickSet('jumat', 4)" :class="cellStyleClass('jumat', 4)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 4)">
                 <CellContent :hari="'jumat'" :urutan="4" fallback="TEMA 2" />
               </td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap">{{ formatSlotTime('sabtu', 4, '08.30 - 09.00') }}</td>
-              <td @click="openQuickSet('sabtu', 4)" :class="cellStyleClass('sabtu', 4)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('sabtu', 4)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('sabtu', 4, '08.30 - 09.30') }}</td>
+              <td @click="openQuickSet('sabtu', 4)" :class="cellStyleClass('sabtu', 4)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('sabtu', 4)">
                 <CellContent :hari="'sabtu'" :urutan="4" fallback="Ekstrakulikuler Wajib" />
               </td>
             </tr>
+            <template v-else>
+              <!-- ROW 4: 08.00 - 08.35 (1x35) -->
+              <tr>
+                <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-1.5">1 x 35</td>
+                <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 4, '08.00 - 08.35') }}</td>
+                <td @click="openQuickSet('senin', 4)" :class="cellStyleClass('senin', 4)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 4)">
+                  <CellContent :hari="'senin'" :urutan="4" fallback="TEMA 3" />
+                </td>
+                <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('selasa', 4, '08.00 - 09.10') }}</td>
+                <td @click="openQuickSet('selasa', 4)" :class="cellStyleClass('selasa', 4)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 4)">
+                  <CellContent :hari="'selasa'" :urutan="4" fallback="TEMA 1" />
+                </td>
+                <td @click="openQuickSet('rabu', 4)" :class="cellStyleClass('rabu', 4)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 4)">
+                  <CellContent :hari="'rabu'" :urutan="4" fallback="TEMA 4" />
+                </td>
+                <td @click="openQuickSet('kamis', 4)" :class="cellStyleClass('kamis', 4)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 4)">
+                  <CellContent :hari="'kamis'" :urutan="4" fallback="TEMA 5" />
+                </td>
+                <td @click="openQuickSet('jumat', 4)" :class="cellStyleClass('jumat', 4)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 4)">
+                  <CellContent :hari="'jumat'" :urutan="4" fallback="TEMA 2" />
+                </td>
+                <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('sabtu', 4, '08.30 - 09.00') }}</td>
+                <td @click="openQuickSet('sabtu', 4)" :class="cellStyleClass('sabtu', 4)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('sabtu', 4)">
+                  <CellContent :hari="'sabtu'" :urutan="4" fallback="Ekstrakulikuler Wajib" />
+                </td>
+              </tr>
 
-            <!-- ROW 5: 08.35 - 09.10 -->
-            <tr>
-              <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-2">1 X 35</td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 5, '08.35 - 09.10') }}</td>
-              <td @click="openQuickSet('senin', 5)" :class="cellStyleClass('senin', 5)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 5)">
-                <CellContent :hari="'senin'" :urutan="5" fallback="TEMA 3" />
-              </td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 5, '08.35 - 09.10') }}</td>
-              <td @click="openQuickSet('selasa', 5)" :class="cellStyleClass('selasa', 5)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 5)">
-                <CellContent :hari="'selasa'" :urutan="5" fallback="TEMA 1" />
-              </td>
-              <td @click="openQuickSet('rabu', 5)" :class="cellStyleClass('rabu', 5)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 5)">
-                <CellContent :hari="'rabu'" :urutan="5" fallback="TEMA 4" />
-              </td>
-              <td @click="openQuickSet('kamis', 5)" :class="cellStyleClass('kamis', 5)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 5)">
-                <CellContent :hari="'kamis'" :urutan="5" fallback="TEMA 5" />
-              </td>
-              <td @click="openQuickSet('jumat', 5)" :class="cellStyleClass('jumat', 5)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 5)">
-                <CellContent :hari="'jumat'" :urutan="5" fallback="TEMA 2" />
-              </td>
-              <td class="border border-amber-800 bg-[#fde047]"></td>
-              <td class="border border-amber-800 bg-white"></td>
-            </tr>
+              <!-- ROW 5: 08.35 - 09.10 (1x35) -->
+              <tr>
+                <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-1.5">1 x 35</td>
+                <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 5, '08.35 - 09.10') }}</td>
+                <td @click="openQuickSet('senin', 5)" :class="cellStyleClass('senin', 5)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 5)">
+                  <CellContent :hari="'senin'" :urutan="5" fallback="TEMA 3" />
+                </td>
+                <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 5, '08.35 - 09.10') }}</td>
+                <td @click="openQuickSet('selasa', 5)" :class="cellStyleClass('selasa', 5)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 5)">
+                  <CellContent :hari="'selasa'" :urutan="5" fallback="TEMA 1" />
+                </td>
+                <td @click="openQuickSet('rabu', 5)" :class="cellStyleClass('rabu', 5)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 5)">
+                  <CellContent :hari="'rabu'" :urutan="5" fallback="TEMA 4" />
+                </td>
+                <td @click="openQuickSet('kamis', 5)" :class="cellStyleClass('kamis', 5)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 5)">
+                  <CellContent :hari="'kamis'" :urutan="5" fallback="TEMA 5" />
+                </td>
+                <td @click="openQuickSet('jumat', 5)" :class="cellStyleClass('jumat', 5)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 5)">
+                  <CellContent :hari="'jumat'" :urutan="5" fallback="TEMA 2" />
+                </td>
+                <td class="border border-amber-800 bg-[#fde047]"></td>
+                <td class="border border-amber-800 bg-white"></td>
+              </tr>
+            </template>
 
             <!-- ROW 6: Shalat Dhuha + Istirahat -->
             <tr>
               <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/20 text-gray-400 py-1.5">-</td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 6, '09.10 - 09.40') }}</td>
-              <td @click="openQuickSet('senin', 6)" :class="cellStyleClass('senin', 6)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 6)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 6, '09.10 - 09.40') }}</td>
+              <td @click="openQuickSet('senin', 6)" :class="cellStyleClass('senin', 6)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 6)">
                 <CellContent :hari="'senin'" :urutan="6" fallback="Shalat Dhuha + Istirahat" />
               </td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 6, '09.10 - 09.40') }}</td>
-              <td @click="openQuickSet('selasa', 6)" :class="cellStyleClass('selasa', 6)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 6)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 6, '09.10 - 09.40') }}</td>
+              <td @click="openQuickSet('selasa', 6)" :class="cellStyleClass('selasa', 6)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 6)">
                 <CellContent :hari="'selasa'" :urutan="6" fallback="Shalat Dhuha + Istirahat" />
               </td>
-              <td @click="openQuickSet('rabu', 6)" :class="cellStyleClass('rabu', 6)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 6)">
+              <td @click="openQuickSet('rabu', 6)" :class="cellStyleClass('rabu', 6)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 6)">
                 <CellContent :hari="'rabu'" :urutan="6" fallback="Shalat Dhuha + Istirahat" />
               </td>
-              <td @click="openQuickSet('kamis', 6)" :class="cellStyleClass('kamis', 6)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 6)">
+              <td @click="openQuickSet('kamis', 6)" :class="cellStyleClass('kamis', 6)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 6)">
                 <CellContent :hari="'kamis'" :urutan="6" fallback="Shalat Dhuha + Istirahat" />
               </td>
-              <td @click="openQuickSet('jumat', 6)" :class="cellStyleClass('jumat', 6)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 6)">
+              <td @click="openQuickSet('jumat', 6)" :class="cellStyleClass('jumat', 6)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 6)">
                 <CellContent :hari="'jumat'" :urutan="6" fallback="Shalat Dhuha + Istirahat" />
               </td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[11px] whitespace-nowrap">{{ formatSlotTime('sabtu', 6, '09.30 - 10.00') }}</td>
-              <td @click="openQuickSet('sabtu', 6)" :class="cellStyleClass('sabtu', 6)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('sabtu', 6)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('sabtu', 6, '09.30 - 10.00') }}</td>
+              <td @click="openQuickSet('sabtu', 6)" :class="cellStyleClass('sabtu', 6)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('sabtu', 6)">
                 <CellContent :hari="'sabtu'" :urutan="6" fallback="Ekstrakulikuler Wajib" />
               </td>
             </tr>
 
             <!-- ROW 7: 3X35 (09.40 - 11.20) -->
             <tr>
-              <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-2">3X35</td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 7, '09.40 - 11.20') }}</td>
-              <td @click="openQuickSet('senin', 7)" :class="cellStyleClass('senin', 7)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 7)">
+              <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-1.5 font-sans">3X35</td>
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 7, '09.40 - 11.20') }}</td>
+              <td @click="openQuickSet('senin', 7)" :class="cellStyleClass('senin', 7)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 7)">
                 <CellContent :hari="'senin'" :urutan="7" fallback="TEMA 3" />
               </td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 7, '09.40 - 11.20') }}</td>
-              <td @click="openQuickSet('selasa', 7)" :class="cellStyleClass('selasa', 7)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 7)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 7, '09.40 - 11.20') }}</td>
+              <td @click="openQuickSet('selasa', 7)" :class="cellStyleClass('selasa', 7)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 7)">
                 <CellContent :hari="'selasa'" :urutan="7" fallback="TEMA 1" />
               </td>
-              <td @click="openQuickSet('rabu', 7)" :class="cellStyleClass('rabu', 7)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 7)">
+              <td @click="openQuickSet('rabu', 7)" :class="cellStyleClass('rabu', 7)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 7)">
                 <CellContent :hari="'rabu'" :urutan="7" fallback="TEMA 4" />
               </td>
-              <td @click="openQuickSet('kamis', 7)" :class="cellStyleClass('kamis', 7)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 7)">
+              <td @click="openQuickSet('kamis', 7)" :class="cellStyleClass('kamis', 7)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 7)">
                 <CellContent :hari="'kamis'" :urutan="7" fallback="TEMA 5" />
               </td>
-              <td @click="openQuickSet('jumat', 7)" :class="cellStyleClass('jumat', 7)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 7)">
+              <td @click="openQuickSet('jumat', 7)" :class="cellStyleClass('jumat', 7)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 7)">
                 <CellContent :hari="'jumat'" :urutan="7" fallback="TEMA 2" />
               </td>
-              <td rowspan="4" colspan="2" class="border border-amber-800 bg-[#cbd5e1] p-3 text-left align-top select-none font-sans">
-                <div class="text-xs font-bold text-gray-900 mb-2">Catatan:</div>
-                <div class="text-[11px] text-gray-800 space-y-1.5 font-medium leading-relaxed">
+              <td :rowspan="modeSlot2x35 ? 3 : 4" colspan="2" class="border border-amber-800 bg-[#cbd5e1] p-2 sm:p-2.5 text-left align-top select-none font-sans">
+                <div class="text-xs font-bold text-gray-900 mb-1.5">Catatan:</div>
+                <div class="text-[10px] sm:text-[11px] text-gray-800 space-y-1 font-medium leading-relaxed">
                   <div><strong class="font-bold text-gray-900">Kamis:</strong> Javanese language</div>
                   <div><strong class="font-bold text-gray-900">Jum'at:</strong> Arabic language</div>
                 </div>
@@ -349,87 +412,110 @@
             <!-- ROW 8: Shalat Dzuhur + Makan siang -->
             <tr>
               <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/20 text-gray-400 py-1.5">-</td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 8, '11.20 - 12.10') }}</td>
-              <td @click="openQuickSet('senin', 8)" :class="cellStyleClass('senin', 8)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 8)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 8, '11.20 - 12.10') }}</td>
+              <td @click="openQuickSet('senin', 8)" :class="cellStyleClass('senin', 8)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 8)">
                 <CellContent :hari="'senin'" :urutan="8" fallback="Shalat Dzuhur + Makan siang" />
               </td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 8, '11.20 - 12.10') }}</td>
-              <td @click="openQuickSet('selasa', 8)" :class="cellStyleClass('selasa', 8)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 8)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 8, '11.20 - 12.10') }}</td>
+              <td @click="openQuickSet('selasa', 8)" :class="cellStyleClass('selasa', 8)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 8)">
                 <CellContent :hari="'selasa'" :urutan="8" fallback="Shalat Dzuhur + Makan siang" />
               </td>
-              <td @click="openQuickSet('rabu', 8)" :class="cellStyleClass('rabu', 8)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 8)">
+              <td @click="openQuickSet('rabu', 8)" :class="cellStyleClass('rabu', 8)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 8)">
                 <CellContent :hari="'rabu'" :urutan="8" fallback="Shalat Dzuhur + Makan siang" />
               </td>
-              <td @click="openQuickSet('kamis', 8)" :class="cellStyleClass('kamis', 8)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 8)">
+              <td @click="openQuickSet('kamis', 8)" :class="cellStyleClass('kamis', 8)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 8)">
                 <CellContent :hari="'kamis'" :urutan="8" fallback="Shalat Dzuhur + Makan siang" />
               </td>
-              <td @click="openQuickSet('jumat', 8)" :class="cellStyleClass('jumat', 8)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 8)">
+              <td @click="openQuickSet('jumat', 8)" :class="cellStyleClass('jumat', 8)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 8)">
                 <CellContent :hari="'jumat'" :urutan="8" fallback="Shalat Dzuhur + Makan siang" />
               </td>
             </tr>
 
-            <!-- ROW 9: 12.10 - 12.45 -->
-            <tr>
-              <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-2">1 X 35</td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 9, '12.10 - 12.45') }}</td>
-              <td @click="openQuickSet('senin', 9)" :class="cellStyleClass('senin', 9)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 9)">
+            <!-- ROW 9 & 10: SESI SIANG (COMBINED 2x35 OR DETAILED 1x35) -->
+            <tr v-if="modeSlot2x35">
+              <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-1.5 font-sans">2 x 35</td>
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 9, '12.10 - 13.20') }}</td>
+              <td @click="openQuickSet('senin', 9)" :class="cellStyleClass('senin', 9)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 9)">
                 <CellContent :hari="'senin'" :urutan="9" fallback="TEMA 3" />
               </td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 9, '12.10 - 12.45') }}</td>
-              <td @click="openQuickSet('selasa', 9)" :class="cellStyleClass('selasa', 9)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 9)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('selasa', 9, '12.10 - 13.20') }}</td>
+              <td @click="openQuickSet('selasa', 9)" :class="cellStyleClass('selasa', 9)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 9)">
                 <CellContent :hari="'selasa'" :urutan="9" fallback="TEMA 1" />
               </td>
-              <td @click="openQuickSet('rabu', 9)" :class="cellStyleClass('rabu', 9)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 9)">
+              <td @click="openQuickSet('rabu', 9)" :class="cellStyleClass('rabu', 9)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 9)">
                 <CellContent :hari="'rabu'" :urutan="9" fallback="TEMA 1" />
               </td>
-              <td @click="openQuickSet('kamis', 9)" :class="cellStyleClass('kamis', 9)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 9)">
+              <td @click="openQuickSet('kamis', 9)" :class="cellStyleClass('kamis', 9)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 9)">
                 <CellContent :hari="'kamis'" :urutan="9" fallback="TEMA 5" />
               </td>
-              <td @click="openQuickSet('jumat', 9)" :class="cellStyleClass('jumat', 9)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 9)">
+              <td @click="openQuickSet('jumat', 9)" :class="cellStyleClass('jumat', 9)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 9)">
                 <CellContent :hari="'jumat'" :urutan="9" fallback="TEMA 2" />
               </td>
             </tr>
+            <template v-else>
+              <!-- ROW 9: 12.10 - 12.45 (1x35) -->
+              <tr>
+                <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-1.5">1 x 35</td>
+                <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 9, '12.10 - 12.45') }}</td>
+                <td @click="openQuickSet('senin', 9)" :class="cellStyleClass('senin', 9)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 9)">
+                  <CellContent :hari="'senin'" :urutan="9" fallback="TEMA 3" />
+                </td>
+                <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 9, '12.10 - 12.45') }}</td>
+                <td @click="openQuickSet('selasa', 9)" :class="cellStyleClass('selasa', 9)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 9)">
+                  <CellContent :hari="'selasa'" :urutan="9" fallback="TEMA 1" />
+                </td>
+                <td @click="openQuickSet('rabu', 9)" :class="cellStyleClass('rabu', 9)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 9)">
+                  <CellContent :hari="'rabu'" :urutan="9" fallback="TEMA 1" />
+                </td>
+                <td @click="openQuickSet('kamis', 9)" :class="cellStyleClass('kamis', 9)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 9)">
+                  <CellContent :hari="'kamis'" :urutan="9" fallback="TEMA 5" />
+                </td>
+                <td @click="openQuickSet('jumat', 9)" :class="cellStyleClass('jumat', 9)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 9)">
+                  <CellContent :hari="'jumat'" :urutan="9" fallback="TEMA 2" />
+                </td>
+              </tr>
 
-            <!-- ROW 10: 12.45 - 13.20 -->
-            <tr>
-              <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-2">1 X 35</td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 10, '12.45 - 13.20') }}</td>
-              <td @click="openQuickSet('senin', 10)" :class="cellStyleClass('senin', 10)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 10)">
-                <CellContent :hari="'senin'" :urutan="10" fallback="TEMA 3" />
-              </td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-2 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 10, '12.45 - 13.20') }}</td>
-              <td @click="openQuickSet('selasa', 10)" :class="cellStyleClass('selasa', 10)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 10)">
-                <CellContent :hari="'selasa'" :urutan="10" fallback="TEMA 1" />
-              </td>
-              <td @click="openQuickSet('rabu', 10)" :class="cellStyleClass('rabu', 10)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 10)">
-                <CellContent :hari="'rabu'" :urutan="10" fallback="TEMA 2" />
-              </td>
-              <td @click="openQuickSet('kamis', 10)" :class="cellStyleClass('kamis', 10)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 10)">
-                <CellContent :hari="'kamis'" :urutan="10" fallback="TEMA 5" />
-              </td>
-              <td @click="openQuickSet('jumat', 10)" :class="cellStyleClass('jumat', 10)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 10)">
-                <CellContent :hari="'jumat'" :urutan="10" fallback="TEMA 2" />
-              </td>
-            </tr>
+              <!-- ROW 10: 12.45 - 13.20 (1x35) -->
+              <tr>
+                <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/40 text-gray-800 py-1.5">1 x 35</td>
+                <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 10, '12.45 - 13.20') }}</td>
+                <td @click="openQuickSet('senin', 10)" :class="cellStyleClass('senin', 10)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 10)">
+                  <CellContent :hari="'senin'" :urutan="10" fallback="TEMA 3" />
+                </td>
+                <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 10, '12.45 - 13.20') }}</td>
+                <td @click="openQuickSet('selasa', 10)" :class="cellStyleClass('selasa', 10)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 10)">
+                  <CellContent :hari="'selasa'" :urutan="10" fallback="TEMA 1" />
+                </td>
+                <td @click="openQuickSet('rabu', 10)" :class="cellStyleClass('rabu', 10)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 10)">
+                  <CellContent :hari="'rabu'" :urutan="10" fallback="TEMA 2" />
+                </td>
+                <td @click="openQuickSet('kamis', 10)" :class="cellStyleClass('kamis', 10)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 10)">
+                  <CellContent :hari="'kamis'" :urutan="10" fallback="TEMA 5" />
+                </td>
+                <td @click="openQuickSet('jumat', 10)" :class="cellStyleClass('jumat', 10)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 10)">
+                  <CellContent :hari="'jumat'" :urutan="10" fallback="TEMA 2" />
+                </td>
+              </tr>
+            </template>
 
             <!-- ROW 11: 13.20 - 13.30 (Lentera Refleksi) -->
             <tr>
               <td class="border border-amber-800 text-center font-bold bg-[#fef3c7]/20 text-gray-400 py-1.5">-</td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 11, '13.20 - 13.30') }}</td>
-              <td @click="openQuickSet('senin', 11)" :class="cellStyleClass('senin', 11)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 11)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 11, '13.20 - 13.30') }}</td>
+              <td @click="openQuickSet('senin', 11)" :class="cellStyleClass('senin', 11)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('senin', 11)">
                 <CellContent :hari="'senin'" :urutan="11" fallback="LENTERA" />
               </td>
-              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[11px] whitespace-nowrap">{{ formatSlotTime('senin', 11, '13.20 - 13.30') }}</td>
-              <td @click="openQuickSet('selasa', 11)" :class="cellStyleClass('selasa', 11)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 11)">
+              <td class="border border-amber-800 text-center font-semibold bg-[#fde047] text-gray-900 py-1.5 text-[10.5px] whitespace-nowrap">{{ formatSlotTime('senin', 11, '13.20 - 13.30') }}</td>
+              <td @click="openQuickSet('selasa', 11)" :class="cellStyleClass('selasa', 11)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('selasa', 11)">
                 <CellContent :hari="'selasa'" :urutan="11" fallback="LENTERA" />
               </td>
-              <td @click="openQuickSet('rabu', 11)" :class="cellStyleClass('rabu', 11)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 11)">
+              <td @click="openQuickSet('rabu', 11)" :class="cellStyleClass('rabu', 11)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('rabu', 11)">
                 <CellContent :hari="'rabu'" :urutan="11" fallback="LENTERA" />
               </td>
-              <td @click="openQuickSet('kamis', 11)" :class="cellStyleClass('kamis', 11)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 11)">
+              <td @click="openQuickSet('kamis', 11)" :class="cellStyleClass('kamis', 11)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('kamis', 11)">
                 <CellContent :hari="'kamis'" :urutan="11" fallback="LENTERA" />
               </td>
-              <td @click="openQuickSet('jumat', 11)" :class="cellStyleClass('jumat', 11)" class="border border-amber-800 p-1.5 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 11)">
+              <td @click="openQuickSet('jumat', 11)" :class="cellStyleClass('jumat', 11)" class="border border-amber-800 p-1 text-center cursor-pointer transition select-none hover:ring-2 hover:ring-purple-500/40" :title="cellTooltip('jumat', 11)">
                 <CellContent :hari="'jumat'" :urutan="11" fallback="LENTERA" />
               </td>
               <td class="border border-amber-800 bg-[#fde047]"></td>
@@ -589,19 +675,64 @@
         <!-- Modal Body (Scrollable) -->
         <div class="p-5 overflow-y-auto space-y-4">
           <!-- Waktu & Jam Sesi -->
-          <div class="bg-amber-50/70 p-3 rounded-2xl border border-amber-200/80">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-[11px] font-bold text-amber-950 uppercase tracking-wider block">
-                ⏰ Waktu Sesi (Dapat Disesuaikan per Kelas/Tahun)
+          <div class="bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200/80 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
+                <span>⏰</span>
+                <span>Atur Jam Pelajaran (JP) & Waktu Sesi</span>
               </span>
-              <span class="text-[10px] text-amber-800 font-mono font-semibold">Slot #{{ quickSetForm.slot_urutan }}</span>
+              <span class="text-[10px] text-amber-800 font-mono font-bold bg-white/80 px-2 py-0.5 rounded border border-amber-200">
+                Slot #{{ quickSetForm.slot_urutan }} • {{ quickSetForm.hari?.toUpperCase() }}
+              </span>
             </div>
-            <div class="grid grid-cols-2 gap-2">
+
+            <!-- JP Preset Selection Buttons -->
+            <div>
+              <label class="text-[10px] font-bold text-amber-900 block mb-1">Pilih Alokasi Jam Pelajaran (1 JP = 35 Menit):</label>
+              <div class="grid grid-cols-4 gap-1.5">
+                <button
+                  type="button"
+                  @click="setJpDuration(1)"
+                  :class="detectedJp === 1 ? 'bg-amber-600 text-white font-black shadow-sm' : 'bg-white hover:bg-amber-100/70 text-gray-800 border border-amber-300 font-bold'"
+                  class="py-1 px-1.5 text-center text-xs rounded-xl transition cursor-pointer"
+                >
+                  1 x 35 <span class="text-[9px] block opacity-80 font-normal">35 mnt</span>
+                </button>
+                <button
+                  type="button"
+                  @click="setJpDuration(2)"
+                  :class="detectedJp === 2 ? 'bg-amber-600 text-white font-black shadow-sm' : 'bg-white hover:bg-amber-100/70 text-gray-800 border border-amber-300 font-bold'"
+                  class="py-1 px-1.5 text-center text-xs rounded-xl transition cursor-pointer"
+                >
+                  2 x 35 <span class="text-[9px] block opacity-80 font-normal">70 mnt</span>
+                </button>
+                <button
+                  type="button"
+                  @click="setJpDuration(3)"
+                  :class="detectedJp === 3 ? 'bg-amber-600 text-white font-black shadow-sm' : 'bg-white hover:bg-amber-100/70 text-gray-800 border border-amber-300 font-bold'"
+                  class="py-1 px-1.5 text-center text-xs rounded-xl transition cursor-pointer"
+                >
+                  3 x 35 <span class="text-[9px] block opacity-80 font-normal">105 mnt</span>
+                </button>
+                <button
+                  type="button"
+                  @click="quickSetDurationMode = 'custom'"
+                  :class="detectedJp === 0 ? 'bg-amber-600 text-white font-black shadow-sm' : 'bg-white hover:bg-amber-100/70 text-gray-800 border border-amber-300 font-bold'"
+                  class="py-1 px-1.5 text-center text-xs rounded-xl transition cursor-pointer"
+                >
+                  Custom <span class="text-[9px] block opacity-80 font-normal">Manual</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Jam Mulai & Selesai Input -->
+            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-amber-200/60">
               <div>
                 <label class="text-[10px] font-bold text-gray-600 block mb-0.5">Jam Mulai:</label>
                 <input
                   v-model="quickSetForm.jam_mulai"
                   type="time"
+                  @change="onJamMulaiChange"
                   class="w-full bg-white border border-amber-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-amber-500 outline-none"
                 />
               </div>
@@ -613,6 +744,12 @@
                   class="w-full bg-white border border-amber-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-amber-500 outline-none"
                 />
               </div>
+            </div>
+            <div class="flex items-center justify-between text-[10px] text-amber-800/90 font-medium px-0.5">
+              <span>Total durasi: <strong>{{ calculatedDurationText }}</strong></span>
+              <span v-if="detectedJp > 0" class="font-bold text-amber-900 bg-amber-200/60 px-1.5 py-0.5 rounded">
+                {{ detectedJp }} x 35 menit
+              </span>
             </div>
           </div>
 
@@ -808,8 +945,63 @@ const assignmentsList = ref<any[]>([]);
 
 const selectedClassId = ref<number | null>(null);
 const scheduleViewMode = ref<'matrix' | 'table'>('matrix');
+const modeSlot2x35 = ref(true); // default true: gabungkan 2x35 jadi 1 baris
+const tableScale = ref<'compact' | 'normal'>('compact'); // default compact: ramping fit layar tanpa scroll
+const quickSetDurationMode = ref<'auto' | 'custom'>('auto');
 const loadingSchedules = ref(false);
 const loadingLookups = ref(false);
+
+const calculatedDurationMinutes = computed(() => {
+  if (!quickSetForm.value.jam_mulai || !quickSetForm.value.jam_selesai) return 0;
+  const [h1, m1] = quickSetForm.value.jam_mulai.split(':').map(Number);
+  const [h2, m2] = quickSetForm.value.jam_selesai.split(':').map(Number);
+  if (isNaN(h1) || isNaN(m1) || isNaN(h2) || isNaN(m2)) return 0;
+  let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+  if (diff < 0) diff += 24 * 60;
+  return diff;
+});
+
+const detectedJp = computed(() => {
+  const m = calculatedDurationMinutes.value;
+  if (m === 35) return 1;
+  if (m === 70) return 2;
+  if (m === 105) return 3;
+  return 0; // custom
+});
+
+const calculatedDurationText = computed(() => {
+  const m = calculatedDurationMinutes.value;
+  if (m <= 0) return '-';
+  const hours = Math.floor(m / 60);
+  const mins = m % 60;
+  if (hours > 0 && mins > 0) return `${hours} jam ${mins} menit (${m} mnt)`;
+  if (hours > 0) return `${hours} jam (${m} mnt)`;
+  return `${m} menit`;
+});
+
+const setJpDuration = (jp: number) => {
+  quickSetDurationMode.value = 'auto';
+  if (!quickSetForm.value.jam_mulai) {
+    quickSetForm.value.jam_mulai = '08:00';
+  }
+  const [hStr, mStr] = quickSetForm.value.jam_mulai.split(':');
+  let h = parseInt(hStr, 10);
+  let m = parseInt(mStr, 10);
+  if (isNaN(h) || isNaN(m)) {
+    h = 8;
+    m = 0;
+  }
+  const totalMin = h * 60 + m + (jp * 35);
+  const endH = Math.floor(totalMin / 60) % 24;
+  const endM = totalMin % 60;
+  quickSetForm.value.jam_selesai = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+};
+
+const onJamMulaiChange = () => {
+  if (detectedJp.value > 0) {
+    setJpDuration(detectedJp.value);
+  }
+};
 
 const selectedClass = computed(() => {
   return classes.value.find(c => c.id === selectedClassId.value) || classes.value[0];
@@ -941,6 +1133,20 @@ const cellTooltip = (hari: string, urutan: number) => {
 
 const formatSlotTime = (hari: string, urutan: number, fallback: string = '') => {
   const ts = timeSlots.value.find(t => t.hari === hari && t.urutan === urutan);
+  if (modeSlot2x35.value) {
+    if (urutan === 4) {
+      if (ts?.jam_mulai && ts?.jam_selesai && ts.jam_selesai.slice(0, 5) !== '08:35') {
+        return `${ts.jam_mulai.slice(0, 5)} - ${ts.jam_selesai.slice(0, 5)}`;
+      }
+      return hari === 'sabtu' ? '08.30 - 09.30' : '08.00 - 09.10';
+    }
+    if (urutan === 9) {
+      if (ts?.jam_mulai && ts?.jam_selesai && ts.jam_selesai.slice(0, 5) !== '12:45') {
+        return `${ts.jam_mulai.slice(0, 5)} - ${ts.jam_selesai.slice(0, 5)}`;
+      }
+      return '12.10 - 13.20';
+    }
+  }
   if (ts?.jam_mulai && ts?.jam_selesai) {
     return `${ts.jam_mulai.slice(0, 5)} - ${ts.jam_selesai.slice(0, 5)}`;
   }
@@ -967,7 +1173,7 @@ const CellContent = defineComponent({
       if (!title) {
         return h(
           'div',
-          { class: 'text-gray-300 hover:text-purple-600 font-bold text-[11px] py-1 flex items-center justify-center gap-1 transition' },
+          { class: 'text-gray-300 hover:text-purple-600 font-bold text-[10px] py-1 flex items-center justify-center gap-1 transition' },
           [
             h('span', { class: 'text-xs leading-none font-bold' }, '+'),
             h('span', { class: 'text-[9px] font-medium leading-none' }, 'Atur')
@@ -979,14 +1185,14 @@ const CellContent = defineComponent({
       const catatan = s?.catatan || '';
 
       const children: any[] = [
-        h('div', { class: 'font-extrabold leading-tight text-[11px] sm:text-xs text-gray-900 tracking-tight' }, title)
+        h('div', { class: 'font-extrabold leading-tight text-[10.5px] sm:text-xs text-gray-900 tracking-tight' }, title)
       ];
 
       if (teacher) {
         children.push(
           h(
             'div',
-            { class: 'text-[9px] font-bold text-purple-950 bg-black/5 hover:bg-black/10 px-1 py-0.5 rounded mt-0.5 truncate leading-tight transition inline-block max-w-full' },
+            { class: 'text-[8.5px] font-bold text-purple-950 bg-black/5 hover:bg-black/10 px-1 py-0.5 rounded mt-0.5 truncate leading-tight transition inline-block max-w-full' },
             teacher
           )
         );
@@ -994,7 +1200,7 @@ const CellContent = defineComponent({
 
       if (catatan) {
         children.push(
-          h('div', { class: 'text-[8.5px] italic text-gray-700/90 truncate leading-tight mt-0.5' }, catatan)
+          h('div', { class: 'text-[8px] italic text-gray-700/90 truncate leading-tight mt-0.5' }, catatan)
         );
       }
 
@@ -1025,8 +1231,22 @@ const openQuickSet = (hari: string, urutan: number) => {
   const ts = timeSlots.value.find(t => t.hari === hari && t.urutan === urutan);
   const existing = cellSchedule(hari, urutan);
 
-  const jamMulai = existing?.time_slot?.jam_mulai?.slice(0, 5) || ts?.jam_mulai?.slice(0, 5) || '08:00';
-  const jamSelesai = existing?.time_slot?.jam_selesai?.slice(0, 5) || ts?.jam_selesai?.slice(0, 5) || '08:35';
+  let jamMulai = existing?.time_slot?.jam_mulai?.slice(0, 5) || ts?.jam_mulai?.slice(0, 5) || '08:00';
+  let jamSelesai = existing?.time_slot?.jam_selesai?.slice(0, 5) || ts?.jam_selesai?.slice(0, 5) || '08:35';
+
+  if (modeSlot2x35.value) {
+    if (urutan === 4) {
+      jamMulai = jamMulai || '08:00';
+      if (jamSelesai === '08:35' || !existing?.time_slot?.jam_selesai) {
+        jamSelesai = hari === 'sabtu' ? '09:30' : '09:10';
+      }
+    } else if (urutan === 9) {
+      jamMulai = jamMulai || '12:10';
+      if (jamSelesai === '12:45' || !existing?.time_slot?.jam_selesai) {
+        jamSelesai = '13:20';
+      }
+    }
+  }
 
   quickSetForm.value = {
     hari,
@@ -1148,6 +1368,24 @@ const saveQuickSet = async () => {
 
     const res = await api.post('/schedules/quick-set', payload);
     if (res.data.success) {
+      // If 2x35 mode is active, synchronize paired slot (slot 4 -> 5, slot 9 -> 10)
+      const pairUrutan = quickSetForm.value.slot_urutan === 4 ? 5 : (quickSetForm.value.slot_urutan === 9 ? 10 : null);
+      if (modeSlot2x35.value && pairUrutan) {
+        const pairSlot = timeSlots.value.find(t => t.hari === quickSetForm.value.hari && t.urutan === pairUrutan);
+        if (pairSlot) {
+          try {
+            await api.post('/schedules/quick-set', {
+              ...payload,
+              time_slot_id: pairSlot.id,
+              jam_mulai: null,
+              jam_selesai: null,
+            });
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+
       showSuccess('Berhasil!', 'Slot jadwal berhasil diperbarui.');
       isQuickSetModalOpen.value = false;
       await fetchClassSchedules();
@@ -1184,6 +1422,22 @@ const clearCurrentSlot = async () => {
 
     const res = await api.post('/schedules/quick-set', payload);
     if (res.data.success) {
+      // Also clear paired slot if 2x35 mode
+      const pairUrutan = quickSetForm.value.slot_urutan === 4 ? 5 : (quickSetForm.value.slot_urutan === 9 ? 10 : null);
+      if (modeSlot2x35.value && pairUrutan) {
+        const pairSlot = timeSlots.value.find(t => t.hari === quickSetForm.value.hari && t.urutan === pairUrutan);
+        if (pairSlot) {
+          try {
+            await api.post('/schedules/quick-set', {
+              ...payload,
+              time_slot_id: pairSlot.id,
+            });
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+
       showSuccess('Dikosongkan!', 'Slot jadwal berhasil dikosongkan.');
       isQuickSetModalOpen.value = false;
       await fetchClassSchedules();

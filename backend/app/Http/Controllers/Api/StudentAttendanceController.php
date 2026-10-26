@@ -94,6 +94,8 @@ class StudentAttendanceController extends Controller
             ];
         });
 
+        $holiday = \App\Models\SchoolCalendar::checkHoliday($tanggal);
+
         return response()->json([
             'success' => true,
             'message' => 'Lembar presensi harian siswa berhasil disiapkan.',
@@ -106,6 +108,12 @@ class StudentAttendanceController extends Controller
                 'recorded_at' => $firstRecord?->created_at?->toIso8601String(),
                 'updated_at' => $lastRecord?->updated_at?->toIso8601String(),
                 'recorded_by' => $lastRecord?->recorder?->nama ?? $firstRecord?->recorder?->nama,
+                'holiday' => [
+                    'is_holiday' => $holiday['is_holiday'],
+                    'is_sunday' => $holiday['is_sunday'],
+                    'name' => $holiday['name'],
+                    'type' => $holiday['type'],
+                ],
                 'summary' => $summary,
                 'students' => $items,
             ],
@@ -239,8 +247,8 @@ class StudentAttendanceController extends Controller
         $classId = (int) $validated['class_id'];
         $scheduleId = $validated['schedule_id'] ?? null;
 
-        // Validasi: Apakah tanggal berada dalam rentang semester yang aktif dan tidak terkunci?
-        PeriodLockService::validateDate($tanggal);
+        // Validasi: Apakah tanggal berada dalam rentang semester yang aktif, tidak terkunci, dan bukan hari libur/Minggu?
+        PeriodLockService::validateDate($tanggal, checkHoliday: true, context: 'Presensi siswa');
 
         $schoolClass = SchoolClass::findOrFail($classId);
 

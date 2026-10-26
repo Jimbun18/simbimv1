@@ -1,0 +1,74 @@
+@startuml erd_kesiswaan
+!theme plain
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 6
+hide circle
+
+title 🎓 ERD Modul Kesiswaan & Orang Tua / Wali
+
+entity "students" as students {
+  * id : BIGINT <<PK>>
+  --
+  # class_id : BIGINT <<FK>>
+  * nis : VARCHAR(20)
+  * nisn : VARCHAR(20)
+  * nama_lengkap : VARCHAR(150)
+  * jenis_kelamin : ENUM('L','P')
+  * tgl_lahir : DATE
+  * status : VARCHAR(20)
+}
+
+entity "guardians" as guardians {
+  * id : BIGINT <<PK>>
+  --
+  # user_id : BIGINT <<FK>>
+  * nama_lengkap : VARCHAR(150)
+  * no_hp : VARCHAR(20)
+  nik : VARCHAR(20)
+  alamat : TEXT
+}
+
+entity "student_guardian" as student_guardian {
+  * id : BIGINT <<PK>>
+  --
+  # student_id : BIGINT <<FK>>
+  # guardian_id : BIGINT <<FK>>
+  * hubungan : VARCHAR(20)
+  * is_kontak_utama : TINYINT(1)
+}
+
+entity "classes" as classes {
+  * id : BIGINT <<PK>>
+  --
+  * nama : VARCHAR(50)
+  * tingkat : TINYINT
+}
+
+entity "student_enrollments" as student_enrollments {
+  * id : BIGINT <<PK>>
+  --
+  # student_id : BIGINT <<FK>>
+  # class_id : BIGINT <<FK>>
+  # academic_year_id : BIGINT <<FK>>
+  * tgl_masuk_kelas : DATE
+  * status_kelas : VARCHAR(20)
+}
+
+entity "student_status_history" as student_status_history {
+  * id : BIGINT <<PK>>
+  --
+  # student_id : BIGINT <<FK>>
+  * jenis : VARCHAR(30)
+  * tanggal : DATE
+  text alasan : TEXT
+}
+
+classes ||--o{ students : "ditempatkan di"
+students ||--o{ student_guardian : "memiliki wali"
+guardians ||--o{ student_guardian : "menjadi wali dari"
+students ||--o{ student_enrollments : "riwayat kelas"
+classes ||--o{ student_enrollments : "anggota rombel"
+students ||--o{ student_status_history : "riwayat mutasi"
+
+@enduml

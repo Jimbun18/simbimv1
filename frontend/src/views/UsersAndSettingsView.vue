@@ -357,22 +357,34 @@ onMounted(() => {
                   <td class="p-3 text-right whitespace-nowrap space-x-1.5">
                     <button 
                       @click="openEditUserForm(u)"
-                      class="bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-lg font-medium border border-amber-200 cursor-pointer"
+                      class="inline-flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-lg font-semibold border border-amber-200 cursor-pointer transition"
+                      title="Edit Akun Pengguna"
                     >
-                      Edit
+                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      <span>Edit</span>
                     </button>
                     <button 
                       @click="resetPassword(u)"
-                      class="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs px-2.5 py-1 rounded-lg font-medium border border-blue-200 cursor-pointer"
+                      class="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs px-2.5 py-1 rounded-lg font-semibold border border-indigo-200 cursor-pointer transition"
+                      title="Reset Kata Sandi"
                     >
-                      Reset Password
+                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                      </svg>
+                      <span>Reset Sandi</span>
                     </button>
                     <button 
                       v-if="u.id !== auth.user?.id"
                       @click="deleteUser(u)"
-                      class="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs px-2.5 py-1 rounded-lg font-medium border border-rose-200 cursor-pointer"
+                      class="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs px-2.5 py-1 rounded-lg font-semibold border border-rose-200 cursor-pointer transition"
+                      title="Nonaktifkan Akun"
                     >
-                      Nonaktifkan
+                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                      </svg>
+                      <span>Nonaktifkan</span>
                     </button>
                   </td>
                 </tr>

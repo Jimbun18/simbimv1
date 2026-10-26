@@ -8,6 +8,8 @@ defineProps<{
   submitting: boolean
   gpsLoading: boolean
   photoPreview: string | null
+  isHoliday?: boolean
+  holidayReason?: string
 }>()
 
 const emit = defineEmits<{
@@ -140,9 +142,23 @@ const onPhotoSelected = (e: Event) => {
 
     <!-- Tombol Utama Presensi -->
     <div class="space-y-3 pt-1">
+      <!-- 0. Banner Jika Hari Libur -->
+      <div
+        v-if="isHoliday"
+        class="w-full py-4 px-5 bg-amber-50 border border-amber-200/90 rounded-xl text-center space-y-1.5"
+      >
+        <div class="inline-flex items-center gap-1.5 text-amber-800 font-bold text-xs">
+          <span>🏖️</span>
+          <span>Presensi Tidak Aktif (Hari Libur)</span>
+        </div>
+        <p class="text-[11px] text-amber-700">
+          {{ holidayReason || 'Hari ini adalah hari libur sekolah. Presensi tidak dibuka.' }}
+        </p>
+      </div>
+
       <!-- 1. Tombol Absen Masuk -->
       <button
-        v-if="!todayAttendance?.jam_masuk"
+        v-else-if="!todayAttendance?.jam_masuk"
         @click="emit('check-in')"
         :disabled="submitting || gpsLoading"
         class="w-full py-3.5 px-6 bg-[#059669] hover:bg-[#047857] active:scale-[0.99] text-white font-bold rounded-xl shadow-xs text-sm transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"

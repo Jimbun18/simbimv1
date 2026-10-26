@@ -1,0 +1,162 @@
+@startuml menu_module_flow
+!theme plain
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam ranksep 35
+skinparam nodesep 25
+skinparam defaultFontName "Consolas", "Courier New", monospace
+
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #334155
+  FontSize 11
+}
+
+skinparam package {
+  FontColor #0F172A
+  FontStyle bold
+  FontSize 12
+  BorderColor #64748B
+}
+
+title 🗄️ Relasi Modul & Entitas Database (SIM-BIM Database Schema)
+
+' ==========================================================
+' 1. USERS & ROLES
+' ==========================================================
+package "auth_module" #EEF2FF {
+  rectangle "roles\n---\n• id (PK)\n• nama\n• guard_name" as roles #E0E7FF
+  rectangle "users\n---\n• id (PK)\n• role_id (FK)\n• username\n• email\n• status" as users #E0E7FF
+
+  roles -right-> users : "role_id"
+}
+
+' ==========================================================
+' 2. STUDENTS & GUARDIANS
+' ==========================================================
+package "student_module" #F0FDFA {
+  rectangle "students\n---\n• id (PK)\n• nis, nisn\n• nama_lengkap\n• class_id (FK)\n• status (aktif/lulus/mutasi)" as students #CCFBF1
+
+  rectangle "guardians\n---\n• id (PK)\n• user_id (FK)\n• nama_lengkap\n• no_hp" as guardians #CCFBF1
+
+  rectangle "student_guardian\n---\n• id (PK)\n• student_id (FK)\n• guardian_id (FK)\n• hubungan" as student_guardian #CCFBF1
+
+  rectangle "student_enrollments\n---\n• id (PK)\n• student_id (FK)\n• class_id (FK)\n• academic_year_id (FK)\n• status_kelas" as student_enrollments #CCFBF1
+
+  students -right-> student_guardian : "student_id"
+  guardians -left-> student_guardian : "guardian_id"
+  students -down-> student_enrollments : "student_id"
+}
+
+' ==========================================================
+' 3. TEACHERS & STAFF
+' ==========================================================
+package "teacher_module" #FFF7ED {
+  rectangle "teachers\n---\n• id (PK)\n• user_id (FK)\n• nip, nama_lengkap\n• status_kepegawaian" as teachers #FFEDD5
+
+  rectangle "teacher_attendance\n---\n• id (PK)\n• teacher_id (FK)\n• tanggal, jam_masuk\n• status, lat, lng" as teacher_attendance #FFEDD5
+
+  teachers -down-> teacher_attendance : "teacher_id"
+}
+
+' ==========================================================
+' 4. ACADEMIC & CLASSES
+' ==========================================================
+package "academic_module" #ECFDF5 {
+  rectangle "academic_years\n---\n• id (PK)\n• nama (2026/2027)\n• status (aktif/selesai)" as academic_years #D1FAE5
+
+  rectangle "semesters\n---\n• id (PK)\n• academic_year_id (FK)\n• semester (gasal/genap)" as semesters #D1FAE5
+
+  rectangle "rooms\n---\n• id (PK)\n• nama_ruang" as rooms #D1FAE5
+
+  rectangle "classes\n---\n• id (PK)\n• academic_year_id (FK)\n• wali_kelas_id (FK)\n• room_id (FK)\n• nama, tingkat" as classes #A7F3D0
+
+  rectangle "subjects\n---\n• id (PK)\n• kode, nama\n• kelompok" as subjects #D1FAE5
+
+  rectangle "schedules\n---\n• id (PK)\n• class_id (FK)\n• subject_id (FK)\n• teacher_id (FK)\n• room_id (FK)\n• academic_year_id (FK)\n• semester_id (FK)\n• time_slot_id (FK)\n• hari" as schedules #A7F3D0
+
+  academic_years -down-> semesters : "academic_year_id"
+  academic_years -down-> classes : "academic_year_id"
+  classes -down-> schedules : "class_id"
+  subjects -down-> schedules : "subject_id"
+  rooms -down-> classes : "room_id"
+}
+
+' ==========================================================
+' 5. ATTENDANCE & KBM ACTIVITIES
+' ==========================================================
+package "kbm_module" #FAF5FF {
+  rectangle "student_attendance\n---\n• id (PK)\n• student_id (FK)\n• class_id (FK)\n• schedule_id (FK)\n• tanggal\n• status (hadir/sakit/izin/alpa)" as student_attendance #F3E8FF
+
+  rectangle "daily_activities\n---\n• id (PK)\n• class_id (FK)\n• teacher_id (FK)\n• tanggal\n• judul_aktivitas" as daily_activities #F3E8FF
+
+  rectangle "learning_progress\n---\n• id (PK)\n• student_id (FK)\n• subject_id (FK)\n• teacher_id (FK)\n• capaian (tahfidz/materi)" as learning_progress #F3E8FF
+}
+
+' ==========================================================
+' 6. REPORT CARDS
+' ==========================================================
+package "report_card_module" #F0F9FF {
+  rectangle "report_cards\n---\n• id (PK)\n• student_id (FK)\n• class_id (FK)\n• academic_year_id (FK)\n• semester_id (FK)\n• jenis_rapor\n• periode\n• status (draft/menunggu/final)\n• sakit, izin, alpa" as report_cards #BAE6FD
+
+  rectangle "report_card_grades\n---\n• id (PK)\n• report_card_id (FK)\n• subject_id (FK)\n• nilai_akhir, predikat\n• capaian_kompetensi" as report_card_grades #E0F2FE
+
+  rectangle "report_card_extracurriculars\n---\n• id (PK)\n• report_card_id (FK)\n• kegiatan, predikat" as report_card_extracurriculars #E0F2FE
+
+  rectangle "report_card_revisions\n---\n• id (PK)\n• report_card_id (FK)\n• revised_by (FK)\n• catatan_revisi" as report_card_revisions #E0F2FE
+
+  report_cards -down-> report_card_grades : "report_card_id"
+  report_cards -down-> report_card_extracurriculars : "report_card_id"
+  report_cards -down-> report_card_revisions : "report_card_id"
+}
+
+' ==========================================================
+' 7. FINANCE & BILLING
+' ==========================================================
+package "finance_module" #FEFCE8 {
+  rectangle "fee_types\n---\n• id (PK)\n• kode, nama\n• nominal_standar\n• tipe (bulanan/sekali)" as fee_types #FEF08A
+
+  rectangle "invoices\n---\n• id (PK)\n• student_id (FK)\n• fee_type_id (FK)\n• academic_year_id (FK)\n• nomor_invoice (UK)\n• jumlah_tagihan, sisa_tagihan\n• status (belum_lunas/lunas)" as invoices #FEF08A
+
+  rectangle "payments\n---\n• id (PK)\n• invoice_id (FK)\n• nomor_kuitansi (UK)\n• tanggal_bayar\n• jumlah_bayar" as payments #FEF08A
+
+  rectangle "finance_transactions\n---\n• id (PK)\n• payment_id (FK)\n• tanggal\n• tipe (masuk/keluar)\n• kategori, nominal" as finance_transactions #FEF08A
+
+  fee_types -down-> invoices : "fee_type_id"
+  invoices -down-> payments : "invoice_id"
+  payments -down-> finance_transactions : "payment_id"
+}
+
+' ==========================================================
+' RELASI ANTAR MODUL (CROSS-MODULE FOREIGN KEYS)
+' ==========================================================
+
+' Users -> Teachers & Guardians
+users -down-> teachers : "teachers.user_id"
+users -down-> guardians : "guardians.user_id"
+
+' Teachers -> Classes & Schedules
+teachers -down-> classes : "classes.wali_kelas_id"
+teachers -down-> schedules : "schedules.teacher_id"
+
+' Classes -> Students & Enrollments
+classes -down-> students : "students.class_id"
+classes -down-> student_enrollments : "student_enrollments.class_id"
+
+' Schedules -> Attendance & Activities
+schedules -down-> student_attendance : "student_attendance.schedule_id"
+students -down-> student_attendance : "student_attendance.student_id"
+classes -down-> daily_activities : "daily_activities.class_id"
+students -down-> learning_progress : "learning_progress.student_id"
+
+' Students & Classes -> Report Cards
+students -down-> report_cards : "report_cards.student_id"
+classes -down-> report_cards : "report_cards.class_id"
+subjects -down-> report_card_grades : "report_card_grades.subject_id"
+
+' Students -> Invoices
+students -down-> invoices : "invoices.student_id"
+academic_years -down-> invoices : "invoices.academic_year_id"
+
+@enduml

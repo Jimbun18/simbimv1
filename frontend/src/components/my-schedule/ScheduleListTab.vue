@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
+import { showConfirm } from '../../services/swal'
 import {
   type ScheduleItem,
   type MergedScheduleItem,
@@ -8,6 +9,8 @@ import {
   getIndonesianDayName,
   isTodaySchedule,
   getCardTheme,
+  getScheduleStatusInfo,
+  getScheduleTimeStatus,
   mergeConsecutiveSchedules
 } from './types'
 
@@ -15,6 +18,7 @@ const props = defineProps<{
   schedules: ScheduleItem[]
   teachersList: Teacher[]
   todayHomeroomStatus: any
+  todayHoliday?: any
   activeDate: string
   loading: boolean
 }>()
@@ -37,8 +41,12 @@ const currentTodayName = computed(() => {
   return getIndonesianDayName(props.activeDate)
 })
 
+const allMergedSchedules = computed<MergedScheduleItem[]>(() => {
+  return mergeConsecutiveSchedules(props.schedules)
+})
+
 const filteredSchedules = computed<MergedScheduleItem[]>(() => {
-  let list = mergeConsecutiveSchedules(props.schedules)
+  let list = allMergedSchedules.value
 
   // Day filter
   if (selectedHari.value) {
@@ -86,7 +94,7 @@ const filteredSchedules = computed<MergedScheduleItem[]>(() => {
 })
 
 const todayMergedSchedules = computed(() => {
-  return mergeConsecutiveSchedules(props.schedules).filter(
+  return allMergedSchedules.value.filter(
     (s) => s.hari.toLowerCase() === currentTodayName.value
   )
 })
@@ -94,22 +102,129 @@ const todayMergedSchedules = computed(() => {
 const todaySchedulesCount = computed(() => todayMergedSchedules.value.length)
 const completedTodayCount = computed(() => todayMergedSchedules.value.filter(s => s.today_evidence_count > 0).length)
 
-const handleCardClick = (sch: MergedScheduleItem) => {
-  if (!isTodaySchedule(sch, props.activeDate) && !(sch as any).today_evidence_count && !auth.isAdmin) {
+// Reactive live clock
+const currentTime = ref(new Date())
+let clockTimer: any = null
+
+onMounted(() => {
+  clockTimer = setInterval(() => {
+    currentTime.value = new Date()
+  }, 10000)
+})
+
+onUnmounted(() => {
+  if (clockTimer) clearInterval(clockTimer)
+})
+
+const handleCardClick = async (sch: MergedScheduleItem, forceAdmin: boolean = false) => {
+  // 1. Guru sudah pernah mengunggah bukti: selalu izinkan untuk melihat bukti
+  if ((sch as any).today_evidence_count > 0) {
+    emit('open-kbm', sch)
+    return
+  }
+
+  // 2. Jika hari ini adalah hari libur (Minggu atau Libur Kalender)
+  if (props.todayHoliday?.is_holiday) {
+    if (auth.isAdmin && forceAdmin) {
+      emit('open-kbm', sch)
+      return
+    }
+    if (auth.isAdmin) {
+      const confirmed = await showConfirm(
+        'Akses Khusus Administrator',
+        `Hari ini tercatat sebagai hari libur (${props.todayHoliday.reason || 'Libur Sekolah'}).\n\nSebagai Administrator, apakah Anda ingin tetap membuka form bukti KBM ini secara khusus?`,
+        'Ya, Buka Form',
+        'question'
+      )
+      if (confirmed) {
+        emit('open-kbm', sch)
+      }
+      return
+    }
     emit(
       'notify',
-      'Jadwal Belum Dibuka',
-      `Jadwal pelajaran ini berlangsung pada hari ${sch.hari.toUpperCase()}. Pengunggahan bukti foto dan jurnal KBM hanya dapat dilakukan saat hari pelaksanaan KBM tersebut.`,
+      'Hari Libur Sekolah',
+      `Hari ini libur (${props.todayHoliday.reason || 'Hari Libur'}). Kegiatan KBM dan pengunggahan bukti dinonaktifkan.`,
       'warning'
     )
     return
   }
-  emit('open-kbm', sch)
+
+  const info = getScheduleStatusInfo(sch, props.activeDate, currentTime.value)
+
+  // 3. Jika jadwal sedang berlangsung: izinkan upload
+  if (info.canUpload) {
+    emit('open-kbm', sch)
+    return
+  }
+
+  // 4. Jika admin mengklik override tombol admin
+  if (auth.isAdmin && forceAdmin) {
+    emit('open-kbm', sch)
+    return
+  }
+
+  // 5. Jika admin mengklik kartu yang terkunci, tanyakan konfirmasi override
+  if (auth.isAdmin) {
+    const confirmed = await showConfirm(
+      'Akses Khusus Administrator',
+      `Jadwal KBM ini saat ini di luar jam pelajaran aktif (${sch.jam_mulai_efektif} - ${sch.jam_selesai_efektif} WIB).\n\nSebagai Administrator, apakah Anda ingin membuka form bukti KBM ini secara khusus?`,
+      'Ya, Buka Form',
+      'question'
+    )
+    if (confirmed) {
+      emit('open-kbm', sch)
+    }
+    return
+  }
+
+  // 6. Bukan admin dan di luar jam pelajaran: BLOKIR DENGAN NOTIFIKASI
+  emit(
+    'notify',
+    info.status === 'belum_mulai' ? 'Jam Pelajaran Belum Dimulai' : 'Jam Pelajaran Telah Berakhir',
+    info.disabledReason || 'Pengunggahan bukti KBM hanya dapat diakses saat jam pelajaran sedang berlangsung sesuai jadwal.',
+    'warning'
+  )
 }
 </script>
 
 <template>
   <div class="space-y-6">
+    <!-- Banner Hari Libur Sekolah / Akhir Pekan -->
+    <div
+      v-if="todayHoliday?.is_holiday"
+      class="bg-amber-500/10 border-2 border-amber-500/40 rounded-3xl p-5 sm:p-6 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs"
+    >
+      <div class="flex items-start sm:items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-900 flex items-center justify-center text-2xl shrink-0">
+          🏖️
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-900 border border-amber-300">
+              {{ todayHoliday?.holiday_info?.is_sunday ? 'Hari Minggu' : 'Kalender Libur' }}
+            </span>
+            <span class="text-xs text-amber-800 font-bold">
+              KBM & Presensi Tidak Aktif
+            </span>
+          </div>
+          <h3 class="text-base font-bold text-amber-950 mt-1">
+            {{ todayHoliday?.reason || 'Hari ini adalah hari libur sekolah.' }}
+          </h3>
+          <p class="text-xs text-amber-800/90 mt-0.5">
+            Sesuai kalender akademik, kegiatan KBM diliburkan sehingga pengunggahan jurnal dan bukti KBM dinonaktifkan.
+          </p>
+        </div>
+      </div>
+      <router-link
+        to="/classes-schedules?tab=calendar"
+        class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition shrink-0 shadow-xs"
+      >
+        <span>Lihat Kalender Akademik</span>
+        <span>&rarr;</span>
+      </router-link>
+    </div>
+
     <!-- Wali Kelas Special Banner & Shortcut to Daily Homeroom Attendance -->
     <div
       v-if="auth.isWaliKelas"
@@ -219,12 +334,12 @@ const handleCardClick = (sch: MergedScheduleItem) => {
           :class="selectedHari === '' ? 'bg-slate-900 text-white font-bold shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
           class="px-3.5 py-2 rounded-xl transition whitespace-nowrap cursor-pointer"
         >
-          Semua Hari ({{ schedules.length }})
+          Semua Hari ({{ allMergedSchedules.length }})
         </button>
         <button
           type="button"
           @click="selectedHari = currentTodayName"
-          :class="selectedHari === currentTodayName ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 font-semibold'"
+          :class="selectedHari === currentTodayName ? 'bg-emerald-500 text-white font-bold shadow-md shadow-emerald-500/20' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 font-semibold'"
           class="px-3.5 py-2 rounded-xl transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer"
         >
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -285,20 +400,24 @@ const handleCardClick = (sch: MergedScheduleItem) => {
       </div>
     </div>
 
-    <!-- Indikator Makna Warna Hijau & Merah -->
+    <!-- Indikator Makna Warna & Status Waktu KBM -->
     <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-      <div class="flex flex-wrap items-center gap-2 sm:gap-4">
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
         <span class="font-bold text-slate-800 flex items-center gap-1.5">
           <span>🎨</span>
-          <span>Arti Warna Kartu:</span>
+          <span>Status KBM:</span>
         </span>
-        <div class="flex items-center gap-1.5 bg-emerald-50 text-emerald-900 border border-emerald-200 px-3 py-1 rounded-xl font-bold">
-          <span class="w-3 h-3 rounded-full bg-[#137333] shadow-xs inline-block"></span>
-          <span>HIJAU = Jadwal Hari Ini ({{ currentTodayName.toUpperCase() }})</span>
+        <div class="flex items-center gap-1.5 bg-emerald-50 text-emerald-900 border border-emerald-200 px-2.5 py-1 rounded-xl font-bold">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs inline-block animate-pulse"></span>
+          <span>SEDANG BERLANGSUNG = Upload Aktif Sesuai Jam</span>
         </div>
-        <div class="flex items-center gap-1.5 bg-red-50 text-red-900 border border-red-200 px-3 py-1 rounded-xl font-bold">
-          <span class="w-3 h-3 rounded-full bg-[#b3261e] shadow-xs inline-block"></span>
-          <span>MERAH = Jadwal Bukan Hari Ini</span>
+        <div class="flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-xl font-bold">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-xs inline-block"></span>
+          <span>BELUM MULAI / SELESAI = Tombol Terkunci 🔒</span>
+        </div>
+        <div class="flex items-center gap-1.5 bg-red-50 text-red-900 border border-red-200 px-2.5 py-1 rounded-xl font-bold">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#b3261e] shadow-xs inline-block"></span>
+          <span>BUKAN HARI INI</span>
         </div>
       </div>
 
@@ -312,11 +431,11 @@ const handleCardClick = (sch: MergedScheduleItem) => {
           {{ sortByTodayFirst ? 'Urutan: Hari Ini Teratas' : 'Urutan: Sesuai Urutan Hari' }}
         </button>
         <span class="hidden sm:inline text-slate-300">•</span>
-        <span class="flex items-center gap-1 text-slate-400">
+        <span class="flex items-center gap-1 text-slate-500 font-mono font-bold">
           <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Otomatis berganti status jam 00:00 WIB
+          Jam: {{ String(currentTime.getHours()).padStart(2, '0') }}:{{ String(currentTime.getMinutes()).padStart(2, '0') }} WIB
         </span>
       </div>
     </div>
@@ -365,9 +484,9 @@ const handleCardClick = (sch: MergedScheduleItem) => {
           <!-- CARD HEADER (Color banner) -->
           <div
             class="px-4 py-3.5 text-white relative flex flex-col justify-between min-h-[96px] transition-colors"
-            :class="getCardTheme(sch, props.activeDate).bg"
+            :class="getCardTheme(sch, props.activeDate, currentTime).bg"
           >
-            <!-- Top Row: Hari, Waktu Efektif & Status Hari Ini -->
+            <!-- Top Row: Hari, Waktu Efektif & Status Waktu Real-Time -->
             <div class="flex items-center justify-between gap-2 mb-1.5">
               <div class="flex items-center gap-1.5 text-xs font-bold tracking-wide">
                 <svg class="w-3.5 h-3.5 opacity-90 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -376,19 +495,12 @@ const handleCardClick = (sch: MergedScheduleItem) => {
                 <span>{{ sch.hari.toUpperCase() }} • {{ sch.jam_mulai_efektif }} - {{ sch.jam_selesai_efektif }}</span>
               </div>
 
-              <!-- Status Badge -->
+              <!-- Status Badge Waktu KBM Real-Time -->
               <div
-                v-if="isTodaySchedule(sch, props.activeDate)"
-                class="px-2 py-0.5 bg-black/30 backdrop-blur-xs text-[10px] font-black uppercase tracking-wider rounded-full flex items-center gap-1 border border-white/20 text-white shrink-0 shadow-xs"
+                :class="getScheduleStatusInfo(sch, props.activeDate, currentTime).badgeClass"
+                class="px-2.5 py-0.5 text-[10px] uppercase tracking-wider rounded-full flex items-center gap-1 shrink-0"
               >
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-ping"></span>
-                <span>HARI INI</span>
-              </div>
-              <div
-                v-else
-                class="px-2 py-0.5 bg-black/30 backdrop-blur-xs text-[10px] font-bold uppercase tracking-wider rounded-full border border-white/20 text-red-100 shrink-0 shadow-xs"
-              >
-                <span>BUKAN HARI INI</span>
+                <span>{{ getScheduleStatusInfo(sch, props.activeDate, currentTime).badgeText }}</span>
               </div>
             </div>
 
@@ -465,10 +577,13 @@ const handleCardClick = (sch: MergedScheduleItem) => {
                 <span class="text-amber-600 text-sm shrink-0">⏱️</span>
                 <div class="min-w-0 flex-1 flex items-center justify-between gap-2">
                   <div>
-                    <p class="text-[9px] uppercase font-bold text-slate-400 leading-tight">Sesi Pembelajaran</p>
+                    <p class="text-[9px] uppercase font-bold text-slate-400 leading-tight">Sesi & Jam Pelajaran</p>
                     <p class="font-bold text-slate-800 text-xs">{{ sch.sesi_label }}</p>
+                    <p class="text-[10px] text-amber-700 font-bold mt-0.5">
+                      {{ sch.durasi_jp }} Jam Pelajaran ({{ sch.durasi_jp }} x 35 menit)
+                    </p>
                   </div>
-                  <span class="text-[11px] font-mono font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 shrink-0">
+                  <span class="text-[11px] font-mono font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200 shrink-0 shadow-2xs">
                     {{ sch.jam_mulai_efektif }} - {{ sch.jam_selesai_efektif }}
                   </span>
                 </div>
@@ -505,37 +620,47 @@ const handleCardClick = (sch: MergedScheduleItem) => {
         </div>
 
         <!-- CARD FOOTER ACTION BAR -->
-        <div class="p-4 pt-0 bg-white">
+        <div class="p-4 pt-0 bg-white space-y-1.5">
+          <!-- BISA AKSES: Sedang berlangsung ATAU sudah ada bukti yang terunggah (untuk lihat) -->
           <button
-            v-if="isTodaySchedule(sch, props.activeDate) || (sch as any).today_evidence_count > 0 || auth.isAdmin"
+            v-if="getScheduleStatusInfo(sch, props.activeDate, currentTime).canUpload || (getScheduleStatusInfo(sch, props.activeDate, currentTime).canView && (sch as any).today_evidence_count > 0)"
             @click="handleCardClick(sch)"
-            :class="
-              (sch as any).today_evidence_count > 0
-                ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-xs shadow-purple-600/20 active:scale-[0.98]'
-                : 'bg-[#137333] hover:bg-[#0d5926] text-white shadow-xs shadow-emerald-700/25 active:scale-[0.98]'
-            "
+            :class="getScheduleStatusInfo(sch, props.activeDate, currentTime).buttonClass"
             class="w-full py-2.5 px-3.5 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg v-if="getScheduleStatusInfo(sch, props.activeDate, currentTime).canUpload" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
             </svg>
-            <span>{{
-              (sch as any).today_evidence_count > 0
-                ? 'Lihat / Edit Bukti KBM & Jurnal'
-                : 'Unggah Bukti KBM & Jurnal (Hari Ini)'
-            }}</span>
+            <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            <span>{{ getScheduleStatusInfo(sch, props.activeDate, currentTime).buttonText }}</span>
           </button>
 
-          <!-- Jika BUKAN jadwal hari ini: DITUTUP / TIDAK BISA UNGGAH -->
+          <!-- TERKUNCI: DI LUAR JAM PELAJARAN (Belum mulai, sudah selesai, atau bukan hari ini) -->
           <div
             v-else
-            class="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 text-slate-400 font-semibold text-xs rounded-xl flex items-center justify-center gap-1.5 select-none cursor-not-allowed text-center"
-            :title="`Pengunggahan bukti KBM ditutup. Hanya dapat diunggah pada hari ${sch.hari.toUpperCase()}.`"
+            @click="handleCardClick(sch)"
+            :class="getScheduleStatusInfo(sch, props.activeDate, currentTime).buttonClass"
+            class="w-full py-2.5 px-3 text-xs rounded-xl flex items-center justify-center gap-1.5 select-none text-center cursor-pointer transition hover:opacity-90"
+            :title="getScheduleStatusInfo(sch, props.activeDate, currentTime).disabledReason"
           >
-            <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
-            <span class="truncate">Hanya Dibuka Hari {{ sch.hari.toUpperCase() }}</span>
+            <span class="truncate">{{ getScheduleStatusInfo(sch, props.activeDate, currentTime).buttonText }}</span>
+          </div>
+
+          <!-- Opsi Khusus Admin saat terkunci -->
+          <div v-if="auth.isAdmin && !getScheduleStatusInfo(sch, props.activeDate, currentTime).canUpload && !(sch as any).today_evidence_count" class="text-center pt-0.5">
+            <button
+              type="button"
+              @click.stop="handleCardClick(sch, true)"
+              class="text-[10.5px] text-purple-700 hover:text-purple-900 font-semibold underline cursor-pointer"
+            >
+              Mode Admin: Buka Form KBM Khusus
+            </button>
           </div>
         </div>
       </div>

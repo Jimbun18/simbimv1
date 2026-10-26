@@ -213,6 +213,34 @@ export const showSuccess = (title: string, text?: string) => {
   });
 };
 
+export const showWarning = (title: string, text?: string) => {
+  return Swal.fire({
+    title,
+    text,
+    icon: 'warning',
+    confirmButtonColor: '#d97706', // Amber-600
+    confirmButtonText: 'Mengerti',
+    customClass: {
+      popup: 'rounded-3xl shadow-2xl font-sans',
+      confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md hover:shadow-lg transition-all',
+    },
+  });
+};
+
+export const showInfo = (title: string, text?: string) => {
+  return Swal.fire({
+    title,
+    text,
+    icon: 'info',
+    confirmButtonColor: '#0284c7', // Sky-600
+    confirmButtonText: 'Mengerti',
+    customClass: {
+      popup: 'rounded-3xl shadow-2xl font-sans',
+      confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md hover:shadow-lg transition-all',
+    },
+  });
+};
+
 /**
  * Menampilkan pesan kesalahan informatif dan ramah bagi pengguna awam
  */
@@ -328,6 +356,8 @@ export const confirmDeleteWithKeyword = async (
 
 export default {
   showSuccess,
+  showWarning,
+  showInfo,
   showError,
   showConfirm,
   confirmDeleteWithKeyword,
