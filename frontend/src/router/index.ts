@@ -9,6 +9,42 @@ const routes = [
     meta: { layout: 'landing' },
   },
   {
+    path: '/profil',
+    name: 'landing-profile',
+    component: () => import('../views/landing/LandingProfileView.vue'),
+    meta: { layout: 'landing' },
+  },
+  {
+    path: '/pendidikan',
+    name: 'landing-education',
+    component: () => import('../views/landing/LandingEducationView.vue'),
+    meta: { layout: 'landing' },
+  },
+  {
+    path: '/artikel',
+    name: 'landing-articles',
+    component: () => import('../views/landing/LandingArticlesView.vue'),
+    meta: { layout: 'landing' },
+  },
+  {
+    path: '/galeri',
+    name: 'landing-gallery',
+    component: () => import('../views/landing/LandingGalleryView.vue'),
+    meta: { layout: 'landing' },
+  },
+  {
+    path: '/prestasi',
+    name: 'landing-achievements',
+    component: () => import('../views/landing/LandingAchievementsView.vue'),
+    meta: { layout: 'landing' },
+  },
+  {
+    path: '/spmb',
+    name: 'landing-spmb',
+    component: () => import('../views/landing/LandingSpmbView.vue'),
+    meta: { layout: 'landing' },
+  },
+  {
     path: '/home',
     redirect: '/',
   },

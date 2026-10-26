@@ -1,12 +1,24 @@
 <script setup lang="ts">
-defineProps<{
-  userPortalLabel: string
+import { useAuthStore } from '../../stores/auth'
+
+const props = defineProps<{
+  userPortalLabel?: string
 }>()
 
 const emit = defineEmits<{
-  (e: 'navigate', id: string): void
   (e: 'open-portal'): void
 }>()
+
+const auth = useAuthStore()
+
+const getPortalLabel = () => {
+  if (props.userPortalLabel) return props.userPortalLabel
+  if (!auth.isAuthenticated) return 'Masuk SIM-BIM'
+  if (auth.isAdmin) return 'Buka Dashboard Admin'
+  if (auth.isGuru) return 'Buka Presensi & KBM'
+  if (auth.isWali) return 'Buka Portal Wali Murid'
+  return 'Buka Dashboard'
+}
 </script>
 
 <template>
@@ -18,7 +30,7 @@ const emit = defineEmits<{
         
         <!-- Col 1: Identitas Sekolah -->
         <div class="lg:col-span-5 space-y-4">
-          <div class="flex items-center gap-3 cursor-pointer" @click="emit('navigate', 'hero')">
+          <router-link to="/" class="flex items-center gap-3">
             <img 
               src="/logo.png" 
               alt="Logo SDI Bina Insan Mandiri Purwokerto" 
@@ -28,7 +40,7 @@ const emit = defineEmits<{
               <span class="font-black text-xl text-white tracking-tight">SDI Bina Insan Mandiri</span>
               <p class="text-xs text-emerald-400 font-semibold">Yayasan Bina Insan Mandiri Purwokerto</p>
             </div>
-          </div>
+          </router-link>
 
           <p class="text-xs sm:text-sm text-emerald-100/80 leading-relaxed font-light">
             Sekolah Dasar Islam unggulan berbasis fitrah yang berfokus membentuk generasi pembelajar bertauhid kokoh, berakhlak mulia, hafidz Al-Qur'an, dan berjiwa mandiri pembina peradaban.
@@ -52,42 +64,42 @@ const emit = defineEmits<{
 
         <!-- Col 2: Navigasi Cepat Halaman -->
         <div class="lg:col-span-3 space-y-3">
-          <h4 class="font-bold text-sm text-emerald-300 uppercase tracking-wider">Navigasi Utama</h4>
+          <h4 class="font-bold text-sm text-emerald-300 uppercase tracking-wider">Halaman Resmi</h4>
           <ul class="space-y-2 text-xs text-emerald-100/80 font-medium">
             <li>
-              <button @click="emit('navigate', 'hero')" class="hover:text-amber-300 transition cursor-pointer">
-                • Beranda Utama
-              </button>
+              <router-link to="/" class="hover:text-amber-300 transition">
+                • Beranda
+              </router-link>
             </li>
             <li>
-              <button @click="emit('navigate', 'profil')" class="hover:text-amber-300 transition cursor-pointer">
+              <router-link to="/profil" class="hover:text-amber-300 transition">
                 • 1. Profil (Singkat, Visi-Misi, Guru, Janji)
-              </button>
+              </router-link>
             </li>
             <li>
-              <button @click="emit('navigate', 'pendidikan')" class="hover:text-amber-300 transition cursor-pointer">
+              <router-link to="/pendidikan" class="hover:text-amber-300 transition">
                 • 2. Pendidikan (Fitrah & Peradaban)
-              </button>
+              </router-link>
             </li>
             <li>
-              <button @click="emit('navigate', 'artikel')" class="hover:text-amber-300 transition cursor-pointer">
+              <router-link to="/artikel" class="hover:text-amber-300 transition">
                 • 3. Artikel & Warta Sekolah
-              </button>
+              </router-link>
             </li>
             <li>
-              <button @click="emit('navigate', 'galeri')" class="hover:text-amber-300 transition cursor-pointer">
+              <router-link to="/galeri" class="hover:text-amber-300 transition">
                 • 4. Galeri Kegiatan Santri
-              </button>
+              </router-link>
             </li>
             <li>
-              <button @click="emit('navigate', 'prestasi')" class="hover:text-amber-300 transition cursor-pointer">
+              <router-link to="/prestasi" class="hover:text-amber-300 transition">
                 • 5. Prestasi Santri & Sekolah
-              </button>
+              </router-link>
             </li>
             <li>
-              <button @click="emit('navigate', 'spmb')" class="hover:text-amber-300 transition cursor-pointer">
+              <router-link to="/spmb" class="hover:text-amber-300 transition">
                 • 6. Info SPMB 2026/2027
-              </button>
+              </router-link>
             </li>
           </ul>
         </div>
@@ -103,7 +115,7 @@ const emit = defineEmits<{
             @click="emit('open-portal')"
             class="w-full inline-flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-bold transition shadow-md cursor-pointer"
           >
-            <span>{{ userPortalLabel }}</span>
+            <span>{{ getPortalLabel() }}</span>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
             </svg>

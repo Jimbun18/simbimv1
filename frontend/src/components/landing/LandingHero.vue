@@ -42,15 +42,15 @@ const emit = defineEmits<{
 
           <!-- Action Buttons -->
           <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
-            <button 
-              @click="emit('navigate', 'spmb')"
-              class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-sm sm:text-base shadow-xl shadow-amber-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+            <router-link 
+              to="/spmb"
+              class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-sm sm:text-base shadow-xl shadow-amber-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0"
             >
               <span>Info Pendaftaran SPMB</span>
               <svg class="w-5 h-5 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
               </svg>
-            </button>
+            </router-link>
 
             <button 
               @click="emit('open-portal')"
@@ -146,13 +146,13 @@ const emit = defineEmits<{
 
               <!-- Quick Link Button inside card -->
               <div class="pt-1">
-                <button 
-                  @click="emit('navigate', 'profil')"
-                  class="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-emerald-200 text-xs font-bold transition flex items-center justify-between border border-white/10 cursor-pointer"
+                <router-link 
+                  to="/profil"
+                  class="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-emerald-200 text-xs font-bold transition flex items-center justify-between border border-white/10"
                 >
-                  <span>Kenali Lebih Dekat SDI BIM</span>
+                  <span>Kenali Lebih Dekat Profil SDI BIM</span>
                   <span>&rarr;</span>
-                </button>
+                </router-link>
               </div>
 
             </div>

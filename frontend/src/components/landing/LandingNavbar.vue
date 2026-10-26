@@ -1,24 +1,44 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '../../stores/auth'
 
-defineProps<{
-  userPortalLabel: string
+const props = defineProps<{
+  userPortalLabel?: string
 }>()
 
 const emit = defineEmits<{
-  (e: 'navigate', id: string): void
   (e: 'open-portal'): void
 }>()
+
+const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
 
 const isMobileMenuOpen = ref(false)
 const isProfileDropdownOpen = ref(false)
 const isEducationDropdownOpen = ref(false)
 
-const handleNav = (id: string) => {
+const computedPortalLabel = ref('')
+const getPortalLabel = () => {
+  if (props.userPortalLabel) return props.userPortalLabel
+  if (!auth.isAuthenticated) return 'Masuk SIM-BIM'
+  if (auth.isAdmin) return 'Buka Dashboard Admin'
+  if (auth.isGuru) return 'Buka Presensi & KBM'
+  if (auth.isWali) return 'Buka Portal Wali Murid'
+  return 'Buka Dashboard'
+}
+
+const navigateTo = (path: string) => {
   isMobileMenuOpen.value = false
   isProfileDropdownOpen.value = false
   isEducationDropdownOpen.value = false
-  emit('navigate', id)
+  router.push(path)
+}
+
+const handlePortalClick = () => {
+  isMobileMenuOpen.value = false
+  emit('open-portal')
 }
 </script>
 
@@ -27,7 +47,7 @@ const handleNav = (id: string) => {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
       
       <!-- Logo & Brand Header -->
-      <div class="flex items-center gap-3 cursor-pointer select-none" @click="handleNav('hero')">
+      <router-link to="/" class="flex items-center gap-3 select-none">
         <img 
           src="/logo.png" 
           alt="Logo SDI Bina Insan Mandiri Purwokerto" 
@@ -42,17 +62,19 @@ const handleNav = (id: string) => {
           </div>
           <p class="text-xs font-bold text-emerald-700 leading-tight">SDI Bina Insan Mandiri Purwokerto</p>
         </div>
-      </div>
+      </router-link>
 
       <!-- Desktop Navigation Links -->
       <nav class="hidden lg:flex items-center gap-7 text-sm font-semibold text-slate-600">
         <!-- 0. Beranda -->
-        <button 
-          @click="handleNav('hero')" 
-          class="hover:text-emerald-700 transition-colors cursor-pointer py-2"
+        <router-link 
+          to="/" 
+          class="hover:text-emerald-700 transition-colors py-2 relative"
+          :class="route.path === '/' ? 'text-emerald-700 font-bold' : ''"
         >
-          Beranda
-        </button>
+          <span>Beranda</span>
+          <span v-if="route.path === '/'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
+        </router-link>
 
         <!-- 1. Profil (Dropdown) -->
         <div 
@@ -60,15 +82,17 @@ const handleNav = (id: string) => {
           @mouseenter="isProfileDropdownOpen = true"
           @mouseleave="isProfileDropdownOpen = false"
         >
-          <button 
-            @click="handleNav('profil')"
-            class="flex items-center gap-1.5 hover:text-emerald-700 transition-colors cursor-pointer py-2"
+          <router-link 
+            to="/profil"
+            class="flex items-center gap-1.5 hover:text-emerald-700 transition-colors py-2 relative"
+            :class="route.path.startsWith('/profil') ? 'text-emerald-700 font-bold' : ''"
           >
             <span>Profil</span>
             <svg class="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
-          </button>
+            <span v-if="route.path.startsWith('/profil')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
+          </router-link>
 
           <!-- Dropdown Menu Profil -->
           <transition
@@ -84,7 +108,7 @@ const handleNav = (id: string) => {
               class="absolute left-0 top-full w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 px-1 text-xs font-medium z-50 space-y-0.5"
             >
               <button 
-                @click="handleNav('profil-singkat')"
+                @click="navigateTo('/profil?tab=profil')"
                 class="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-800 transition flex items-center gap-2.5 cursor-pointer"
               >
                 <span class="text-emerald-600">🏛️</span>
@@ -94,7 +118,7 @@ const handleNav = (id: string) => {
                 </div>
               </button>
               <button 
-                @click="handleNav('visi-misi')"
+                @click="navigateTo('/profil?tab=visi')"
                 class="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-800 transition flex items-center gap-2.5 cursor-pointer"
               >
                 <span class="text-teal-600">🎯</span>
@@ -104,7 +128,7 @@ const handleNav = (id: string) => {
                 </div>
               </button>
               <button 
-                @click="handleNav('tenaga-pendidik')"
+                @click="navigateTo('/profil?tab=guru')"
                 class="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-800 transition flex items-center gap-2.5 cursor-pointer"
               >
                 <span class="text-amber-600">👨‍🏫</span>
@@ -114,7 +138,7 @@ const handleNav = (id: string) => {
                 </div>
               </button>
               <button 
-                @click="handleNav('janji-siswa')"
+                @click="navigateTo('/profil?tab=janji')"
                 class="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-800 transition flex items-center gap-2.5 cursor-pointer"
               >
                 <span class="text-emerald-600">📜</span>
@@ -133,15 +157,17 @@ const handleNav = (id: string) => {
           @mouseenter="isEducationDropdownOpen = true"
           @mouseleave="isEducationDropdownOpen = false"
         >
-          <button 
-            @click="handleNav('pendidikan')"
-            class="flex items-center gap-1.5 hover:text-emerald-700 transition-colors cursor-pointer py-2"
+          <router-link 
+            to="/pendidikan"
+            class="flex items-center gap-1.5 hover:text-emerald-700 transition-colors py-2 relative"
+            :class="route.path.startsWith('/pendidikan') ? 'text-emerald-700 font-bold' : ''"
           >
             <span>Pendidikan</span>
             <svg class="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
-          </button>
+            <span v-if="route.path.startsWith('/pendidikan')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
+          </router-link>
 
           <!-- Dropdown Menu Pendidikan -->
           <transition
@@ -157,7 +183,7 @@ const handleNav = (id: string) => {
               class="absolute left-0 top-full w-64 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 px-1 text-xs font-medium z-50 space-y-0.5"
             >
               <button 
-                @click="handleNav('pendidikan-fitrah')"
+                @click="navigateTo('/pendidikan#pendidikan-fitrah')"
                 class="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-800 transition flex items-center gap-2.5 cursor-pointer"
               >
                 <span class="text-emerald-600">🌱</span>
@@ -167,7 +193,7 @@ const handleNav = (id: string) => {
                 </div>
               </button>
               <button 
-                @click="handleNav('membangun-peradaban')"
+                @click="navigateTo('/pendidikan#membangun-peradaban')"
                 class="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-800 transition flex items-center gap-2.5 cursor-pointer"
               >
                 <span class="text-teal-600">🌍</span>
@@ -181,48 +207,56 @@ const handleNav = (id: string) => {
         </div>
 
         <!-- 3. Artikel -->
-        <button 
-          @click="handleNav('artikel')" 
-          class="hover:text-emerald-700 transition-colors cursor-pointer py-2"
+        <router-link 
+          to="/artikel" 
+          class="hover:text-emerald-700 transition-colors py-2 relative"
+          :class="route.path.startsWith('/artikel') ? 'text-emerald-700 font-bold' : ''"
         >
-          Artikel
-        </button>
+          <span>Artikel</span>
+          <span v-if="route.path.startsWith('/artikel')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
+        </router-link>
 
         <!-- 4. Galeri -->
-        <button 
-          @click="handleNav('galeri')" 
-          class="hover:text-emerald-700 transition-colors cursor-pointer py-2"
+        <router-link 
+          to="/galeri" 
+          class="hover:text-emerald-700 transition-colors py-2 relative"
+          :class="route.path.startsWith('/galeri') ? 'text-emerald-700 font-bold' : ''"
         >
-          Galeri
-        </button>
+          <span>Galeri</span>
+          <span v-if="route.path.startsWith('/galeri')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
+        </router-link>
 
         <!-- 5. Prestasi -->
-        <button 
-          @click="handleNav('prestasi')" 
-          class="hover:text-emerald-700 transition-colors cursor-pointer py-2"
+        <router-link 
+          to="/prestasi" 
+          class="hover:text-emerald-700 transition-colors py-2 relative"
+          :class="route.path.startsWith('/prestasi') ? 'text-emerald-700 font-bold' : ''"
         >
-          Prestasi
-        </button>
+          <span>Prestasi</span>
+          <span v-if="route.path.startsWith('/prestasi')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
+        </router-link>
 
         <!-- 6. Info SPMB -->
-        <button 
-          @click="handleNav('spmb')" 
-          class="relative hover:text-emerald-700 transition-colors cursor-pointer py-2 flex items-center gap-1.5"
+        <router-link 
+          to="/spmb" 
+          class="hover:text-emerald-700 transition-colors py-2 flex items-center gap-1.5 relative"
+          :class="route.path.startsWith('/spmb') ? 'text-emerald-700 font-bold' : ''"
         >
           <span>Info SPMB</span>
           <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-400 text-amber-950 uppercase tracking-tight">
             Baru
           </span>
-        </button>
+          <span v-if="route.path.startsWith('/spmb')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
+        </router-link>
       </nav>
 
       <!-- CTA Masuk Sistem SIM-BIM -->
       <div class="hidden sm:flex items-center gap-3">
         <button 
-          @click="emit('open-portal')"
+          @click="handlePortalClick"
           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-emerald-700/20 hover:from-emerald-700 hover:to-teal-800 transition-all hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
         >
-          <span>{{ userPortalLabel }}</span>
+          <span>{{ getPortalLabel() }}</span>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
           </svg>
@@ -251,7 +285,7 @@ const handleNav = (id: string) => {
       v-if="isMobileMenuOpen" 
       class="lg:hidden border-t border-slate-200 bg-white/95 backdrop-blur-md px-5 pt-3 pb-6 space-y-2 text-sm shadow-xl"
     >
-      <button @click="handleNav('hero')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
+      <button @click="navigateTo('/')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
         Beranda
       </button>
 
@@ -259,16 +293,16 @@ const handleNav = (id: string) => {
       <div class="py-1 border-y border-slate-100">
         <div class="font-bold text-xs uppercase tracking-wider text-slate-400 py-1">1. Profil Sekolah</div>
         <div class="pl-3 space-y-1.5 pt-1">
-          <button @click="handleNav('profil-singkat')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
+          <button @click="navigateTo('/profil?tab=profil')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
             • Profil Singkat Sekolah
           </button>
-          <button @click="handleNav('visi-misi')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
+          <button @click="navigateTo('/profil?tab=visi')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
             • Visi & Misi
           </button>
-          <button @click="handleNav('tenaga-pendidik')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
+          <button @click="navigateTo('/profil?tab=guru')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
             • Tenaga Pendidik & Kependidikan
           </button>
-          <button @click="handleNav('janji-siswa')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
+          <button @click="navigateTo('/profil?tab=janji')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
             • Janji Siswa SDI BIM
           </button>
         </div>
@@ -278,35 +312,35 @@ const handleNav = (id: string) => {
       <div class="py-1 border-b border-slate-100">
         <div class="font-bold text-xs uppercase tracking-wider text-slate-400 py-1">2. Pendidikan</div>
         <div class="pl-3 space-y-1.5 pt-1">
-          <button @click="handleNav('pendidikan-fitrah')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
+          <button @click="navigateTo('/pendidikan#pendidikan-fitrah')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
             • Pendidikan Berbasis Fitrah
           </button>
-          <button @click="handleNav('membangun-peradaban')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
+          <button @click="navigateTo('/pendidikan#membangun-peradaban')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
             • Tujuan Pendidikan: Membangun Peradaban
           </button>
         </div>
       </div>
 
-      <button @click="handleNav('artikel')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
+      <button @click="navigateTo('/artikel')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
         3. Artikel & Warta
       </button>
-      <button @click="handleNav('galeri')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
+      <button @click="navigateTo('/galeri')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
         4. Galeri Kegiatan
       </button>
-      <button @click="handleNav('prestasi')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
+      <button @click="navigateTo('/prestasi')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
         5. Prestasi Santri
       </button>
-      <button @click="handleNav('spmb')" class="block w-full text-left py-2 font-bold text-emerald-800 hover:text-emerald-950 flex items-center justify-between">
+      <button @click="navigateTo('/spmb')" class="block w-full text-left py-2 font-bold text-emerald-800 hover:text-emerald-950 flex items-center justify-between">
         <span>6. Info SPMB 2026/2027</span>
         <span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-amber-950 font-bold">Dibuka</span>
       </button>
 
       <div class="pt-3">
         <button 
-          @click="emit('open-portal')"
+          @click="handlePortalClick"
           class="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20 text-xs"
         >
-          <span>{{ userPortalLabel }}</span>
+          <span>{{ getPortalLabel() }}</span>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
           </svg>
