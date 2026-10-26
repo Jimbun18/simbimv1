@@ -12,28 +12,28 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <section id="hero" class="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-32 text-white">
+  <section id="hero" class="relative overflow-hidden pt-16 pb-24 md:pt-24 md:pb-36 text-white">
     <!-- Background Image Foto Dokumentasi Santri SDI BIM -->
     <div class="absolute inset-0 z-0">
       <img 
         :src="heroBg" 
         alt="Santri SDI Bina Insan Mandiri Purwokerto" 
-        class="w-full h-full object-cover object-center scale-105"
+        class="w-full h-full object-cover object-center scale-105 filter blur-[2.5px]"
       />
-      <!-- Soft Subtle Overlay: Foto tetap tampak jelas, sisi teks diberi bayangan lembut transparan -->
-      <div class="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/50 to-slate-950/30"></div>
-      <div class="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-black/30"></div>
+      <!-- Soft Vignette & Subtle Overlay agar Teks di Tengah Terbaca Nyaman -->
+      <div class="absolute inset-0 bg-slate-950/45"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/50"></div>
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-      <div class="max-w-3xl space-y-6 text-center lg:text-left">
+      <div class="max-w-4xl mx-auto space-y-6 text-center">
         
-        <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-emerald-200 text-xs sm:text-sm font-semibold">
+        <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-emerald-200 text-xs sm:text-sm font-semibold shadow-xs">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span>Sekolah Dasar Islam Unggulan • Purwokerto</span>
         </div>
 
-        <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight sm:leading-tight drop-shadow-lg">
+        <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight sm:leading-tight drop-shadow-lg mx-auto">
           Mewujudkan Generasi <br class="hidden sm:inline" />
           <span class="bg-gradient-to-r from-emerald-300 via-teal-200 to-amber-200 bg-clip-text text-transparent">
             Qur'ani & Unggul
@@ -41,16 +41,16 @@ const emit = defineEmits<{
           Berbasis Deep Learning
         </h1>
 
-        <p class="text-sm sm:text-base md:text-lg text-slate-100 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed drop-shadow-md">
+        <p class="text-sm sm:text-base md:text-lg text-slate-100 max-w-2xl mx-auto font-normal leading-relaxed drop-shadow-md">
           Selamat datang di portal resmi <strong>SDI Bina Insan Mandiri Purwokerto</strong>. 
           Mendidik dengan cinta, menerapkan pembelajaran mendalam (<em>deep learning</em>), dan membangun karakter peradaban islam yang kokoh, mandiri, dan berwawasan luas.
         </p>
 
-        <!-- Action Buttons -->
-        <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
+        <!-- Action Buttons (Centered) -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
           <router-link 
             to="/spmb"
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-sm sm:text-base shadow-xl shadow-amber-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-sm sm:text-base shadow-xl shadow-amber-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0"
           >
             <span>Info Pendaftaran SPMB</span>
             <svg class="w-5 h-5 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,7 +60,7 @@ const emit = defineEmits<{
 
           <button 
             @click="emit('open-portal')"
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm sm:text-base border border-emerald-400/40 shadow-lg shadow-emerald-950/30 transition-all cursor-pointer"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm sm:text-base border border-emerald-400/40 shadow-lg shadow-emerald-950/30 transition-all cursor-pointer"
           >
             <span>{{ userPortalLabel }}</span>
             <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
