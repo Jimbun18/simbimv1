@@ -73,7 +73,10 @@ const closeLightbox = () => {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
       
       <!-- Section Title Header -->
-      <div class="text-center max-w-3xl mx-auto space-y-3">
+      <div 
+        v-reveal="{ type: 'fade-up', delay: 50 }"
+        class="text-center max-w-3xl mx-auto space-y-3"
+      >
         <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
           Dokumentasi Sekolah
         </span>
@@ -84,39 +87,44 @@ const closeLightbox = () => {
           Potret keceriaan, semangat belajar fitrah, dan ragam aktivitas bermakna siswa SDI Bina Insan Mandiri Purwokerto di dalam maupun luar kelas.
         </p>
 
-        <!-- Category Filters -->
+        <!-- Category Filters with Splash Animation -->
         <div class="flex flex-wrap items-center justify-center gap-2 pt-2">
           <button
             @click="selectedCategory = 'all'"
-            class="px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border"
+            v-splash
+            class="btn-splash px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border"
             :class="selectedCategory === 'all' ? 'bg-emerald-700 text-white border-emerald-700 shadow-xs' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'"
           >
             Semua Foto
           </button>
           <button
             @click="selectedCategory = 'kbm'"
-            class="px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border"
+            v-splash
+            class="btn-splash px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border"
             :class="selectedCategory === 'kbm' ? 'bg-emerald-700 text-white border-emerald-700 shadow-xs' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'"
           >
             🌿 KBM Sains & Alam
           </button>
           <button
             @click="selectedCategory = 'tahfidz'"
-            class="px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border"
+            v-splash
+            class="btn-splash px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border"
             :class="selectedCategory === 'tahfidz' ? 'bg-emerald-700 text-white border-emerald-700 shadow-xs' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'"
           >
             📖 Tahfidz Al-Qur'an
           </button>
           <button
             @click="selectedCategory = 'marketday'"
-            class="px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border"
+            v-splash
+            class="btn-splash px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border"
             :class="selectedCategory === 'marketday' ? 'bg-emerald-700 text-white border-emerald-700 shadow-xs' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'"
           >
             🛍️ Market Day
           </button>
           <button
             @click="selectedCategory = 'outbound'"
-            class="px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border"
+            v-splash
+            class="btn-splash px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border"
             :class="selectedCategory === 'outbound' ? 'bg-emerald-700 text-white border-emerald-700 shadow-xs' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'"
           >
             ⛺ Outbound & Rihlah
@@ -124,13 +132,14 @@ const closeLightbox = () => {
         </div>
       </div>
 
-      <!-- Gallery Grid -->
+      <!-- Gallery Grid with Staggered Scroll Reveal -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div 
-          v-for="item in filteredItems" 
+          v-for="(item, idx) in filteredItems" 
           :key="item.id"
+          v-reveal="{ type: 'fade-up', delay: 60 + (idx % 3) * 90 }"
           @click="openLightbox(item)"
-          class="group relative rounded-3xl overflow-hidden bg-gradient-to-tr text-white p-7 h-64 sm:h-72 flex flex-col justify-between shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
+          class="btn-splash group relative rounded-3xl overflow-hidden bg-gradient-to-tr text-white p-7 h-64 sm:h-72 flex flex-col justify-between shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1.5"
           :class="item.color"
         >
           <!-- Background Real Photo (from CMS) or Abstract Pattern -->

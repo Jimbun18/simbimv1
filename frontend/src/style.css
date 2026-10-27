@@ -19,8 +19,155 @@
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
 }
+
+/* ============================================================
+   BUTTON SPLASH EFFECT & ANIMATIONS
+   ============================================================ */
+@keyframes splashWaveExpand {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes splashDropletFly {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx, 20px)), calc(-50% + var(--dy, 20px))) scale(0.2);
+    opacity: 0;
+  }
+}
+
+@keyframes buttonShine {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 200%;
+  }
+}
+
+/* Global Splash Button Class */
+.btn-splash {
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.btn-splash:active {
+  transform: scale(0.96) !important;
+}
+
+/* Subtle Shimmer Sheen on CTA buttons */
+.btn-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-sheen::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 100%
+  );
+  transform: skewX(-25deg);
+  pointer-events: none;
+}
+
+.btn-sheen:hover::after {
+  animation: buttonShine 0.85s ease-out;
+}
+
+/* ============================================================
+   SCROLL REVEAL ANIMATIONS (GPU-ACCELERATED)
+   ============================================================ */
+.reveal-base {
+  opacity: 0;
+  transition-property: opacity, transform, filter;
+  transition-duration: 0.75s;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.reveal-fade-up {
+  transform: translateY(32px);
+  filter: blur(4px);
+}
+
+.reveal-fade-in {
+  filter: blur(5px);
+}
+
+.reveal-scale {
+  transform: scale(0.92);
+  filter: blur(3px);
+}
+
+.reveal-slide-left {
+  transform: translateX(-36px);
+  filter: blur(3px);
+}
+
+.reveal-slide-right {
+  transform: translateX(36px);
+  filter: blur(3px);
+}
+
+/* Revealed State */
+.reveal-base.is-revealed {
+  opacity: 1 !important;
+  transform: translate(0, 0) scale(1) !important;
+  filter: blur(0) !important;
+}
+
+/* Stagger Delay Utilities */
+.reveal-delay-75 { transition-delay: 75ms; }
+.reveal-delay-100 { transition-delay: 100ms; }
+.reveal-delay-150 { transition-delay: 150ms; }
+.reveal-delay-200 { transition-delay: 200ms; }
+.reveal-delay-250 { transition-delay: 250ms; }
+.reveal-delay-300 { transition-delay: 300ms; }
+.reveal-delay-400 { transition-delay: 400ms; }
+.reveal-delay-500 { transition-delay: 500ms; }
+
+/* Subtle floating animation for decorative icons */
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 4s ease-in-out infinite;
+}
+
 
 /* ============================================================
    GLOBAL PRINT STYLES FOR SIM-BIM (RAPOR, KWITANSI, JADWAL)

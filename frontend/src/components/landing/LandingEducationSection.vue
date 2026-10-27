@@ -11,7 +11,10 @@ import pendidikanBawahBg from '../../assets/pendidikan bawah.jpeg'
       <!-- SUB-SECTION 1: PENDIDIKAN BERBASIS DEEP LEARNING -->
       <div id="pendidikan-deep-learning" class="space-y-10">
         
-        <div class="text-center max-w-3xl mx-auto space-y-3">
+        <div 
+          v-reveal="{ type: 'fade-up', delay: 50 }"
+          class="text-center max-w-3xl mx-auto space-y-3"
+        >
           <span class="px-3.5 py-1 rounded-full bg-teal-100 text-teal-800 text-xs font-bold uppercase tracking-wider">
             Filosofi & Kurikulum Unggulan
           </span>
@@ -23,12 +26,13 @@ import pendidikanBawahBg from '../../assets/pendidikan bawah.jpeg'
           </p>
         </div>
 
-        <!-- 4 Pilar Deep Learning Cards -->
+        <!-- 4 Pilar Deep Learning Cards with Stagger Reveal -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div 
-            v-for="pillar in deepLearningPillars" 
+            v-for="(pillar, idx) in deepLearningPillars" 
             :key="pillar.title"
-            class="bg-white p-7 sm:p-8 rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-emerald-300 transition-all space-y-4"
+            v-reveal="{ type: 'fade-up', delay: 80 + idx * 80 }"
+            class="bg-white p-7 sm:p-8 rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1.5 transition-all duration-300 space-y-4"
           >
             <div class="flex items-center justify-between">
               <span class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-2xl shadow-xs border border-emerald-100">
@@ -57,7 +61,7 @@ import pendidikanBawahBg from '../../assets/pendidikan bawah.jpeg'
                 Praktik Nyata di SDI BIM:
               </div>
               <ul class="text-xs text-slate-700 space-y-1.5">
-                <li v-for="(practice, idx) in pillar.practices" :key="idx" class="flex items-start gap-2">
+                <li v-for="(practice, pIdx) in pillar.practices" :key="pIdx" class="flex items-start gap-2">
                   <span class="text-emerald-600 font-bold mt-0.5">✓</span>
                   <span>{{ practice }}</span>
                 </li>

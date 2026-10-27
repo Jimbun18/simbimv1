@@ -161,7 +161,8 @@ const getPortalLabel = () => {
 
           <button 
             @click="emit('open-portal')"
-            class="w-full inline-flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-bold transition shadow-md cursor-pointer"
+            v-splash="'emerald'"
+            class="btn-splash btn-sheen w-full inline-flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-bold transition-all shadow-md hover:shadow-lg cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
           >
             <span>{{ getPortalLabel() }}</span>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

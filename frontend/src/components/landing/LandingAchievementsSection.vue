@@ -56,7 +56,10 @@ onMounted(() => {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
       
       <!-- Section Title Header -->
-      <div class="text-center max-w-3xl mx-auto space-y-3">
+      <div 
+        v-reveal="{ type: 'fade-up', delay: 50 }"
+        class="text-center max-w-3xl mx-auto space-y-3"
+      >
         <span class="px-3.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">
           Jejak Karya & Keunggulan
         </span>
@@ -68,12 +71,13 @@ onMounted(() => {
         </p>
       </div>
 
-      <!-- Mode CMS: Foto + Judul + Waktu Posting -->
+      <!-- Mode CMS: Foto + Judul + Waktu Posting dengan Staggered Scroll Reveal -->
       <div v-if="isCmsMode" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         <div 
-          v-for="item in items" 
+          v-for="(item, idx) in items" 
           :key="item.id"
-          class="bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-amber-400 transition-all group flex flex-col"
+          v-reveal="{ type: 'fade-up', delay: 60 + (idx % 4) * 80 }"
+          class="bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-amber-400 hover:-translate-y-1.5 transition-all duration-300 group flex flex-col"
         >
           <div class="aspect-4/3 w-full bg-slate-100 overflow-hidden relative">
             <img 
@@ -107,9 +111,10 @@ onMounted(() => {
       <!-- Mode Fallback Default (Jika CMS belum ada data) -->
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div 
-          v-for="item in items" 
+          v-for="(item, idx) in items" 
           :key="item.id"
-          class="bg-slate-50 rounded-3xl border border-slate-200/90 p-6 hover:shadow-xl hover:border-amber-300 transition-all flex flex-col justify-between group"
+          v-reveal="{ type: 'fade-up', delay: 60 + (idx % 4) * 80 }"
+          class="bg-slate-50 rounded-3xl border border-slate-200/90 p-6 hover:shadow-xl hover:border-amber-300 hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group"
         >
           <div class="space-y-3">
             <div class="flex items-center justify-between">
@@ -146,7 +151,10 @@ onMounted(() => {
 
       <!-- Testimoni Wali Murid Card Grid -->
       <div class="mt-14 pt-10 border-t border-slate-200/80">
-        <div class="text-center max-w-2xl mx-auto mb-8">
+        <div 
+          v-reveal="{ type: 'fade-up', delay: 50 }"
+          class="text-center max-w-2xl mx-auto mb-8"
+        >
           <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Suara Orang Tua</span>
           <h3 class="text-xl sm:text-2xl font-black text-slate-900 mt-1">
             Apa Kata Ayah Bunda Tentang SDI BIM?
@@ -154,7 +162,10 @@ onMounted(() => {
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="p-6 rounded-3xl bg-emerald-50/60 border border-emerald-200/80 space-y-3 flex flex-col justify-between">
+          <div 
+            v-reveal="{ type: 'fade-up', delay: 100 }"
+            class="p-6 rounded-3xl bg-emerald-50/60 hover:bg-emerald-50 border border-emerald-200/80 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 space-y-3 flex flex-col justify-between"
+          >
             <p class="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
               "Alhamdulillah, perkembangan hafalan ananda di SDI BIM sangat pesat tanpa paksaan. Yang paling membuat saya terharu adalah adab kesantunan dan inisiatif sholatnya yang tertib di rumah."
             </p>
@@ -169,7 +180,10 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="p-6 rounded-3xl bg-teal-50/60 border border-teal-200/80 space-y-3 flex flex-col justify-between">
+          <div 
+            v-reveal="{ type: 'fade-up', delay: 200 }"
+            class="p-6 rounded-3xl bg-teal-50/60 hover:bg-teal-50 border border-teal-200/80 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 space-y-3 flex flex-col justify-between"
+          >
             <p class="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
               "Pendidikan berbasis deep learning di SDI BIM benar-benar menghargai cara belajar dan keunikan anak. Guru-gurunya sangat sabar dan komunikatif melalui Portal SIM-BIM, sehingga kami di rumah selalu selaras mendidik."
             </p>
@@ -184,7 +198,10 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="p-6 rounded-3xl bg-amber-50/60 border border-amber-200/80 space-y-3 flex flex-col justify-between">
+          <div 
+            v-reveal="{ type: 'fade-up', delay: 300 }"
+            class="p-6 rounded-3xl bg-amber-50/60 hover:bg-amber-50 border border-amber-200/80 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 space-y-3 flex flex-col justify-between"
+          >
             <p class="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
               "Suasana sekolahnya sangat ramah anak dan asri. Ananda selalu pulang sekolah dengan wajah ceria dan cerita seru seputar eksperimen tematik hariannya. Pilihan terbaik untuk fondasi anak."
             </p>

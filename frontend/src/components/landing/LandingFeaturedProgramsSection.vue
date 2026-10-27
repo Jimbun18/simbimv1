@@ -12,7 +12,10 @@ defineProps<{
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
       
       <!-- Section Header -->
-      <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div 
+        v-reveal="{ type: 'fade-up', delay: 50 }"
+        class="flex flex-col md:flex-row md:items-end justify-between gap-6"
+      >
         <div class="max-w-3xl space-y-3">
           <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
             <span>⭐</span>
@@ -30,7 +33,8 @@ defineProps<{
         <div v-if="showViewAllLink" class="shrink-0">
           <router-link
             to="/pendidikan#program-unggulan"
-            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs sm:text-sm transition border border-emerald-200 shadow-xs"
+            v-splash="'emerald'"
+            class="btn-splash inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs sm:text-sm transition-all border border-emerald-200 shadow-xs hover:shadow-md cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
           >
             <span>Buka di Halaman Pendidikan</span>
             <span>&rarr;</span>
@@ -38,12 +42,13 @@ defineProps<{
         </div>
       </div>
 
-      <!-- Grid 8 Program Unggulan (4 Kolom pada Desktop, 2 pada Tablet, 1 pada Mobile) -->
+      <!-- Grid 8 Program Unggulan dengan Staggered Scroll Reveal -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div 
-          v-for="program in featuredPrograms" 
+          v-for="(program, idx) in featuredPrograms" 
           :key="program.id"
-          class="group bg-slate-50 hover:bg-white rounded-3xl border border-slate-200 hover:border-emerald-300 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden"
+          v-reveal="{ type: 'fade-up', delay: 60 + (idx % 4) * 80 }"
+          class="group bg-slate-50 hover:bg-white rounded-3xl border border-slate-200 hover:border-emerald-300 shadow-xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5 flex flex-col overflow-hidden"
         >
           <!-- FOTO / VISUAL CONTAINER PROGRAM -->
           <div class="relative h-48 w-full overflow-hidden bg-slate-900">

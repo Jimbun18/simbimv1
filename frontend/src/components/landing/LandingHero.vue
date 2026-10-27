@@ -28,12 +28,20 @@ const emit = defineEmits<{
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <div class="max-w-4xl mx-auto space-y-6 text-center">
         
-        <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-emerald-200 text-xs sm:text-sm font-semibold shadow-xs">
+        <!-- Floating Pill Badge -->
+        <div 
+          v-reveal="{ type: 'fade-up', delay: 100 }"
+          class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-emerald-200 text-xs sm:text-sm font-semibold shadow-xs animate-float-slow"
+        >
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span>Sekolah Dasar Islam Unggulan • Purwokerto</span>
         </div>
 
-        <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight sm:leading-tight drop-shadow-lg mx-auto">
+        <!-- Main Hero Title -->
+        <h1 
+          v-reveal="{ type: 'fade-up', delay: 200 }"
+          class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight sm:leading-tight drop-shadow-lg mx-auto"
+        >
           Mewujudkan Generasi <br class="hidden sm:inline" />
           <span class="bg-gradient-to-r from-emerald-300 via-teal-200 to-amber-200 bg-clip-text text-transparent">
             Qur'ani & Unggul
@@ -41,16 +49,24 @@ const emit = defineEmits<{
           Berbasis Deep Learning
         </h1>
 
-        <p class="text-sm sm:text-base md:text-lg text-slate-100 max-w-2xl mx-auto font-normal leading-relaxed drop-shadow-md">
+        <!-- Hero Subtitle Description -->
+        <p 
+          v-reveal="{ type: 'fade-up', delay: 300 }"
+          class="text-sm sm:text-base md:text-lg text-slate-100 max-w-2xl mx-auto font-normal leading-relaxed drop-shadow-md"
+        >
           Selamat datang di portal resmi <strong>SDI Bina Insan Mandiri Purwokerto</strong>. 
           Mendidik dengan cinta, menerapkan pembelajaran mendalam (<em>deep learning</em>), dan membangun karakter peradaban islam yang kokoh, mandiri, dan berwawasan luas.
         </p>
 
-        <!-- Action Buttons (Centered) -->
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+        <!-- Action Buttons (Centered with Splash Animation) -->
+        <div 
+          v-reveal="{ type: 'fade-up', delay: 400 }"
+          class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
+        >
           <router-link 
             to="/spmb"
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-sm sm:text-base shadow-xl shadow-amber-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0"
+            v-splash="'amber'"
+            class="btn-splash btn-sheen w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-sm sm:text-base shadow-xl shadow-amber-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
           >
             <span>Info Pendaftaran SPMB</span>
             <svg class="w-5 h-5 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,7 +76,8 @@ const emit = defineEmits<{
 
           <button 
             @click="emit('open-portal')"
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm sm:text-base border border-emerald-400/40 shadow-lg shadow-emerald-950/30 transition-all cursor-pointer"
+            v-splash="'emerald'"
+            class="btn-splash btn-sheen w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm sm:text-base border border-emerald-400/40 shadow-lg shadow-emerald-950/30 transition-all cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
           >
             <span>{{ userPortalLabel }}</span>
             <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">

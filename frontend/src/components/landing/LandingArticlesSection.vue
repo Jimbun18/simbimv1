@@ -84,7 +84,10 @@ const closeArticle = () => {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
       
       <!-- Section Title Header -->
-      <div class="text-center max-w-3xl mx-auto space-y-3">
+      <div 
+        v-reveal="{ type: 'fade-up', delay: 50 }"
+        class="text-center max-w-3xl mx-auto space-y-3"
+      >
         <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
           Wawasan & Warta Sekolah
         </span>
@@ -95,13 +98,14 @@ const closeArticle = () => {
           Kumpulan tulisan inspiratif seputar pembelajaran mendalam (deep learning), kiat muroja'ah Al-Qur'an, edukasi anak islami, serta dokumentasi warta kegiatan civitas SDI Bina Insan Mandiri.
         </p>
 
-        <!-- Category Filter Badges -->
+        <!-- Category Filter Badges with Splash Animation -->
         <div class="flex flex-wrap items-center justify-center gap-2 pt-2">
           <button
             v-for="cat in categories"
             :key="cat"
             @click="selectedCategory = cat"
-            class="px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border"
+            v-splash
+            class="btn-splash px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border"
             :class="selectedCategory === cat ? 'bg-emerald-700 text-white border-emerald-700 shadow-xs' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'"
           >
             {{ cat }}
@@ -109,12 +113,13 @@ const closeArticle = () => {
         </div>
       </div>
 
-      <!-- Grid Cards Artikel -->
+      <!-- Grid Cards Artikel with Staggered Scroll Reveal -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <article
-          v-for="article in filteredArticles"
+          v-for="(article, idx) in filteredArticles"
           :key="article.id"
-          class="bg-slate-50 rounded-3xl border border-slate-200/80 p-5 hover:shadow-xl hover:border-emerald-300 transition-all flex flex-col justify-between group overflow-hidden"
+          v-reveal="{ type: 'fade-up', delay: 60 + (idx % 4) * 80 }"
+          class="bg-slate-50 hover:bg-white rounded-3xl border border-slate-200/80 hover:border-emerald-300 hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group overflow-hidden"
         >
           <div>
             <!-- Foto Sampul (Jika dari CMS) -->

@@ -23,7 +23,10 @@ watch(
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
       
       <!-- Section Title Header -->
-      <div class="text-center max-w-3xl mx-auto">
+      <div 
+        v-reveal="{ type: 'fade-up', delay: 50 }"
+        class="text-center max-w-3xl mx-auto"
+      >
         <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
           Profil Lembaga
         </span>
@@ -34,32 +37,36 @@ watch(
           Mengenal lebih dekat identitas lembaga, cita-cita luhur visi-misi, dedikasi tenaga pendidik, serta ikrar janji siswa kami.
         </p>
 
-        <!-- Sub-Navigation Tabs Switcher -->
+        <!-- Sub-Navigation Tabs Switcher with Splash Animation -->
         <div class="mt-8 flex flex-wrap items-center justify-center gap-2 p-1.5 bg-slate-100 rounded-2xl max-w-2xl mx-auto border border-slate-200">
           <button
             @click="activeTab = 'profil'"
-            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
+            v-splash
+            class="btn-splash px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
             :class="activeTab === 'profil' ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/60' : 'text-slate-600 hover:text-slate-900'"
           >
             🏛️ Profil Singkat
           </button>
           <button
             @click="activeTab = 'visi'"
-            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
+            v-splash
+            class="btn-splash px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
             :class="activeTab === 'visi' ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/60' : 'text-slate-600 hover:text-slate-900'"
           >
             🎯 Visi & Misi
           </button>
           <button
             @click="activeTab = 'guru'"
-            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
+            v-splash
+            class="btn-splash px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
             :class="activeTab === 'guru' ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/60' : 'text-slate-600 hover:text-slate-900'"
           >
             👨‍🏫 Tenaga Pendidik
           </button>
           <button
             @click="activeTab = 'janji'"
-            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
+            v-splash
+            class="btn-splash px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
             :class="activeTab === 'janji' ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/60' : 'text-slate-600 hover:text-slate-900'"
           >
             📜 Janji Siswa

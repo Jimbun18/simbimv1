@@ -56,7 +56,8 @@ const openChat = (phone: string, role: string) => {
           <!-- Pilihan 1: Sekretariat Sekolah -->
           <button
             @click="openChat('6285138568694', 'Sekretariat')"
-            class="w-full text-left p-3 rounded-2xl bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 transition flex items-center gap-3 cursor-pointer group shadow-xs"
+            v-splash="'emerald'"
+            class="btn-splash w-full text-left p-3 rounded-2xl bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 transition-all flex items-center gap-3 cursor-pointer group shadow-xs active:scale-95"
           >
             <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 text-lg group-hover:scale-105 transition">
               🏛️
@@ -74,7 +75,8 @@ const openChat = (phone: string, role: string) => {
           <!-- Pilihan 2: Panitia SPMB -->
           <button
             @click="openChat('6285150725032', 'Panitia SPMB')"
-            class="w-full text-left p-3 rounded-2xl bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 transition flex items-center gap-3 cursor-pointer group shadow-xs"
+            v-splash="'amber'"
+            class="btn-splash w-full text-left p-3 rounded-2xl bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 transition-all flex items-center gap-3 cursor-pointer group shadow-xs active:scale-95"
           >
             <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center shrink-0 text-lg group-hover:scale-105 transition">
               📝
@@ -96,10 +98,11 @@ const openChat = (phone: string, role: string) => {
       </div>
     </transition>
 
-    <!-- Floating Toggle Button -->
+    <!-- Floating Toggle Button with Splash Animation -->
     <button
       @click="isOpen = !isOpen"
-      class="group flex items-center gap-2.5 px-4 py-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xl shadow-emerald-700/30 hover:shadow-2xl hover:scale-105 transition duration-200 cursor-pointer border border-emerald-400/40 relative"
+      v-splash="'emerald'"
+      class="btn-splash group flex items-center gap-2.5 px-4 py-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xl shadow-emerald-700/30 hover:shadow-2xl hover:scale-105 transition duration-200 cursor-pointer border border-emerald-400/40 relative active:scale-95"
       aria-label="Chat WhatsApp SDI BIM"
     >
       <!-- Pulse Effect -->

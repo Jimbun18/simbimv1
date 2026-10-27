@@ -33,7 +33,10 @@ const handleQuickRegister = () => {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
       
       <!-- Section Title Header -->
-      <div class="text-center max-w-3xl mx-auto space-y-3">
+      <div 
+        v-reveal="{ type: 'fade-up', delay: 50 }"
+        class="text-center max-w-3xl mx-auto space-y-3"
+      >
         <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
           Penerimaan Murid Baru
         </span>
@@ -45,12 +48,13 @@ const handleQuickRegister = () => {
         </p>
       </div>
 
-      <!-- Jadwal Gelombang Pendaftaran Cards -->
+      <!-- Jadwal Gelombang Pendaftaran Cards with Stagger Reveal -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div 
-          v-for="wave in spmbWaves" 
+          v-for="(wave, idx) in spmbWaves" 
           :key="wave.name"
-          class="bg-white rounded-3xl p-6 border shadow-xs flex flex-col justify-between"
+          v-reveal="{ type: 'fade-up', delay: 60 + idx * 90 }"
+          class="bg-white rounded-3xl p-6 border shadow-xs hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
           :class="wave.isOpen ? 'border-emerald-300 ring-2 ring-emerald-500/20 shadow-md' : 'border-slate-200 opacity-90'"
         >
           <div class="space-y-3">
@@ -85,7 +89,10 @@ const handleQuickRegister = () => {
       </div>
 
       <!-- 5 Langkah Alur Pendaftaran -->
-      <div class="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200/90 shadow-xs space-y-8">
+      <div 
+        v-reveal="{ type: 'fade-up', delay: 100 }"
+        class="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200/90 shadow-xs space-y-8"
+      >
         <div class="text-center max-w-2xl mx-auto space-y-1">
           <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Tahapan Seleksi</span>
           <h3 class="text-xl sm:text-2xl font-black text-slate-900">
@@ -98,9 +105,10 @@ const handleQuickRegister = () => {
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div 
-            v-for="step in spmbSteps" 
+            v-for="(step, idx) in spmbSteps" 
             :key="step.step"
-            class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-emerald-300 transition-all space-y-2 flex flex-col justify-between"
+            v-reveal="{ type: 'fade-up', delay: 80 + idx * 70 }"
+            class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-emerald-300 hover:shadow-md hover:-translate-y-1 transition-all duration-300 space-y-2 flex flex-col justify-between"
           >
             <div>
               <div class="flex items-center justify-between mb-2">
@@ -124,7 +132,10 @@ const handleQuickRegister = () => {
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         <!-- Syarat & Ketentuan -->
-        <div class="lg:col-span-6 bg-white rounded-3xl p-8 border border-slate-200/90 shadow-xs space-y-5">
+        <div 
+          v-reveal="{ type: 'slide-left', delay: 100 }"
+          class="lg:col-span-6 bg-white rounded-3xl p-8 border border-slate-200/90 shadow-xs space-y-5"
+        >
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg">
               📋
@@ -156,7 +167,10 @@ const handleQuickRegister = () => {
         </div>
 
         <!-- Form Konsultasi & Pendaftaran WhatsApp -->
-        <div class="lg:col-span-6 bg-gradient-to-br from-[#022e23] to-[#034435] rounded-3xl p-8 text-white shadow-xl space-y-6">
+        <div 
+          v-reveal="{ type: 'slide-right', delay: 150 }"
+          class="lg:col-span-6 bg-gradient-to-br from-[#022e23] to-[#034435] rounded-3xl p-8 text-white shadow-xl space-y-6"
+        >
           <div>
             <span class="px-3 py-1 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 text-xs font-bold uppercase tracking-wider">
               Konsultasi Langsung
@@ -215,7 +229,8 @@ const handleQuickRegister = () => {
 
             <button 
               type="submit"
-              class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-sm shadow-xl shadow-amber-500/20 transition flex items-center justify-center gap-2 cursor-pointer"
+              v-splash="'amber'"
+              class="btn-splash btn-sheen w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-sm shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
             >
               <span>Hubungi Panitia SPMB via WhatsApp</span>
               <svg class="w-4 h-4 text-slate-950" fill="currentColor" viewBox="0 0 24 24">
