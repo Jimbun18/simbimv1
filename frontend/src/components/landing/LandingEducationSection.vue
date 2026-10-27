@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { deepLearningPillars, civilizationPoints } from './landingData'
+import pendidikanBawahBg from '../../assets/pendidikan bawah.jpeg'
 </script>
 
 <template>
@@ -68,10 +69,22 @@ import { deepLearningPillars, civilizationPoints } from './landingData'
 
       <!-- SUB-SECTION 2: TUJUAN PENDIDIKAN ADALAH MEMBANGUN SEBUAH PERADABAN -->
       <div id="membangun-peradaban" class="pt-8">
-        <div class="bg-gradient-to-br from-[#022c22] via-[#034435] to-[#02261e] rounded-3xl p-8 sm:p-12 text-white shadow-xl relative overflow-hidden">
+        <div class="rounded-3xl p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden">
           
-          <div class="absolute -right-20 -top-20 w-80 h-80 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div class="absolute -left-20 -bottom-20 w-80 h-80 bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
+          <!-- Background Image Pendidikan Bawah (Suasana KBM Kelas) -->
+          <div class="absolute inset-0 z-0">
+            <img 
+              :src="pendidikanBawahBg" 
+              alt="Suasana KBM Belajar Santri SDI BIM" 
+              class="w-full h-full object-cover object-center scale-105 filter blur-[1.5px]"
+            />
+            <!-- Dark Emerald & Charcoal Gradient Overlay agar teks sangat tajam & kontras -->
+            <div class="absolute inset-0 bg-gradient-to-br from-[#022c22]/95 via-[#034435]/90 to-[#02261e]/95"></div>
+            <div class="absolute inset-0 bg-slate-950/40"></div>
+          </div>
+
+          <div class="absolute -right-20 -top-20 w-80 h-80 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none z-0"></div>
+          <div class="absolute -left-20 -bottom-20 w-80 h-80 bg-amber-400/10 rounded-full blur-3xl pointer-events-none z-0"></div>
 
           <div class="relative z-10 max-w-3xl mx-auto text-center space-y-4 mb-12">
             <span class="px-3.5 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs font-bold uppercase tracking-wider">
