@@ -55,7 +55,7 @@ class CmsController extends Controller
 
     public function indexGalleries(): JsonResponse
     {
-        $galleries = CmsGallery::with('creator:id,name')->orderByDesc('created_at')->paginate(20);
+        $galleries = CmsGallery::with('creator:id,nama')->orderByDesc('created_at')->paginate(20);
         return response()->json([
             'success' => true,
             'message' => 'Data galeri berhasil diambil.',
@@ -129,7 +129,7 @@ class CmsController extends Controller
 
     public function indexAchievements(): JsonResponse
     {
-        $achievements = CmsAchievement::with('creator:id,name')->orderByDesc('created_at')->paginate(20);
+        $achievements = CmsAchievement::with('creator:id,nama')->orderByDesc('created_at')->paginate(20);
         return response()->json([
             'success' => true,
             'message' => 'Data prestasi berhasil diambil.',
@@ -203,7 +203,7 @@ class CmsController extends Controller
 
     public function indexArticles(): JsonResponse
     {
-        $articles = CmsArticle::with('creator:id,name')->orderByDesc('created_at')->paginate(20);
+        $articles = CmsArticle::with('creator:id,nama')->orderByDesc('created_at')->paginate(20);
         return response()->json([
             'success' => true,
             'message' => 'Data artikel berhasil diambil.',
