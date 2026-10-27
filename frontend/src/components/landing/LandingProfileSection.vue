@@ -25,7 +25,7 @@ watch(
       <!-- Section Title Header -->
       <div class="text-center max-w-3xl mx-auto">
         <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-          Bagian 1 • Profil Lembaga
+          Profil Lembaga
         </span>
         <h2 class="mt-3 text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
           SDI Bina Insan Mandiri Purwokerto

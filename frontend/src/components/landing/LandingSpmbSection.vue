@@ -35,7 +35,7 @@ const handleQuickRegister = () => {
       <!-- Section Title Header -->
       <div class="text-center max-w-3xl mx-auto space-y-3">
         <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-          Bagian 6 • Penerimaan Murid Baru
+          Penerimaan Murid Baru
         </span>
         <h2 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
           Info SPMB Tahun Ajaran 2026/2027

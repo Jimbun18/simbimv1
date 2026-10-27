@@ -121,32 +121,32 @@ const getPortalLabel = () => {
             </li>
             <li>
               <router-link to="/profil" class="hover:text-amber-300 transition">
-                • 1. Profil (Singkat, Visi-Misi, Guru, Janji)
+                • Profil Sekolah
               </router-link>
             </li>
             <li>
               <router-link to="/pendidikan" class="hover:text-amber-300 transition">
-                • 2. Pendidikan (Deep Learning & Peradaban)
+                • Pendidikan & Deep Learning
               </router-link>
             </li>
             <li>
               <router-link to="/artikel" class="hover:text-amber-300 transition">
-                • 3. Artikel & Warta Sekolah
+                • Artikel & Warta Sekolah
               </router-link>
             </li>
             <li>
               <router-link to="/galeri" class="hover:text-amber-300 transition">
-                • 4. Galeri Kegiatan Santri
+                • Galeri Kegiatan Santri
               </router-link>
             </li>
             <li>
               <router-link to="/prestasi" class="hover:text-amber-300 transition">
-                • 5. Prestasi Santri & Sekolah
+                • Prestasi Santri & Sekolah
               </router-link>
             </li>
             <li>
               <router-link to="/spmb" class="hover:text-amber-300 transition">
-                • 6. Info SPMB 2026/2027
+                • Info SPMB 2026/2027
               </router-link>
             </li>
           </ul>

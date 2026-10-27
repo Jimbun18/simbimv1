@@ -9,7 +9,7 @@ import { achievementsData } from './landingData'
       <!-- Section Title Header -->
       <div class="text-center max-w-3xl mx-auto space-y-3">
         <span class="px-3.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">
-          Bagian 5 • Jejak Karya & Keunggulan
+          Jejak Karya & Keunggulan
         </span>
         <h2 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
           Prestasi Santri & Sekolah

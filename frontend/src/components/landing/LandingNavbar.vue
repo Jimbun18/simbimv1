@@ -176,24 +176,24 @@ const handlePortalClick = () => {
       </button>
 
       <button @click="navigateTo('/profil')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
-        1. Profil
+        Profil
       </button>
 
       <button @click="navigateTo('/pendidikan')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
-        2. Pendidikan
+        Pendidikan
       </button>
 
       <button @click="navigateTo('/artikel')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
-        3. Artikel & Warta
+        Artikel & Warta
       </button>
       <button @click="navigateTo('/galeri')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
-        4. Galeri Kegiatan
+        Galeri Kegiatan
       </button>
       <button @click="navigateTo('/prestasi')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
-        5. Prestasi Santri
+        Prestasi Santri
       </button>
       <button @click="navigateTo('/spmb')" class="block w-full text-left py-2 font-bold text-emerald-800 hover:text-emerald-950 flex items-center justify-between">
-        <span>6. Info SPMB 2026/2027</span>
+        <span>Info SPMB 2026/2027</span>
         <span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-amber-950 font-bold">Dibuka</span>
       </button>
 

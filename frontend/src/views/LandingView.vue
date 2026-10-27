@@ -65,7 +65,7 @@ const handlePortalAccess = () => {
           <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-                Ringkasan • 1. Profil Sekolah
+                Profil Sekolah
               </span>
               <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 Mendidik dengan Hati, Menumbuhkan Fitrah
@@ -154,7 +154,7 @@ const handlePortalAccess = () => {
           <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <span class="px-3.5 py-1 rounded-full bg-teal-100 text-teal-800 text-xs font-bold uppercase tracking-wider">
-                Ringkasan • 2. Pendidikan
+                Pendidikan & Deep Learning
               </span>
               <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 Pendidikan Berbasis Deep Learning & Membangun Peradaban
@@ -224,7 +224,7 @@ const handlePortalAccess = () => {
           <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-                Ringkasan • 4. Artikel & Warta
+                Artikel & Warta
               </span>
               <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 Kabar Terbaru & Wawasan Parenting
@@ -284,7 +284,7 @@ const handlePortalAccess = () => {
           <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-                Ringkasan • 5. Galeri
+                Galeri Kegiatan
               </span>
               <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 Dokumentasi Kegiatan Santri
@@ -337,7 +337,7 @@ const handlePortalAccess = () => {
           <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <span class="px-3.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">
-                Ringkasan • 6. Prestasi
+                Prestasi Santri
               </span>
               <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 Pencapaian Prestasi Santri
@@ -389,7 +389,7 @@ const handlePortalAccess = () => {
           
           <div class="max-w-3xl space-y-3">
             <span class="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs font-bold uppercase tracking-wider">
-              Ringkasan • 7. Penerimaan Murid Baru
+              Penerimaan Murid Baru
             </span>
             <h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight">
               Penerimaan Murid Baru (SPMB) TA 2026/2027

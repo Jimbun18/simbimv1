@@ -13,7 +13,7 @@ import pendidikanBawahBg from '../../assets/pendidikan bawah.jpeg'
         
         <div class="text-center max-w-3xl mx-auto space-y-3">
           <span class="px-3.5 py-1 rounded-full bg-teal-100 text-teal-800 text-xs font-bold uppercase tracking-wider">
-            Bagian 2 • Filosofi & Kurikulum Unggulan
+            Filosofi & Kurikulum Unggulan
           </span>
           <h2 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
             Pendidikan Berbasis Deep Learning
