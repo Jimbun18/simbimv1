@@ -1,16 +1,38 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-950 flex items-center justify-center p-3 sm:p-6 lg:p-8">
+  <div class="min-h-screen relative flex items-center justify-center p-3 sm:p-6 lg:p-8 overflow-hidden">
+    <!-- BACKGROUND UTAMA: Foto Santri & Guru SDI BIM (login.jpeg) -->
+    <div class="absolute inset-0 z-0">
+      <img 
+        :src="loginBg" 
+        alt="Latar Belakang SIM-BIM" 
+        class="w-full h-full object-cover object-center filter blur-[3px] scale-105"
+      />
+      <!-- Overlay Gradien Hijau Zamrud Elegan & Gelap untuk Kontras Maksimal -->
+      <div class="absolute inset-0 bg-gradient-to-br from-emerald-950/88 via-slate-950/82 to-teal-950/88"></div>
+      <div class="absolute inset-0 bg-black/25"></div>
+    </div>
     
     <!-- RESPONSIVE LOGIN CONTAINER: Adapts automatically between Mobile, Tablet, and Desktop Monitor -->
-    <div class="w-full max-w-md md:max-w-xl lg:max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-emerald-100/40 backdrop-blur-md grid grid-cols-1 lg:grid-cols-12 transition-all">
+    <div class="w-full max-w-md md:max-w-xl lg:max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-emerald-100/40 backdrop-blur-md grid grid-cols-1 lg:grid-cols-12 transition-all relative z-10">
       
       <!-- DESKTOP / WIDE MONITOR LEFT BRANDING SIDEBAR (Visible on Monitor >= 1024px) -->
-      <div class="hidden lg:flex lg:col-span-5 bg-gradient-to-br from-emerald-900 via-emerald-850 to-teal-950 p-8 flex-col justify-between text-white relative overflow-hidden">
-        <!-- Ambient Glow -->
-        <div class="absolute -right-10 -top-10 w-48 h-48 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none"></div>
-        <div class="absolute -left-10 -bottom-10 w-48 h-48 bg-teal-500/15 rounded-full blur-2xl pointer-events-none"></div>
+      <div class="hidden lg:flex lg:col-span-5 p-8 flex-col justify-between text-white relative overflow-hidden">
+        <!-- Background Image Foto Santri & Pendidik SDI BIM -->
+        <div class="absolute inset-0 z-0">
+          <img 
+            :src="loginBg" 
+            alt="Santri & Pendidik SDI Bina Insan Mandiri" 
+            class="w-full h-full object-cover object-top scale-105"
+          />
+          <!-- Overlay Gelap Zamrud Elegan agar Teks Sangat Jelas Terbaca -->
+          <div class="absolute inset-0 bg-gradient-to-b from-emerald-950/92 via-emerald-900/85 to-slate-950/95"></div>
+        </div>
 
-        <div class="relative z-10">
+        <!-- Ambient Glow -->
+        <div class="absolute -right-10 -top-10 w-48 h-48 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none z-10"></div>
+        <div class="absolute -left-10 -bottom-10 w-48 h-48 bg-teal-500/20 rounded-full blur-2xl pointer-events-none z-10"></div>
+
+        <div class="relative z-20">
           <div class="flex items-center gap-3">
             <img 
               src="/logo.png" 
@@ -56,7 +78,7 @@
           </div>
         </div>
 
-        <div class="relative z-10 pt-6 border-t border-white/10 text-[11px] text-emerald-300/80 flex justify-between items-center">
+        <div class="relative z-20 pt-6 border-t border-white/10 text-[11px] text-emerald-300/80 flex justify-between items-center">
           <span>Purwokerto, Jawa Tengah</span>
           <span>TA 2024/2025</span>
         </div>
@@ -204,6 +226,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import loginBg from '../assets/login.jpeg';
 
 const router = useRouter();
 const auth = useAuthStore();
