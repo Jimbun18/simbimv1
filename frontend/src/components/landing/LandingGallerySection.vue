@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { galleryItems as defaultGalleryItems, type GalleryItem } from './landingData'
+import { galleryItems as defaultGalleryItems } from './landingData'
 import api from '../../services/api'
 
 interface DynamicGalleryItem {
