@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { articlesData as defaultArticlesData, type ArticleItem } from './landingData'
+import { articlesData as defaultArticlesData } from './landingData'
 import api from '../../services/api'
 
 interface DynamicArticle {

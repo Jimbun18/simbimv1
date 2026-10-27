@@ -1037,7 +1037,7 @@ const handleLogout = async () => {
           <div class="flex items-center gap-2 sm:gap-4">
             <!-- Mobile Drawer Toggle Button (Visible only on Mobile & Tablet < 1024px) -->
             <button 
-              @click="isMobileDrawerOpen = true"
+              @click="toggleSidebar"
               class="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all active:scale-95"
               title="Buka Menu Navigasi"
               aria-label="Buka Menu Navigasi"
