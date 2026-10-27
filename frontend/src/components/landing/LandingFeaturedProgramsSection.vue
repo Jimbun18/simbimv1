@@ -23,7 +23,7 @@ defineProps<{
             <span class="text-emerald-700">SDI Bina Insan Mandiri Purwokerto</span>
           </h2>
           <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            Kurikulum holistik berbasis <em>Deep Learning</em> yang mengasah kecerdasan spiritual, intelektual, kepemimpinan, dan kemandirian santri untuk membentuk generasi pembina peradaban.
+            Kurikulum holistik berbasis <em>Deep Learning</em> yang mengasah kecerdasan spiritual, intelektual, kepemimpinan, dan kemandirian siswa/siswi untuk membentuk generasi pembina peradaban.
           </p>
         </div>
 
@@ -69,7 +69,7 @@ defineProps<{
               <div class="absolute bottom-2.5 left-3 right-3 z-10 text-white">
                 <div class="text-[10px] font-mono text-emerald-300 font-semibold drop-shadow-sm flex items-center gap-1.5">
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  <span>Dokumentasi Santri BIM</span>
+                  <span>Dokumentasi Siswa/Siswi BIM</span>
                 </div>
               </div>
             </template>
@@ -142,7 +142,7 @@ defineProps<{
             Sinergi Kurikulum Terpadu
           </div>
           <h3 class="text-lg sm:text-xl font-black text-white">
-            Setiap Program Dirancang Tumbuh Bersama Fitrah Santri
+            Setiap Program Dirancang Tumbuh Bersama Potensi Siswa/Siswi
           </h3>
           <p class="text-xs text-emerald-100/90 max-w-2xl leading-relaxed">
             Menghubungkan kecintaan pada Al-Qur'an, adab berakhlak mulia, kecakapan bahasa global, hingga keterampilan hidup nyata (Cooking Day & Entrepreneurship).
@@ -153,7 +153,7 @@ defineProps<{
           to="/spmb"
           class="px-6 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm transition shrink-0 shadow-lg shadow-amber-400/20"
         >
-          Daftar Santri Baru (SPMB) &rarr;
+          Daftar Siswa/Siswi Baru (SPMB) &rarr;
         </router-link>
       </div>
 
