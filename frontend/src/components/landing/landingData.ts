@@ -26,6 +26,19 @@ export interface DeepLearningPillar {
 
 export type FitrahPillar = DeepLearningPillar
 
+export interface FeaturedProgram {
+  id: number
+  number: number
+  title: string
+  subtitle: string
+  desc: string
+  icon: string
+  image?: string
+  gradient: string
+  badgeColor: string
+  category: string
+}
+
 export interface ArticleItem {
   id: number
   title: string
@@ -258,6 +271,98 @@ export const civilizationPoints = [
     title: 'Generasi Qur\'ani yang Relevan dengan Zaman',
     desc: 'Kokoh dalam hafalan dan pemahaman Al-Qur\'an, sekaligus adaptif dan mahir memanfaatkan sains teknologi untuk kemaslahatan umat Islam dan dunia global.',
     icon: '🌍',
+  },
+]
+
+// 4.1 DATA 8 PROGRAM UNGGULAN SDI BINA INSAN MANDIRI
+export const featuredPrograms: FeaturedProgram[] = [
+  {
+    id: 1,
+    number: 1,
+    title: 'Tahfidz Al-Qur\'an',
+    subtitle: 'Bimbingan Hafalan Al-Qur\'an Intensif & Bersanad',
+    desc: 'Program terstruktur tahfidz Al-Qur\'an juz 30, 29, dan surah pilihan dengan metode talaqqi, tasmi\', dan muraja\'ah harian terbimbing bersama dewan asatidz tahfidz.',
+    icon: '📖',
+    gradient: 'from-emerald-700 via-emerald-800 to-teal-900',
+    badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    category: 'Al-Qur\'an'
+  },
+  {
+    id: 2,
+    number: 2,
+    title: 'Tahsin Al-Qur\'an',
+    subtitle: 'Standarisasi Makharijul Huruf & Kaidah Tajwid',
+    desc: 'Pembinaan perbaikan kualitas bacaan Al-Qur\'an santri sejak dini agar fasih, tartil, dan memahami hukum tajwid dengan evaluasi berkala per jilid metode terstandar.',
+    icon: '🕌',
+    gradient: 'from-teal-700 via-teal-800 to-cyan-900',
+    badgeColor: 'bg-teal-100 text-teal-800 border-teal-200',
+    category: 'Al-Qur\'an'
+  },
+  {
+    id: 3,
+    number: 3,
+    title: 'Three Language',
+    subtitle: 'Bahasa Arab, Bahasa Inggris, & Bahasa Indonesia',
+    desc: 'Pembiasaan lingkungan berbahasa aktif melalui kosakata harian (daily vocabulary), percakapan tematik, serta pembekalan komunikasi global yang santun dan percaya diri.',
+    icon: '🌍',
+    gradient: 'from-blue-700 via-indigo-800 to-slate-900',
+    badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
+    category: 'Bahasa & Wawasan'
+  },
+  {
+    id: 4,
+    number: 4,
+    title: 'Pembiasaan Akhlak Islami',
+    subtitle: 'Karakter Qur\'ani, Adab Keseharian & Ibadah Praktis',
+    desc: 'Internalisasi nilai-nilai Islam melalui shalat dhuha & dhuhur berjama\'ah, dzikir pagi, adab makan minum Islami, kepedulian sosial, serta 6 Ikrar Janji Santri SDI BIM.',
+    icon: '🤲',
+    gradient: 'from-emerald-800 via-green-850 to-teal-950',
+    badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    category: 'Karakter & Adab'
+  },
+  {
+    id: 5,
+    number: 5,
+    title: 'Leadership',
+    subtitle: 'Kepemimpinan Santri, Tanggung Jawab & Keberanian',
+    desc: 'Melatih jiwa kepemimpinan santri melalui giliran memimpin doa, petugas upacara, kepanduan Pramuka SIT, ketua kelompok halaqah, dan dinamika keorganisasian santri.',
+    icon: '👑',
+    gradient: 'from-amber-700 via-orange-800 to-slate-900',
+    badgeColor: 'bg-amber-100 text-amber-900 border-amber-200',
+    category: 'Kepemimpinan'
+  },
+  {
+    id: 6,
+    number: 6,
+    title: 'Entrepreneurship',
+    subtitle: 'Jiwa Wirausaha Kreatif, Market Day & Literasi Finansial',
+    desc: 'Edukasi kemandirian finansial dan etika berniaga Islami melalui agenda Market Day santri, pembuatan produk kreatif, perhitungan modal keuntungan, dan sedekah hasil usaha.',
+    icon: '💼',
+    gradient: 'from-purple-700 via-violet-850 to-indigo-950',
+    badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
+    category: 'Kreativitas & Bisnis'
+  },
+  {
+    id: 7,
+    number: 7,
+    title: 'Life Skill',
+    subtitle: 'Kecakapan Hidup, Kemandirian Praktis & Problem Solving',
+    desc: 'Pembiasaan keterampilan hidup mandiri seperti merapikan perlengkapan belajar, kebersihan diri, pertolongan pertama (P3K dasar), kerajinan tangan, dan ketangkasan fisik.',
+    icon: '🛠️',
+    gradient: 'from-teal-800 via-emerald-850 to-slate-900',
+    badgeColor: 'bg-teal-100 text-teal-800 border-teal-200',
+    category: 'Kecakapan Hidup'
+  },
+  {
+    id: 8,
+    number: 8,
+    title: 'Cooking Day',
+    subtitle: 'Edukasi Makanan Halal-Thayyib & Kerjasama Santri',
+    desc: 'Kegiatan edukatif memasak bersama yang melatih kerjasama tim, mengenal gizi seimbang makanan halal dan thayyib, adab dapur, serta menghargai jerih payah orang tua.',
+    icon: '🍳',
+    gradient: 'from-rose-700 via-orange-800 to-amber-950',
+    badgeColor: 'bg-rose-100 text-rose-800 border-rose-200',
+    category: 'Eksplorasi Praktis'
   },
 ]
 

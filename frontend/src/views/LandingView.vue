@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth'
 
 import LandingNavbar from '../components/landing/LandingNavbar.vue'
 import LandingHero from '../components/landing/LandingHero.vue'
+import LandingFeaturedProgramsSection from '../components/landing/LandingFeaturedProgramsSection.vue'
 import LandingFooter from '../components/landing/LandingFooter.vue'
 
 import { 
@@ -213,14 +214,17 @@ const handlePortalAccess = () => {
         </div>
       </section>
 
-      <!-- 3. RINGKASAN ARTIKEL & WARTA -->
-      <section class="py-20 bg-white border-b border-slate-200/80">
+      <!-- 3. PROGRAM UNGGULAN SEKOLAH (8 PROGRAM) -->
+      <LandingFeaturedProgramsSection :show-view-all-link="true" section-id="beranda-program-unggulan" />
+
+      <!-- 4. RINGKASAN ARTIKEL & WARTA -->
+      <section class="py-20 bg-slate-50 border-b border-slate-200/80">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           
           <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-                Ringkasan • 3. Artikel & Warta
+                Ringkasan • 4. Artikel & Warta
               </span>
               <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 Kabar Terbaru & Wawasan Parenting
@@ -280,7 +284,7 @@ const handlePortalAccess = () => {
           <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-                Ringkasan • 4. Galeri
+                Ringkasan • 5. Galeri
               </span>
               <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 Dokumentasi Kegiatan Santri
@@ -333,7 +337,7 @@ const handlePortalAccess = () => {
           <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <span class="px-3.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">
-                Ringkasan • 5. Prestasi
+                Ringkasan • 6. Prestasi
               </span>
               <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 Pencapaian Prestasi Santri
@@ -385,7 +389,7 @@ const handlePortalAccess = () => {
           
           <div class="max-w-3xl space-y-3">
             <span class="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs font-bold uppercase tracking-wider">
-              Ringkasan • 6. Penerimaan Murid Baru
+              Ringkasan • 7. Penerimaan Murid Baru
             </span>
             <h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight">
               Penerimaan Murid Baru (SPMB) TA 2026/2027
