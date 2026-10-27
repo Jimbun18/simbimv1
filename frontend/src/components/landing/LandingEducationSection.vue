@@ -26,44 +26,44 @@ import pendidikanBawahBg from '../../assets/pendidikan bawah.jpeg'
           </p>
         </div>
 
-        <!-- 4 Pilar Deep Learning Cards with Stagger Reveal -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- 4 Pilar Deep Learning Cards with Stagger Reveal (2 Kolom Mobile, 2 Kolom Desktop) -->
+        <div class="grid grid-cols-2 gap-3 sm:gap-6">
           <div 
             v-for="(pillar, idx) in deepLearningPillars" 
             :key="pillar.title"
             v-reveal="{ type: 'fade-up', delay: 80 + idx * 80 }"
-            class="bg-white p-7 sm:p-8 rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1.5 transition-all duration-300 space-y-4"
+            class="bg-white p-4 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1.5 transition-all duration-300 space-y-2.5 sm:space-y-4"
           >
             <div class="flex items-center justify-between">
-              <span class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-2xl shadow-xs border border-emerald-100">
+              <span class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-lg sm:text-2xl shadow-xs border border-emerald-100">
                 {{ pillar.icon }}
               </span>
-              <span class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
-                Pilar Deep Learning
+              <span class="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-slate-100 text-slate-700 truncate max-w-[100px] sm:max-w-none">
+                Deep Learning
               </span>
             </div>
 
             <div>
-              <h3 class="text-lg sm:text-xl font-black text-slate-900 leading-tight">
+              <h3 class="text-xs sm:text-xl font-black text-slate-900 leading-tight">
                 {{ pillar.title }}
               </h3>
-              <p class="text-xs font-bold text-emerald-700 mt-1">
+              <p class="text-[10px] sm:text-xs font-bold text-emerald-700 mt-0.5 sm:mt-1 truncate">
                 {{ pillar.subtitle }}
               </p>
             </div>
 
-            <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            <p class="text-[11px] sm:text-sm text-slate-600 leading-relaxed line-clamp-3 sm:line-clamp-none">
               {{ pillar.desc }}
             </p>
 
-            <div class="pt-3 border-t border-slate-100 space-y-2">
-              <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                Praktik Nyata di SDI BIM:
+            <div class="pt-2 sm:pt-3 border-t border-slate-100 space-y-1.5 sm:space-y-2">
+              <div class="text-[9px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                Praktik di SDI BIM:
               </div>
-              <ul class="text-xs text-slate-700 space-y-1.5">
-                <li v-for="(practice, pIdx) in pillar.practices" :key="pIdx" class="flex items-start gap-2">
-                  <span class="text-emerald-600 font-bold mt-0.5">✓</span>
-                  <span>{{ practice }}</span>
+              <ul class="text-[10px] sm:text-xs text-slate-700 space-y-1 sm:space-y-1.5">
+                <li v-for="(practice, pIdx) in pillar.practices" :key="pIdx" class="flex items-start gap-1.5 sm:gap-2">
+                  <span class="text-emerald-600 font-bold mt-0.5 shrink-0">✓</span>
+                  <span class="line-clamp-2 sm:line-clamp-none">{{ practice }}</span>
                 </li>
               </ul>
             </div>
@@ -109,18 +109,18 @@ import pendidikanBawahBg from '../../assets/pendidikan bawah.jpeg'
             </p>
           </div>
 
-          <!-- Grid 4 Titik Tumpu Peradaban -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 relative z-10">
+          <!-- Grid 4 Titik Tumpu Peradaban (2 Kolom Mobile, 4 Desktop) -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 relative z-10">
             <div 
               v-for="point in civilizationPoints" 
               :key="point.title"
-              class="p-5 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-md hover:bg-white/15 transition-all space-y-3"
+              class="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-white/10 border border-white/15 backdrop-blur-md hover:bg-white/15 transition-all space-y-1.5 sm:space-y-3"
             >
-              <div class="text-3xl">{{ point.icon }}</div>
-              <h4 class="font-bold text-sm text-emerald-200 leading-snug">
+              <div class="text-2xl sm:text-3xl">{{ point.icon }}</div>
+              <h4 class="font-bold text-xs sm:text-sm text-emerald-200 leading-snug line-clamp-1 sm:line-clamp-none">
                 {{ point.title }}
               </h4>
-              <p class="text-xs text-white/80 leading-relaxed font-light">
+              <p class="text-[10px] sm:text-xs text-white/80 leading-relaxed font-light line-clamp-2 sm:line-clamp-none">
                 {{ point.desc }}
               </p>
             </div>

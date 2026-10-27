@@ -42,16 +42,16 @@ defineProps<{
         </div>
       </div>
 
-      <!-- Grid 8 Program Unggulan dengan Staggered Scroll Reveal -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Grid 8 Program Unggulan (2 Kolom pada Mobile, 4 Kolom pada Desktop) -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         <div 
           v-for="(program, idx) in featuredPrograms" 
           :key="program.id"
           v-reveal="{ type: 'fade-up', delay: 60 + (idx % 4) * 80 }"
-          class="group bg-slate-50 hover:bg-white rounded-3xl border border-slate-200 hover:border-emerald-300 shadow-xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5 flex flex-col overflow-hidden"
+          class="group bg-slate-50 hover:bg-white rounded-2xl sm:rounded-3xl border border-slate-200 hover:border-emerald-300 shadow-xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5 flex flex-col overflow-hidden"
         >
           <!-- FOTO / VISUAL CONTAINER PROGRAM -->
-          <div class="relative h-48 w-full overflow-hidden bg-slate-900">
+          <div class="relative h-32 sm:h-48 w-full overflow-hidden bg-slate-900">
             <!-- Jika foto sudah diberikan user -->
             <template v-if="program.image">
               <img 
@@ -63,18 +63,18 @@ defineProps<{
               <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30 pointer-events-none"></div>
 
               <!-- Floating Badges di atas Foto -->
-              <div class="absolute top-3 left-3 w-8 h-8 rounded-full bg-slate-950/90 text-white font-black text-xs flex items-center justify-center shadow-md z-10 border border-white/30 backdrop-blur-xs">
+              <div class="absolute top-2 left-2 sm:top-3 sm:left-3 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-950/90 text-white font-black text-[10px] sm:text-xs flex items-center justify-center shadow-md z-10 border border-white/30 backdrop-blur-xs">
                 {{ program.number }}
               </div>
-              <div class="absolute top-3 right-3 z-10">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/50 backdrop-blur-md text-emerald-100 border border-white/20">
+              <div class="absolute top-2 right-2 sm:top-3 sm:right-3 z-10">
+                <span class="px-2 py-0.5 rounded-full text-[8px] sm:text-[10px] font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md text-emerald-100 border border-white/20 truncate max-w-[90px] sm:max-w-none block">
                   {{ program.category }}
                 </span>
               </div>
-              <div class="absolute bottom-2.5 left-3 right-3 z-10 text-white">
-                <div class="text-[10px] font-mono text-emerald-300 font-semibold drop-shadow-sm flex items-center gap-1.5">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  <span>Dokumentasi Siswa/Siswi BIM</span>
+              <div class="absolute bottom-2 left-2 right-2 sm:bottom-2.5 sm:left-3 sm:right-3 z-10 text-white">
+                <div class="text-[9px] sm:text-[10px] font-mono text-emerald-300 font-semibold drop-shadow-sm flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                  <span class="truncate">Siswa/Siswi BIM</span>
                 </div>
               </div>
             </template>
@@ -82,7 +82,7 @@ defineProps<{
             <!-- Jika belum ada foto (Tampilan Banner Artistik Islami Menunggu Foto) -->
             <div 
               v-else 
-              class="w-full h-full bg-gradient-to-br flex flex-col justify-between p-5 text-white relative overflow-hidden group-hover:scale-105 transition-transform duration-500"
+              class="w-full h-full bg-gradient-to-br flex flex-col justify-between p-3.5 sm:p-5 text-white relative overflow-hidden group-hover:scale-105 transition-transform duration-500"
               :class="program.gradient"
             >
               <!-- Ambient Pattern Effect -->
@@ -90,49 +90,48 @@ defineProps<{
               
               <!-- Top Row: Badge Nomor & Kategori -->
               <div class="relative z-10 flex items-center justify-between">
-                <!-- Lingkaran Nomor Hitam-Putih Sesuai Desain Acuan -->
-                <div class="w-8 h-8 rounded-full bg-white text-slate-950 font-black text-sm flex items-center justify-center shadow-md">
+                <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center shadow-md">
                   {{ program.number }}
                 </div>
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/25 backdrop-blur-md text-emerald-100 border border-white/15">
+                <span class="px-2 py-0.5 rounded-full text-[8px] sm:text-[10px] font-bold uppercase tracking-wider bg-black/25 backdrop-blur-md text-emerald-100 border border-white/15">
                   {{ program.category }}
                 </span>
               </div>
 
               <!-- Center/Bottom Info Banner -->
-              <div class="relative z-10 space-y-1">
-                <div class="text-3xl mb-1">{{ program.icon }}</div>
-                <div class="text-xs font-mono text-emerald-200/90 font-medium tracking-wide">Program #{{ program.number }}</div>
-                <h4 class="font-black text-base text-white leading-tight drop-shadow-sm">{{ program.title }}</h4>
+              <div class="relative z-10 space-y-0.5 sm:space-y-1">
+                <div class="text-xl sm:text-3xl mb-0.5 sm:mb-1">{{ program.icon }}</div>
+                <div class="text-[10px] sm:text-xs font-mono text-emerald-200/90 font-medium tracking-wide">Program #{{ program.number }}</div>
+                <h4 class="font-black text-xs sm:text-base text-white leading-tight drop-shadow-sm truncate">{{ program.title }}</h4>
               </div>
             </div>
           </div>
 
           <!-- KONTEN DESKRIPSI PROGRAM -->
-          <div class="p-6 flex-1 flex flex-col justify-between space-y-4">
-            <div class="space-y-2">
-              <div class="flex items-center gap-2">
-                <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold">
+          <div class="p-3.5 sm:p-6 flex-1 flex flex-col justify-between space-y-2.5 sm:space-y-4">
+            <div class="space-y-1 sm:space-y-2">
+              <div class="flex items-center gap-1.5 sm:gap-2">
+                <span class="w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] sm:text-xs font-bold shrink-0">
                   {{ program.number }}
                 </span>
-                <h3 class="font-black text-base text-slate-900 group-hover:text-emerald-700 transition">
+                <h3 class="font-black text-xs sm:text-base text-slate-900 group-hover:text-emerald-700 transition leading-snug line-clamp-1 sm:line-clamp-none">
                   {{ program.title }}
                 </h3>
               </div>
               
-              <p class="text-[11px] font-bold text-emerald-700 leading-snug">
+              <p class="text-[10px] sm:text-[11px] font-bold text-emerald-700 leading-snug truncate">
                 {{ program.subtitle }}
               </p>
 
-              <p class="text-xs text-slate-600 leading-relaxed">
+              <p class="text-[11px] sm:text-xs text-slate-600 leading-relaxed line-clamp-2 sm:line-clamp-3">
                 {{ program.desc }}
               </p>
             </div>
 
-            <div class="pt-3 border-t border-slate-200/80 flex items-center justify-between text-[11px]">
-              <span class="font-semibold text-slate-500">SDI BIM Purwokerto</span>
+            <div class="pt-2 sm:pt-3 border-t border-slate-200/80 flex items-center justify-between text-[10px] sm:text-[11px]">
+              <span class="font-semibold text-slate-500 truncate hidden sm:inline">SDI BIM</span>
               <span class="font-bold text-emerald-700 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
-                Deep Learning &rarr;
+                Detail &rarr;
               </span>
             </div>
           </div>

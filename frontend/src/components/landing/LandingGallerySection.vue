@@ -132,14 +132,14 @@ const closeLightbox = () => {
         </div>
       </div>
 
-      <!-- Gallery Grid with Staggered Scroll Reveal -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Gallery Grid with Staggered Scroll Reveal (2 Kolom Mobile, 3 Kolom Desktop) -->
+      <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
         <div 
           v-for="(item, idx) in filteredItems" 
           :key="item.id"
           v-reveal="{ type: 'fade-up', delay: 60 + (idx % 3) * 90 }"
           @click="openLightbox(item)"
-          class="btn-splash group relative rounded-3xl overflow-hidden bg-gradient-to-tr text-white p-7 h-64 sm:h-72 flex flex-col justify-between shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1.5"
+          class="btn-splash group relative rounded-2xl sm:rounded-3xl overflow-hidden bg-gradient-to-tr text-white p-3.5 sm:p-7 h-48 sm:h-72 flex flex-col justify-between shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1.5"
           :class="item.color"
         >
           <!-- Background Real Photo (from CMS) or Abstract Pattern -->
@@ -154,25 +154,25 @@ const closeLightbox = () => {
 
           <!-- Top Badge & Icon -->
           <div class="relative z-10 flex items-center justify-between">
-            <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/20 backdrop-blur-md border border-white/20 text-white">
+            <span class="px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[8px] sm:text-[10px] font-bold uppercase tracking-wider bg-white/20 backdrop-blur-md border border-white/20 text-white truncate max-w-[90px] sm:max-w-none">
               {{ item.categoryLabel }}
             </span>
-            <span class="text-3xl filter drop-shadow">{{ item.icon }}</span>
+            <span class="text-xl sm:text-3xl filter drop-shadow">{{ item.icon }}</span>
           </div>
 
           <!-- Bottom Content -->
-          <div class="relative z-10 space-y-1.5">
-            <div class="text-[10px] text-emerald-300 font-mono flex items-center gap-1">
-              <span>🕒 Diposting:</span> {{ item.date }}
+          <div class="relative z-10 space-y-0.5 sm:space-y-1.5">
+            <div class="text-[9px] sm:text-[10px] text-emerald-300 font-mono flex items-center gap-1">
+              <span>🕒</span> {{ item.date }}
             </div>
-            <h3 class="font-black text-lg sm:text-xl text-white leading-snug group-hover:text-emerald-200 transition-colors">
+            <h3 class="font-black text-xs sm:text-xl text-white leading-snug group-hover:text-emerald-200 transition-colors line-clamp-2">
               {{ item.title }}
             </h3>
-            <p class="text-xs text-white/80 line-clamp-2 leading-relaxed">
+            <p class="text-[11px] sm:text-xs text-white/80 line-clamp-1 sm:line-clamp-2 leading-relaxed hidden sm:block">
               {{ item.desc }}
             </p>
-            <div class="pt-2 flex items-center gap-1.5 text-xs font-bold text-emerald-300 opacity-90 group-hover:opacity-100">
-              <span>Lihat Foto Selengkapnya</span>
+            <div class="pt-1 sm:pt-2 flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-emerald-300 opacity-90 group-hover:opacity-100">
+              <span>Buka Foto</span>
               <span>&rarr;</span>
             </div>
           </div>

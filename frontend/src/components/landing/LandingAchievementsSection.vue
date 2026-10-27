@@ -71,13 +71,13 @@ onMounted(() => {
         </p>
       </div>
 
-      <!-- Mode CMS: Foto + Judul + Waktu Posting dengan Staggered Scroll Reveal -->
-      <div v-if="isCmsMode" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <!-- Mode CMS: Foto + Judul + Waktu Posting (2 Kolom Mobile, 4 Desktop) -->
+      <div v-if="isCmsMode" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
         <div 
           v-for="(item, idx) in items" 
           :key="item.id"
           v-reveal="{ type: 'fade-up', delay: 60 + (idx % 4) * 80 }"
-          class="bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-amber-400 hover:-translate-y-1.5 transition-all duration-300 group flex flex-col"
+          class="bg-white rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-amber-400 hover:-translate-y-1.5 transition-all duration-300 group flex flex-col"
         >
           <div class="aspect-4/3 w-full bg-slate-100 overflow-hidden relative">
             <img 
@@ -86,65 +86,65 @@ onMounted(() => {
               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading="lazy" 
             />
-            <div class="absolute top-3 left-3">
-              <span class="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-amber-300 text-[10px] font-bold uppercase tracking-wider border border-white/20">
-                🏆 Prestasi Siswa
+            <div class="absolute top-2 left-2 sm:top-3 sm:left-3">
+              <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-black/60 backdrop-blur-md text-amber-300 text-[8px] sm:text-[10px] font-bold uppercase tracking-wider border border-white/20">
+                🏆 Prestasi
               </span>
             </div>
           </div>
 
-          <div class="p-5 flex-1 flex flex-col justify-between space-y-3">
-            <h3 class="font-black text-base text-slate-900 group-hover:text-amber-800 transition-colors leading-snug">
+          <div class="p-3.5 sm:p-5 flex-1 flex flex-col justify-between space-y-2 sm:space-y-3">
+            <h3 class="font-black text-xs sm:text-base text-slate-900 group-hover:text-amber-800 transition-colors leading-snug line-clamp-2">
               {{ item.title }}
             </h3>
 
-            <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-              <span class="flex items-center gap-1 font-mono">
-                <span>🕒 Diposting:</span> {{ item.date }}
+            <div class="pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between text-[9px] sm:text-[11px] text-slate-400">
+              <span class="flex items-center gap-1 font-mono truncate">
+                <span>🕒</span> {{ item.date }}
               </span>
-              <span class="text-amber-600 font-bold">SDI BIM</span>
+              <span class="text-amber-600 font-bold hidden sm:inline">SDI BIM</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Mode Fallback Default (Jika CMS belum ada data) -->
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Mode Fallback Default (2 Kolom Mobile, 4 Desktop) -->
+      <div v-else class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         <div 
           v-for="(item, idx) in items" 
           :key="item.id"
           v-reveal="{ type: 'fade-up', delay: 60 + (idx % 4) * 80 }"
-          class="bg-slate-50 rounded-3xl border border-slate-200/90 p-6 hover:shadow-xl hover:border-amber-300 hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group"
+          class="bg-slate-50 hover:bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-3.5 sm:p-6 hover:shadow-xl hover:border-amber-300 hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group"
         >
-          <div class="space-y-3">
+          <div class="space-y-2 sm:space-y-3">
             <div class="flex items-center justify-between">
               <span 
-                class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border"
+                class="px-2 sm:px-2.5 py-0.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-wider border truncate max-w-[80px] sm:max-w-none"
                 :class="item.badgeColor"
               >
                 {{ item.rank }}
               </span>
-              <span class="text-xs font-mono font-bold text-slate-400">{{ item.year }}</span>
+              <span class="text-[10px] sm:text-xs font-mono font-bold text-slate-400">{{ item.year }}</span>
             </div>
 
-            <h3 class="font-black text-base text-slate-900 group-hover:text-amber-800 transition-colors leading-snug">
+            <h3 class="font-black text-xs sm:text-base text-slate-900 group-hover:text-amber-800 transition-colors leading-snug line-clamp-2">
               {{ item.title }}
             </h3>
 
-            <div class="p-3 bg-white rounded-xl border border-slate-200/70 space-y-1">
-              <div class="text-[10px] uppercase font-bold text-slate-400">Penerima Penghargaan</div>
-              <div class="text-xs font-bold text-slate-800">{{ item.recipient }}</div>
-              <div class="text-[11px] text-emerald-700 font-medium">Tingkat {{ item.level }}</div>
+            <div class="p-2 sm:p-3 bg-white rounded-xl border border-slate-200/70 space-y-0.5 sm:space-y-1">
+              <div class="text-[9px] sm:text-[10px] uppercase font-bold text-slate-400">Penerima</div>
+              <div class="text-[11px] sm:text-xs font-bold text-slate-800 truncate">{{ item.recipient }}</div>
+              <div class="text-[10px] sm:text-[11px] text-emerald-700 font-medium truncate">Tingkat {{ item.level }}</div>
             </div>
 
-            <p class="text-xs text-slate-600 leading-relaxed">
+            <p class="text-[11px] sm:text-xs text-slate-600 leading-relaxed line-clamp-2 sm:line-clamp-none hidden sm:block">
               {{ item.desc }}
             </p>
           </div>
 
-          <div class="mt-5 pt-3 border-t border-slate-200/80 flex items-center justify-between text-[11px] text-slate-500">
-            <span>Bidang: {{ item.category }}</span>
-            <span class="text-amber-600 font-bold">🏆 Berprestasi</span>
+          <div class="mt-3 sm:mt-5 pt-2 sm:pt-3 border-t border-slate-200/80 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-500">
+            <span class="truncate">Bidang: {{ item.category }}</span>
+            <span class="text-amber-600 font-bold shrink-0">🏆</span>
           </div>
         </div>
       </div>

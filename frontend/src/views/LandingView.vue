@@ -88,70 +88,70 @@ const handlePortalAccess = () => {
             </router-link>
           </div>
 
-          <!-- Cards Preview Profil (3 Kolom Ringkas dengan Scroll Reveal Stagger) -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Cards Preview Profil (2 Kolom pada Mobile, 3 Kolom pada Desktop) -->
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6">
             <!-- Profil & Sejarah Singkat -->
             <div 
               v-reveal="{ type: 'fade-up', delay: 100 }"
-              class="p-6 rounded-3xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between"
+              class="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between"
             >
-              <div class="space-y-3">
-                <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-xl font-bold">
+              <div class="space-y-2 sm:space-y-3">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg sm:text-xl font-bold">
                   🏛️
                 </div>
-                <h3 class="font-black text-base text-slate-900">Sejarah & Identitas</h3>
-                <p class="text-xs text-slate-600 leading-relaxed">
+                <h3 class="font-black text-sm sm:text-base text-slate-900 leading-snug">Sejarah & Identitas</h3>
+                <p class="text-[11px] sm:text-xs text-slate-600 leading-relaxed line-clamp-3 sm:line-clamp-none">
                   Didirikan sejak 2012 di Karangklesem, Purwokerto Selatan di bawah naungan Yayasan Bina Insan Mandiri dengan kurikulum berbasis deep learning.
                 </p>
-                <div class="pt-2 text-[11px] font-mono text-emerald-700 font-semibold">
+                <div class="pt-1 sm:pt-2 text-[10px] sm:text-[11px] font-mono text-emerald-700 font-semibold truncate">
                   NPSN: 70036695 • Jenjang SD
                 </div>
               </div>
-              <router-link to="/profil?tab=profil" class="mt-4 text-xs font-bold text-emerald-700 hover:underline">
-                Baca Profil Singkat &rarr;
+              <router-link to="/profil?tab=profil" class="mt-3 sm:mt-4 text-[11px] sm:text-xs font-bold text-emerald-700 hover:underline">
+                Baca Profil &rarr;
               </router-link>
             </div>
 
             <!-- Visi & Misi Ringkas -->
             <div 
               v-reveal="{ type: 'fade-up', delay: 200 }"
-              class="p-6 rounded-3xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-teal-300 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between"
+              class="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-teal-300 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between"
             >
-              <div class="space-y-3">
-                <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center text-xl font-bold">
+              <div class="space-y-2 sm:space-y-3">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center text-lg sm:text-xl font-bold">
                   🎯
                 </div>
-                <h3 class="font-black text-base text-slate-900">Visi & Misi Luhur</h3>
-                <p class="text-xs text-slate-600 leading-relaxed">
+                <h3 class="font-black text-sm sm:text-base text-slate-900 leading-snug">Visi & Misi Luhur</h3>
+                <p class="text-[11px] sm:text-xs text-slate-600 leading-relaxed line-clamp-3 sm:line-clamp-none">
                   "Terwujudnya Generasi Muslim Pembelajar yang Bertauhid Kokoh, Berakhlak Mulia, Tumbuh Sesuai Fitrahnya, Hafidz Al-Qur'an, dan Membangun Peradaban."
                 </p>
-                <div class="pt-2 text-[11px] text-teal-800 font-semibold">
-                  4 Misi Berkelanjutan & Nilai BIM
+                <div class="pt-1 sm:pt-2 text-[10px] sm:text-[11px] text-teal-800 font-semibold truncate">
+                  4 Misi Berkelanjutan
                 </div>
               </div>
-              <router-link to="/profil?tab=visi" class="mt-4 text-xs font-bold text-teal-700 hover:underline">
-                Pelajari Visi & Misi &rarr;
+              <router-link to="/profil?tab=visi" class="mt-3 sm:mt-4 text-[11px] sm:text-xs font-bold text-teal-700 hover:underline">
+                Pelajari Visi &rarr;
               </router-link>
             </div>
 
-            <!-- Guru & Janji Siswa -->
+            <!-- Guru & Janji Siswa (Full width span pada mobile jika 3 kartu) -->
             <div 
               v-reveal="{ type: 'fade-up', delay: 300 }"
-              class="p-6 rounded-3xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-amber-300 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between"
+              class="col-span-2 md:col-span-1 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-amber-300 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between"
             >
-              <div class="space-y-3">
-                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-xl font-bold">
+              <div class="space-y-2 sm:space-y-3">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-lg sm:text-xl font-bold">
                   📜
                 </div>
-                <h3 class="font-black text-base text-slate-900">Pendidik & Janji Siswa</h3>
-                <p class="text-xs text-slate-600 leading-relaxed">
+                <h3 class="font-black text-sm sm:text-base text-slate-900 leading-snug">Pendidik & Janji Siswa</h3>
+                <p class="text-[11px] sm:text-xs text-slate-600 leading-relaxed line-clamp-2 sm:line-clamp-none">
                   Didampingi {{ teachersData.length }}+ dewan asatidz dan pendidik kompeten, serta 6 ikrar janji siswa peradaban yang dihayati dalam keseharian sekolah.
                 </p>
-                <div class="pt-2 text-[11px] text-amber-800 font-semibold">
+                <div class="pt-1 sm:pt-2 text-[10px] sm:text-[11px] text-amber-800 font-semibold truncate">
                   6 Ikrar Siswa • Guru Berdedikasi
                 </div>
               </div>
-              <router-link to="/profil?tab=janji" class="mt-4 text-xs font-bold text-amber-700 hover:underline">
+              <router-link to="/profil?tab=janji" class="mt-3 sm:mt-4 text-[11px] sm:text-xs font-bold text-amber-700 hover:underline">
                 Buka Janji Siswa & Pendidik &rarr;
               </router-link>
             </div>
@@ -190,23 +190,23 @@ const handlePortalAccess = () => {
             </router-link>
           </div>
 
-          <!-- Preview 4 Pilar Deep Learning Grid dengan Staggered Reveal -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <!-- Preview 4 Pilar Deep Learning Grid (2 Kolom Mobile, 4 Desktop) -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             <div 
               v-for="(pillar, idx) in fitrahPillars" 
               :key="pillar.title"
               v-reveal="{ type: 'fade-up', delay: 100 + idx * 80 }"
-              class="p-6 rounded-3xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between space-y-3"
+              class="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white border border-slate-200 hover:border-emerald-400 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between space-y-2 sm:space-y-3"
             >
               <div>
-                <span class="text-3xl block mb-2">{{ pillar.icon }}</span>
-                <h4 class="font-black text-sm text-slate-900 leading-snug">{{ pillar.title }}</h4>
-                <p class="text-[11px] text-emerald-700 font-semibold mt-1">{{ pillar.subtitle }}</p>
-                <p class="text-xs text-slate-600 mt-2 line-clamp-3 leading-relaxed">
+                <span class="text-2xl sm:text-3xl block mb-1.5 sm:mb-2">{{ pillar.icon }}</span>
+                <h4 class="font-black text-xs sm:text-sm text-slate-900 leading-snug">{{ pillar.title }}</h4>
+                <p class="text-[10px] sm:text-[11px] text-emerald-700 font-semibold mt-0.5 sm:mt-1 truncate">{{ pillar.subtitle }}</p>
+                <p class="text-[11px] sm:text-xs text-slate-600 mt-1.5 sm:mt-2 line-clamp-3 leading-relaxed">
                   {{ pillar.desc }}
                 </p>
               </div>
-              <router-link to="/pendidikan#pendidikan-deep-learning" class="text-xs font-bold text-emerald-700 hover:underline pt-2">
+              <router-link to="/pendidikan#pendidikan-deep-learning" class="text-[11px] sm:text-xs font-bold text-emerald-700 hover:underline pt-1 sm:pt-2">
                 Selengkapnya &rarr;
               </router-link>
             </div>
@@ -215,11 +215,11 @@ const handlePortalAccess = () => {
           <!-- Banner Kutipan Peradaban Ringkas -->
           <div 
             v-reveal="{ type: 'scale', delay: 150 }"
-            class="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-emerald-950 via-teal-900 to-slate-950 text-white flex flex-col sm:flex-row items-center justify-between gap-6 shadow-md hover:shadow-2xl transition-all duration-300"
+            class="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-emerald-950 via-teal-900 to-slate-950 text-white flex flex-col sm:flex-row items-center justify-between gap-5 sm:gap-6 shadow-md hover:shadow-2xl transition-all duration-300"
           >
             <div class="space-y-1.5 text-center sm:text-left">
               <span class="text-xs font-bold text-amber-300 uppercase tracking-wider">Tujuan Hakiki</span>
-              <h3 class="text-lg sm:text-xl font-black text-white">Tujuan Pendidikan adalah Membangun Sebuah Peradaban</h3>
+              <h3 class="text-base sm:text-xl font-black text-white">Tujuan Pendidikan adalah Membangun Sebuah Peradaban</h3>
               <p class="text-xs text-emerald-200/90 max-w-xl">
                 Bukan sekadar mengejar angka rapor, tetapi membentuk manusia seutuhnya yang berakhlaq mulia dan bermanfaat bagi umat.
               </p>
@@ -269,33 +269,34 @@ const handlePortalAccess = () => {
             </router-link>
           </div>
 
-          <!-- Grid 3 Artikel Terpilih dengan Stagger Reveal -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Grid 3 Artikel Terpilih (2 Kolom Mobile, 3 Desktop) -->
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6">
             <article
               v-for="(article, idx) in articlesData.slice(0, 3)"
               :key="article.id"
               v-reveal="{ type: 'fade-up', delay: 100 + idx * 100 }"
-              class="bg-white rounded-3xl border border-slate-200 p-6 flex flex-col justify-between hover:border-emerald-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+              class="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-4 sm:p-6 flex flex-col justify-between hover:border-emerald-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+              :class="idx === 2 ? 'col-span-2 md:col-span-1' : ''"
             >
-              <div class="space-y-2.5">
-                <div class="flex items-center justify-between text-[11px] text-slate-400">
-                  <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold uppercase text-[10px]">
+              <div class="space-y-2 sm:space-y-2.5">
+                <div class="flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400">
+                  <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold uppercase text-[9px] sm:text-[10px]">
                     {{ article.category }}
                   </span>
                   <span>{{ article.readTime }}</span>
                 </div>
-                <h3 class="font-black text-base text-slate-900 leading-snug line-clamp-2">
+                <h3 class="font-black text-xs sm:text-base text-slate-900 leading-snug line-clamp-2">
                   {{ article.title }}
                 </h3>
-                <p class="text-xs text-slate-600 line-clamp-3 leading-relaxed">
+                <p class="text-[11px] sm:text-xs text-slate-600 line-clamp-2 sm:line-clamp-3 leading-relaxed">
                   {{ article.summary }}
                 </p>
               </div>
 
-              <div class="mt-5 pt-3 border-t border-slate-200/80 flex items-center justify-between">
-                <div class="text-[11px] text-slate-500 font-medium">{{ article.author }}</div>
-                <router-link to="/artikel" class="text-xs font-bold text-emerald-700 hover:underline">
-                  Baca Artikel &rarr;
+              <div class="mt-3 sm:mt-5 pt-2.5 sm:pt-3 border-t border-slate-200/80 flex items-center justify-between">
+                <div class="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate max-w-[100px] sm:max-w-none">{{ article.author }}</div>
+                <router-link to="/artikel" class="text-[11px] sm:text-xs font-bold text-emerald-700 hover:underline shrink-0">
+                  Baca &rarr;
                 </router-link>
               </div>
             </article>
@@ -334,26 +335,26 @@ const handlePortalAccess = () => {
             </router-link>
           </div>
 
-          <!-- Grid 3 Cuplikan Galeri dengan Stagger Reveal -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Grid 3 Cuplikan Galeri (2 Kolom Mobile, 3 Desktop) -->
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6">
             <div 
               v-for="(item, idx) in galleryItems.slice(0, 3)"
               :key="item.id"
               v-reveal="{ type: 'fade-up', delay: 100 + idx * 100 }"
-              class="rounded-3xl p-6 bg-gradient-to-tr text-white shadow-md hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between h-56 relative overflow-hidden group cursor-pointer"
-              :class="item.color"
+              class="rounded-2xl sm:rounded-3xl p-4 sm:p-6 bg-gradient-to-tr text-white shadow-md hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between h-44 sm:h-56 relative overflow-hidden group cursor-pointer"
+              :class="[item.color, idx === 2 ? 'col-span-2 md:col-span-1' : '']"
             >
               <div class="relative z-10 flex items-center justify-between">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-white/20 backdrop-blur-md">
+                <span class="px-2 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase bg-white/20 backdrop-blur-md">
                   {{ item.categoryLabel }}
                 </span>
-                <span class="text-2xl transform group-hover:scale-110 transition-transform">{{ item.icon }}</span>
+                <span class="text-xl sm:text-2xl transform group-hover:scale-110 transition-transform">{{ item.icon }}</span>
               </div>
-              <div class="relative z-10 space-y-1">
-                <div class="text-[10px] text-emerald-200 font-mono">{{ item.date }}</div>
-                <h3 class="font-bold text-base text-white leading-snug">{{ item.title }}</h3>
-                <router-link to="/galeri" class="inline-block text-xs font-bold text-emerald-200 hover:text-white pt-1">
-                  Lihat Dokumentasi &rarr;
+              <div class="relative z-10 space-y-0.5 sm:space-y-1">
+                <div class="text-[9px] sm:text-[10px] text-emerald-200 font-mono">{{ item.date }}</div>
+                <h3 class="font-bold text-xs sm:text-base text-white leading-snug line-clamp-2">{{ item.title }}</h3>
+                <router-link to="/galeri" class="inline-block text-[11px] sm:text-xs font-bold text-emerald-200 hover:text-white pt-1">
+                  Lihat Foto &rarr;
                 </router-link>
               </div>
             </div>
@@ -392,27 +393,28 @@ const handlePortalAccess = () => {
             </router-link>
           </div>
 
-          <!-- Grid 3 Prestasi Teratas dengan Stagger Reveal -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Grid 3 Prestasi Teratas (2 Kolom Mobile, 3 Desktop) -->
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6">
             <div 
               v-for="(item, idx) in achievementsData.slice(0, 3)" 
               :key="item.id"
               v-reveal="{ type: 'fade-up', delay: 100 + idx * 100 }"
-              class="p-6 rounded-3xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-amber-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+              class="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-amber-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+              :class="idx === 2 ? 'col-span-2 md:col-span-1' : ''"
             >
-              <div class="space-y-2.5">
+              <div class="space-y-1.5 sm:space-y-2.5">
                 <div class="flex items-center justify-between">
-                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border" :class="item.badgeColor">
+                  <span class="px-2 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider border truncate max-w-[80px] sm:max-w-none" :class="item.badgeColor">
                     {{ item.rank }}
                   </span>
-                  <span class="text-xs text-slate-400 font-mono font-bold">{{ item.year }}</span>
+                  <span class="text-[10px] sm:text-xs text-slate-400 font-mono font-bold">{{ item.year }}</span>
                 </div>
-                <h3 class="font-bold text-base text-slate-900 leading-snug">{{ item.title }}</h3>
-                <div class="text-xs font-bold text-emerald-800">{{ item.recipient }}</div>
-                <div class="text-[11px] text-slate-500">Tingkat {{ item.level }}</div>
+                <h3 class="font-bold text-xs sm:text-base text-slate-900 leading-snug line-clamp-2">{{ item.title }}</h3>
+                <div class="text-[11px] sm:text-xs font-bold text-emerald-800 truncate">{{ item.recipient }}</div>
+                <div class="text-[10px] sm:text-[11px] text-slate-500">Tingkat {{ item.level }}</div>
               </div>
-              <router-link to="/prestasi" class="mt-4 text-xs font-bold text-amber-800 hover:underline">
-                Rincian Prestasi &rarr;
+              <router-link to="/prestasi" class="mt-3 sm:mt-4 text-[11px] sm:text-xs font-bold text-amber-800 hover:underline">
+                Rincian &rarr;
               </router-link>
             </div>
           </div>
@@ -439,13 +441,14 @@ const handlePortalAccess = () => {
             </p>
           </div>
 
-          <!-- Cards Gelombang Ringkas dengan Stagger Reveal -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <!-- Cards Gelombang Ringkas (2 Kolom Mobile, 3 Desktop) -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5">
             <div 
               v-for="(wave, idx) in spmbWaves" 
               :key="wave.name"
               v-reveal="{ type: 'fade-up', delay: 100 + idx * 100 }"
-              class="p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-amber-400/40 backdrop-blur-md space-y-2 hover:-translate-y-1 transition-all duration-300"
+              class="p-4 sm:p-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-amber-400/40 backdrop-blur-md space-y-2 hover:-translate-y-1 transition-all duration-300"
+              :class="idx === 2 ? 'col-span-2 sm:col-span-1' : ''"
             >
               <div class="flex items-center justify-between text-[10px] font-bold uppercase">
                 <span :class="wave.isOpen ? 'text-amber-300' : 'text-slate-400'">{{ wave.status }}</span>

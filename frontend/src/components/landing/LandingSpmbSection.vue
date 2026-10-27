@@ -48,54 +48,57 @@ const handleQuickRegister = () => {
         </p>
       </div>
 
-      <!-- Jadwal Gelombang Pendaftaran Cards with Stagger Reveal -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Jadwal Gelombang Pendaftaran Cards (2 Kolom Mobile, 3 Desktop) -->
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
         <div 
           v-for="(wave, idx) in spmbWaves" 
           :key="wave.name"
           v-reveal="{ type: 'fade-up', delay: 60 + idx * 90 }"
-          class="bg-white rounded-3xl p-6 border shadow-xs hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
-          :class="wave.isOpen ? 'border-emerald-300 ring-2 ring-emerald-500/20 shadow-md' : 'border-slate-200 opacity-90'"
+          class="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border shadow-xs hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
+          :class="[
+            wave.isOpen ? 'border-emerald-300 ring-2 ring-emerald-500/20 shadow-md' : 'border-slate-200 opacity-90',
+            idx === 2 ? 'col-span-2 md:col-span-1' : ''
+          ]"
         >
-          <div class="space-y-3">
+          <div class="space-y-2 sm:space-y-3">
             <div class="flex items-center justify-between">
               <span 
-                class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider"
+                class="px-2 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider"
                 :class="wave.isOpen ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'"
               >
                 {{ wave.status }}
               </span>
-              <span v-if="wave.isOpen" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+              <span v-if="wave.isOpen" class="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
             </div>
 
-            <h3 class="font-black text-base text-slate-900 leading-snug">
+            <h3 class="font-black text-xs sm:text-base text-slate-900 leading-snug">
               {{ wave.name }}
             </h3>
 
-            <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <div class="text-[10px] font-bold uppercase text-slate-400">Periode Pendaftaran</div>
-              <div class="text-xs font-bold text-slate-800 font-mono mt-0.5">{{ wave.period }}</div>
+            <div class="p-2 sm:p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <div class="text-[9px] sm:text-[10px] font-bold uppercase text-slate-400">Periode</div>
+              <div class="text-[11px] sm:text-xs font-bold text-slate-800 font-mono mt-0.5 truncate">{{ wave.period }}</div>
             </div>
 
-            <p class="text-xs text-emerald-700 font-medium">
+            <p class="text-[11px] sm:text-xs text-emerald-700 font-medium">
               ★ {{ wave.badge }}
             </p>
           </div>
 
-          <div class="mt-5 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
-            {{ wave.isOpen ? 'Kuota kelas terbatas (maks. 28 siswa / rombel).' : 'Pendaftaran akan dibuka setelah gelombang sebelumnya.' }}
+          <div class="mt-3 sm:mt-5 pt-2 sm:pt-3 border-t border-slate-100 text-[10px] sm:text-[11px] text-slate-500">
+            {{ wave.isOpen ? 'Maks. 28 siswa / rombel.' : 'Dibuka berikutnya.' }}
           </div>
         </div>
       </div>
 
-      <!-- 5 Langkah Alur Pendaftaran -->
+      <!-- 5 Langkah Alur Pendaftaran (2 Kolom Mobile, 5 Desktop) -->
       <div 
         v-reveal="{ type: 'fade-up', delay: 100 }"
-        class="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200/90 shadow-xs space-y-8"
+        class="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-10 border border-slate-200/90 shadow-xs space-y-6 sm:space-y-8"
       >
         <div class="text-center max-w-2xl mx-auto space-y-1">
           <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Tahapan Seleksi</span>
-          <h3 class="text-xl sm:text-2xl font-black text-slate-900">
+          <h3 class="text-lg sm:text-2xl font-black text-slate-900">
             5 Langkah Mudah Alur Pendaftaran SPMB
           </h3>
           <p class="text-xs text-slate-500">
@@ -103,25 +106,26 @@ const handleQuickRegister = () => {
           </p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
           <div 
             v-for="(step, idx) in spmbSteps" 
             :key="step.step"
             v-reveal="{ type: 'fade-up', delay: 80 + idx * 70 }"
-            class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-emerald-300 hover:shadow-md hover:-translate-y-1 transition-all duration-300 space-y-2 flex flex-col justify-between"
+            class="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-emerald-300 hover:shadow-md hover:-translate-y-1 transition-all duration-300 space-y-1.5 sm:space-y-2 flex flex-col justify-between"
+            :class="idx === 4 ? 'col-span-2 lg:col-span-1' : ''"
           >
             <div>
-              <div class="flex items-center justify-between mb-2">
-                <span class="w-7 h-7 rounded-xl bg-emerald-700 text-white font-black text-xs flex items-center justify-center">
+              <div class="flex items-center justify-between mb-1.5 sm:mb-2">
+                <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-emerald-700 text-white font-black text-[10px] sm:text-xs flex items-center justify-center">
                   {{ step.step }}
                 </span>
-                <span class="text-xl">{{ step.icon }}</span>
+                <span class="text-lg sm:text-xl">{{ step.icon }}</span>
               </div>
-              <h4 class="font-bold text-xs text-slate-900 leading-snug">
+              <h4 class="font-bold text-xs sm:text-xs text-slate-900 leading-snug">
                 {{ step.title }}
               </h4>
             </div>
-            <p class="text-[11px] text-slate-600 leading-relaxed pt-2 border-t border-slate-200/60 font-light">
+            <p class="text-[10px] sm:text-[11px] text-slate-600 leading-relaxed pt-1.5 sm:pt-2 border-t border-slate-200/60 font-light line-clamp-2 sm:line-clamp-none">
               {{ step.desc }}
             </p>
           </div>
