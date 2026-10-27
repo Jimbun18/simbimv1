@@ -1,3 +1,6 @@
+import tahfidzImg from '../../assets/tahfid.png'
+import tahsinImg from '../../assets/tahsin.jpg'
+
 export interface TeacherProfile {
   id: number
   name: string
@@ -283,6 +286,7 @@ export const featuredPrograms: FeaturedProgram[] = [
     subtitle: 'Bimbingan Hafalan Al-Qur\'an Intensif & Bersanad',
     desc: 'Program terstruktur tahfidz Al-Qur\'an juz 30, 29, dan surah pilihan dengan metode talaqqi, tasmi\', dan muraja\'ah harian terbimbing bersama dewan asatidz tahfidz.',
     icon: '📖',
+    image: tahfidzImg,
     gradient: 'from-emerald-700 via-emerald-800 to-teal-900',
     badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     category: 'Al-Qur\'an'
@@ -294,6 +298,7 @@ export const featuredPrograms: FeaturedProgram[] = [
     subtitle: 'Standarisasi Makharijul Huruf & Kaidah Tajwid',
     desc: 'Pembinaan perbaikan kualitas bacaan Al-Qur\'an santri sejak dini agar fasih, tartil, dan memahami hukum tajwid dengan evaluasi berkala per jilid metode terstandar.',
     icon: '🕌',
+    image: tahsinImg,
     gradient: 'from-teal-700 via-teal-800 to-cyan-900',
     badgeColor: 'bg-teal-100 text-teal-800 border-teal-200',
     category: 'Al-Qur\'an'

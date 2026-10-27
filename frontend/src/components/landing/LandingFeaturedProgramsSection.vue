@@ -48,12 +48,31 @@ defineProps<{
           <!-- FOTO / VISUAL CONTAINER PROGRAM -->
           <div class="relative h-48 w-full overflow-hidden bg-slate-900">
             <!-- Jika foto sudah diberikan user -->
-            <img 
-              v-if="program.image" 
-              :src="program.image" 
-              :alt="program.title" 
-              class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-            />
+            <template v-if="program.image">
+              <img 
+                :src="program.image" 
+                :alt="program.title" 
+                class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+              />
+              <!-- Soft Gradient Shadow Overlay -->
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30 pointer-events-none"></div>
+
+              <!-- Floating Badges di atas Foto -->
+              <div class="absolute top-3 left-3 w-8 h-8 rounded-full bg-slate-950/90 text-white font-black text-xs flex items-center justify-center shadow-md z-10 border border-white/30 backdrop-blur-xs">
+                {{ program.number }}
+              </div>
+              <div class="absolute top-3 right-3 z-10">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/50 backdrop-blur-md text-emerald-100 border border-white/20">
+                  {{ program.category }}
+                </span>
+              </div>
+              <div class="absolute bottom-2.5 left-3 right-3 z-10 text-white">
+                <div class="text-[10px] font-mono text-emerald-300 font-semibold drop-shadow-sm flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  <span>Dokumentasi Santri BIM</span>
+                </div>
+              </div>
+            </template>
             
             <!-- Jika belum ada foto (Tampilan Banner Artistik Islami Menunggu Foto) -->
             <div 
@@ -81,14 +100,6 @@ defineProps<{
                 <div class="text-xs font-mono text-emerald-200/90 font-medium tracking-wide">Program #{{ program.number }}</div>
                 <h4 class="font-black text-base text-white leading-tight drop-shadow-sm">{{ program.title }}</h4>
               </div>
-            </div>
-
-            <!-- Floating Badge Nomor jika gambar aktif -->
-            <div 
-              v-if="program.image" 
-              class="absolute top-3 left-3 w-8 h-8 rounded-full bg-slate-950 text-white font-black text-xs flex items-center justify-center shadow-md z-10 border border-white/20"
-            >
-              {{ program.number }}
             </div>
           </div>
 
