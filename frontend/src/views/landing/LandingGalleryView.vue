@@ -6,6 +6,7 @@ import { useAuthStore } from '../../stores/auth'
 import LandingNavbar from '../../components/landing/LandingNavbar.vue'
 import LandingFooter from '../../components/landing/LandingFooter.vue'
 import LandingGallerySection from '../../components/landing/LandingGallerySection.vue'
+import galeriBg from '../../assets/galeri.jpeg'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -34,21 +35,31 @@ const handlePortalAccess = () => {
     <LandingNavbar @open-portal="handlePortalAccess" />
 
     <main>
-      <!-- Page Header Banner -->
-      <section class="bg-gradient-to-b from-[#032e23] via-[#044737] to-[#02261d] text-white py-16 sm:py-20 relative overflow-hidden">
-        <div class="absolute -top-24 -left-24 w-80 h-80 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"></div>
+      <!-- Page Header Banner dengan Background Foto Kegiatan Santri Pramuka & Deep Learning -->
+      <section class="relative text-white py-20 sm:py-28 overflow-hidden">
+        <!-- Background Image Galeri -->
+        <div class="absolute inset-0 z-0">
+          <img 
+            :src="galeriBg" 
+            alt="Dokumentasi Kegiatan Belajar Santri SDI Bina Insan Mandiri" 
+            class="w-full h-full object-cover object-center scale-105 filter blur-[1.5px]"
+          />
+          <!-- Overlay Transparan Lembut: Foto Santri Jelas & Teks Terbaca Tajam -->
+          <div class="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/55 to-slate-950/35"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-transparent to-black/30"></div>
+        </div>
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div class="flex items-center gap-2 text-xs font-semibold text-emerald-300 mb-3">
+          <div class="flex items-center gap-2 text-xs font-semibold text-emerald-300 mb-3 drop-shadow">
             <router-link to="/" class="hover:text-white transition">Beranda</router-link>
             <span>/</span>
             <span class="text-white">Galeri Kegiatan</span>
           </div>
 
-          <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+          <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-lg">
             Galeri Dokumentasi Santri
           </h1>
-          <p class="text-sm sm:text-base text-emerald-100/90 max-w-3xl mt-3 leading-relaxed">
+          <p class="text-sm sm:text-base md:text-lg text-slate-100 max-w-3xl mt-3 leading-relaxed drop-shadow-md">
             Merekam jejak ekspresi bahagia, kerjasama, dan pembentukan karakter mulia para santri SDI Bina Insan Mandiri Purwokerto.
           </p>
         </div>
