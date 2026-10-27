@@ -422,12 +422,12 @@ const handlePortalAccess = () => {
             </router-link>
 
             <a
-              href="https://wa.me/6281200000001?text=Bismillah,%20Assalamu'alaikum%20Panitia%20SPMB%20SDI%20BIM"
+              href="https://wa.me/6285138568694?text=Bismillah,%20Assalamu'alaikum%20Sekretariat%20SDI%20Bina%20Insan%20Mandiri"
               target="_blank"
               rel="noopener noreferrer"
               class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm border border-white/20 transition"
             >
-              <span>Chat WhatsApp Panitia SPMB</span>
+              <span>Chat WhatsApp Sekretariat</span>
               <span>💬</span>
             </a>
           </div>

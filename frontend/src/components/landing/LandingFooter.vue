@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAuthStore } from '../../stores/auth'
+import FloatingWhatsApp from './FloatingWhatsApp.vue'
 
 const props = defineProps<{
   userPortalLabel?: string
@@ -46,19 +47,66 @@ const getPortalLabel = () => {
             Sekolah Dasar Islam unggulan berbasis deep learning yang berfokus membentuk generasi pembelajar bertauhid kokoh, berakhlak mulia, hafidz Al-Qur'an, dan berjiwa mandiri pembina peradaban.
           </p>
 
-          <div class="space-y-2 text-xs text-emerald-200/90 pt-1">
+          <div class="space-y-2.5 text-xs text-emerald-200/90 pt-1">
             <div class="flex items-start gap-2.5">
               <span class="text-emerald-400 shrink-0">📍</span>
               <span>Jl. Wadas Kelir RT.04 RW.05 Kel. Karangklesem, Kec. Purwokerto Selatan, Kab. Banyumas 53144</span>
             </div>
             <div class="flex items-center gap-2.5">
-              <span class="text-emerald-400 shrink-0">📞</span>
-              <span>0281-635812 / +62 812-0000-0001 (SPMB)</span>
+              <span class="text-emerald-400 shrink-0">📱</span>
+              <a 
+                href="https://wa.me/6285138568694?text=Bismillah,%20Assalamu'alaikum%20Sekretariat%20SDI%20BIM" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                class="hover:text-amber-300 transition"
+              >
+                <strong>0851-3856-8694</strong> (Sekretariat)
+              </a>
+              <span class="text-emerald-500">•</span>
+              <a 
+                href="https://wa.me/6285150725032?text=Bismillah,%20Assalamu'alaikum%20Panitia%20SPMB%20SDI%20BIM" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                class="hover:text-amber-300 transition"
+              >
+                <strong>0851-5072-5032</strong> (SPMB)
+              </a>
             </div>
             <div class="flex items-center gap-2.5">
               <span class="text-emerald-400 shrink-0">✉️</span>
-              <span>sdibim.pwt@gmail.com</span>
+              <a href="mailto:sdibim.pwt@gmail.com" class="hover:text-amber-300 transition">sdibim.pwt@gmail.com</a>
             </div>
+          </div>
+
+          <!-- Media Sosial Resmi SDI BIM -->
+          <div class="pt-3 flex flex-wrap items-center gap-2">
+            <a 
+              href="https://instagram.com/sdislambim_pwt" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 text-white text-[11px] font-semibold border border-white/15 transition"
+            >
+              <span>📷</span>
+              <span>@sdislambim_pwt</span>
+            </a>
+            <a 
+              href="https://facebook.com/SDbimpwt" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-blue-600 text-white text-[11px] font-semibold border border-white/15 transition"
+            >
+              <span>👥</span>
+              <span>SDbimpwt</span>
+            </a>
+            <a 
+              href="https://bit.ly/SPMB_BIMS" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-400/20 hover:bg-amber-400 hover:text-slate-950 text-amber-300 text-[11px] font-bold border border-amber-400/30 transition"
+            >
+              <span>📝</span>
+              <span>bit.ly/SPMB_BIMS</span>
+            </a>
           </div>
         </div>
 
@@ -146,5 +194,8 @@ const getPortalLabel = () => {
       </div>
 
     </div>
+
+    <!-- FLOATING WHATSAPP BUTTON RESMI (Sekretariat & SPMB) -->
+    <FloatingWhatsApp />
   </footer>
 </template>

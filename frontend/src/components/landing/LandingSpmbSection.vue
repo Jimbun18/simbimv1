@@ -22,8 +22,8 @@ const handleQuickRegister = () => {
     `Mohon informasi lebih lanjut mengenai jadwal observasi fitrah dan formulir SPMB 2026/2027. Terima kasih.`
   )
   
-  // Buka WhatsApp Panitia
-  window.open(`https://wa.me/6281200000001?text=${text}`, '_blank')
+  // Buka WhatsApp Sekretariat / Panitia
+  window.open(`https://wa.me/6285138568694?text=${text}`, '_blank')
   isSubmitted.value = true
 }
 </script>
