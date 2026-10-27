@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import api from '../services/api'
 import { showSuccess, showWarning, showError, showConfirm } from '../services/swal'
+import { compressImage } from '../utils/imageCompressor'
 
 // Active Tab: 'gallery' | 'achievements' | 'articles'
 const activeTab = ref<'gallery' | 'achievements' | 'articles'>('gallery')
@@ -9,6 +10,14 @@ const activeTab = ref<'gallery' | 'achievements' | 'articles'>('gallery')
 // Loading states
 const loading = ref(false)
 const submitting = ref(false)
+const compressing = ref(false)
+
+// Helper format ukuran file
+const formatBytes = (bytes: number): string => {
+  if (bytes === 0) return '0 B'
+  if (bytes > 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  return Math.round(bytes / 1024) + ' KB'
+}
 
 // 1. DATA GALERI
 interface GalleryItem {
@@ -22,6 +31,7 @@ const galleryFile = ref<File | null>(null)
 const galleryPreview = ref<string>('')
 const galleryType = ref<string>('KBM Sains & Eksplorasi')
 const galleryFileInput = ref<HTMLInputElement | null>(null)
+const galleryCompressionInfo = ref<string>('')
 
 // 2. DATA PRESTASI
 interface AchievementItem {
@@ -35,6 +45,7 @@ const achievementFile = ref<File | null>(null)
 const achievementPreview = ref<string>('')
 const achievementTitle = ref<string>('')
 const achievementFileInput = ref<HTMLInputElement | null>(null)
+const achievementCompressionInfo = ref<string>('')
 
 // 3. DATA ARTIKEL
 interface ArticleItem {
@@ -50,6 +61,7 @@ const articlePreview = ref<string>('')
 const articleTitle = ref<string>('')
 const articleDesc = ref<string>('')
 const articleFileInput = ref<HTMLInputElement | null>(null)
+const articleCompressionInfo = ref<string>('')
 
 // Format Waktu Posting
 const formatPostTime = (dateStr: string) => {
@@ -106,28 +118,52 @@ const loadData = async () => {
   loading.value = false
 }
 
-// File Change Handlers
-const onGalleryFileChange = (e: Event) => {
+// File Change Handlers dengan Kompresi Otomatis
+const onGalleryFileChange = async (e: Event) => {
   const target = e.target as HTMLInputElement
   if (target.files && target.files[0]) {
-    galleryFile.value = target.files[0]
-    galleryPreview.value = URL.createObjectURL(target.files[0])
+    const rawFile = target.files[0]
+    compressing.value = true
+    try {
+      const compressed = await compressImage(rawFile, 1400, 0.82)
+      galleryFile.value = compressed
+      galleryPreview.value = URL.createObjectURL(compressed)
+      galleryCompressionInfo.value = `Dikompresi: ${formatBytes(rawFile.size)} ➔ ${formatBytes(compressed.size)} (WebP)`
+    } finally {
+      compressing.value = false
+    }
   }
 }
 
-const onAchievementFileChange = (e: Event) => {
+const onAchievementFileChange = async (e: Event) => {
   const target = e.target as HTMLInputElement
   if (target.files && target.files[0]) {
-    achievementFile.value = target.files[0]
-    achievementPreview.value = URL.createObjectURL(target.files[0])
+    const rawFile = target.files[0]
+    compressing.value = true
+    try {
+      const compressed = await compressImage(rawFile, 1400, 0.82)
+      achievementFile.value = compressed
+      achievementPreview.value = URL.createObjectURL(compressed)
+      achievementCompressionInfo.value = `Dikompresi: ${formatBytes(rawFile.size)} ➔ ${formatBytes(compressed.size)} (WebP)`
+    } finally {
+      compressing.value = false
+    }
   }
 }
 
-const onArticleFileChange = (e: Event) => {
+const onArticleFileChange = async (e: Event) => {
   const target = e.target as HTMLInputElement
   if (target.files && target.files[0]) {
-    articleFile.value = target.files[0]
-    articlePreview.value = URL.createObjectURL(target.files[0])
+    const rawFile = target.files[0]
+    compressing.value = true
+    try {
+      const compressed = await compressImage(rawFile, 1400, 0.82)
+      articleFile.value = compressed
+      articlePreview.value = URL.createObjectURL(compressed)
+      articleCompressionInfo.value = `Dikompresi: ${formatBytes(rawFile.size)} ➔ ${formatBytes(compressed.size)} (WebP)`
+    } finally {
+      compressing.value = false
+    }
   }
 }
 
@@ -387,6 +423,9 @@ onMounted(() => {
               class="hidden" 
               @change="onGalleryFileChange" 
             />
+            <div v-if="galleryCompressionInfo" class="mt-2 text-[11px] text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200/80 flex items-center gap-1.5 font-medium">
+              <span>⚡</span> <span>{{ galleryCompressionInfo }}</span>
+            </div>
           </div>
 
           <!-- Jenis Kegiatan & Tombol Upload -->
@@ -519,6 +558,9 @@ onMounted(() => {
               class="hidden" 
               @change="onAchievementFileChange" 
             />
+            <div v-if="achievementCompressionInfo" class="mt-2 text-[11px] text-amber-800 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200/80 flex items-center gap-1.5 font-medium">
+              <span>⚡</span> <span>{{ achievementCompressionInfo }}</span>
+            </div>
           </div>
 
           <!-- Judul Prestasi & Tombol Simpan -->
@@ -646,6 +688,9 @@ onMounted(() => {
               class="hidden" 
               @change="onArticleFileChange" 
             />
+            <div v-if="articleCompressionInfo" class="mt-2 text-[11px] text-teal-800 bg-teal-50 px-3 py-1.5 rounded-xl border border-teal-200/80 flex items-center gap-1.5 font-medium">
+              <span>⚡</span> <span>{{ articleCompressionInfo }}</span>
+            </div>
           </div>
 
           <!-- Judul & Keterangan Artikel -->

@@ -7,6 +7,7 @@ use App\Models\CmsAchievement;
 use App\Models\CmsArticle;
 use App\Models\CmsGallery;
 use App\Services\ActivityLogService;
+use App\Services\ImageCompressionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -65,11 +66,11 @@ class CmsController extends Controller
     public function storeGallery(Request $request): JsonResponse
     {
         $request->validate([
-            'foto' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'], // Max 5MB
+            'foto' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'], // Mendukung s/d 10MB karena akan dikompresi otomatis
             'activity_type' => ['required', 'string', 'max:100'],
         ]);
 
-        $path = $request->file('foto')->store('cms/galleries', 'public');
+        $path = ImageCompressionService::compressAndStore($request->file('foto'), 'cms/galleries', 1400, 82);
 
         $gallery = CmsGallery::create([
             'image_path' => $path,
@@ -89,7 +90,7 @@ class CmsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Foto kegiatan berhasil ditambahkan ke galeri.',
+            'message' => 'Foto kegiatan berhasil dikompresi dan ditambahkan ke galeri.',
             'data' => $gallery,
         ], 201);
     }
@@ -139,11 +140,11 @@ class CmsController extends Controller
     public function storeAchievement(Request $request): JsonResponse
     {
         $request->validate([
-            'foto' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            'foto' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
             'title' => ['required', 'string', 'max:255'],
         ]);
 
-        $path = $request->file('foto')->store('cms/achievements', 'public');
+        $path = ImageCompressionService::compressAndStore($request->file('foto'), 'cms/achievements', 1400, 82);
 
         $achievement = CmsAchievement::create([
             'title' => $request->input('title'),
@@ -163,7 +164,7 @@ class CmsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Prestasi siswa berhasil ditambahkan.',
+            'message' => 'Prestasi siswa berhasil dikompresi dan ditambahkan.',
             'data' => $achievement,
         ], 201);
     }
@@ -213,12 +214,12 @@ class CmsController extends Controller
     public function storeArticle(Request $request): JsonResponse
     {
         $request->validate([
-            'foto' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            'foto' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
         ]);
 
-        $path = $request->file('foto')->store('cms/articles', 'public');
+        $path = ImageCompressionService::compressAndStore($request->file('foto'), 'cms/articles', 1400, 82);
 
         $article = CmsArticle::create([
             'title' => $request->input('title'),
