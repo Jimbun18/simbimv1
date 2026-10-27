@@ -16,8 +16,6 @@ const router = useRouter()
 const auth = useAuthStore()
 
 const isMobileMenuOpen = ref(false)
-const isProfileDropdownOpen = ref(false)
-const isEducationDropdownOpen = ref(false)
 
 const computedPortalLabel = ref('')
 const getPortalLabel = () => {
@@ -31,8 +29,6 @@ const getPortalLabel = () => {
 
 const navigateTo = (path: string) => {
   isMobileMenuOpen.value = false
-  isProfileDropdownOpen.value = false
-  isEducationDropdownOpen.value = false
   router.push(path)
 }
 
@@ -76,135 +72,25 @@ const handlePortalClick = () => {
           <span v-if="route.path === '/'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
         </router-link>
 
-        <!-- 1. Profil (Dropdown) -->
-        <div 
-          class="relative group"
-          @mouseenter="isProfileDropdownOpen = true"
-          @mouseleave="isProfileDropdownOpen = false"
+        <!-- 1. Profil (Link Langsung) -->
+        <router-link 
+          to="/profil"
+          class="hover:text-emerald-700 transition-colors py-2 relative"
+          :class="route.path.startsWith('/profil') ? 'text-emerald-700 font-bold' : ''"
         >
-          <router-link 
-            to="/profil"
-            class="flex items-center gap-1.5 hover:text-emerald-700 transition-colors py-2 relative"
-            :class="route.path.startsWith('/profil') ? 'text-emerald-700 font-bold' : ''"
-          >
-            <span>Profil</span>
-            <svg class="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-            <span v-if="route.path.startsWith('/profil')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
-          </router-link>
+          <span>Profil</span>
+          <span v-if="route.path.startsWith('/profil')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
+        </router-link>
 
-          <!-- Dropdown Menu Profil -->
-          <transition
-            enter-active-class="transition duration-150 ease-out"
-            enter-from-class="transform opacity-0 scale-95 -translate-y-1"
-            enter-to-class="transform opacity-100 scale-100 translate-y-0"
-            leave-active-class="transition duration-100 ease-in"
-            leave-from-class="transform opacity-100 scale-100 translate-y-0"
-            leave-to-class="transform opacity-0 scale-95 -translate-y-1"
-          >
-            <div 
-              v-show="isProfileDropdownOpen"
-              class="absolute left-0 top-full w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 px-1 text-xs font-medium z-50 space-y-0.5"
-            >
-              <button 
-                @click="navigateTo('/profil?tab=profil')"
-                class="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-800 transition flex items-center gap-2.5 cursor-pointer"
-              >
-                <span class="text-emerald-600">🏛️</span>
-                <div>
-                  <div class="font-bold text-slate-800">Profil Singkat</div>
-                  <div class="text-[10px] text-slate-400">Sejarah & identitas sekolah</div>
-                </div>
-              </button>
-              <button 
-                @click="navigateTo('/profil?tab=visi')"
-                class="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-800 transition flex items-center gap-2.5 cursor-pointer"
-              >
-                <span class="text-teal-600">🎯</span>
-                <div>
-                  <div class="font-bold text-slate-800">Visi & Misi</div>
-                  <div class="text-[10px] text-slate-400">Arah & nilai dasar BIM</div>
-                </div>
-              </button>
-              <button 
-                @click="navigateTo('/profil?tab=guru')"
-                class="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-800 transition flex items-center gap-2.5 cursor-pointer"
-              >
-                <span class="text-amber-600">👨‍🏫</span>
-                <div>
-                  <div class="font-bold text-slate-800">Tenaga Pendidik</div>
-                  <div class="text-[10px] text-slate-400">Guru & asatidz berdedikasi</div>
-                </div>
-              </button>
-              <button 
-                @click="navigateTo('/profil?tab=janji')"
-                class="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-800 transition flex items-center gap-2.5 cursor-pointer"
-              >
-                <span class="text-emerald-600">📜</span>
-                <div>
-                  <div class="font-bold text-slate-800">Janji Siswa</div>
-                  <div class="text-[10px] text-slate-400">6 Ikrar santri peradaban</div>
-                </div>
-              </button>
-            </div>
-          </transition>
-        </div>
-
-        <!-- 2. Pendidikan (Dropdown) -->
-        <div 
-          class="relative group"
-          @mouseenter="isEducationDropdownOpen = true"
-          @mouseleave="isEducationDropdownOpen = false"
+        <!-- 2. Pendidikan (Link Langsung) -->
+        <router-link 
+          to="/pendidikan"
+          class="hover:text-emerald-700 transition-colors py-2 relative"
+          :class="route.path.startsWith('/pendidikan') ? 'text-emerald-700 font-bold' : ''"
         >
-          <router-link 
-            to="/pendidikan"
-            class="flex items-center gap-1.5 hover:text-emerald-700 transition-colors py-2 relative"
-            :class="route.path.startsWith('/pendidikan') ? 'text-emerald-700 font-bold' : ''"
-          >
-            <span>Pendidikan</span>
-            <svg class="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-            <span v-if="route.path.startsWith('/pendidikan')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
-          </router-link>
-
-          <!-- Dropdown Menu Pendidikan -->
-          <transition
-            enter-active-class="transition duration-150 ease-out"
-            enter-from-class="transform opacity-0 scale-95 -translate-y-1"
-            enter-to-class="transform opacity-100 scale-100 translate-y-0"
-            leave-active-class="transition duration-100 ease-in"
-            leave-from-class="transform opacity-100 scale-100 translate-y-0"
-            leave-to-class="transform opacity-0 scale-95 -translate-y-1"
-          >
-            <div 
-              v-show="isEducationDropdownOpen"
-              class="absolute left-0 top-full w-64 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 px-1 text-xs font-medium z-50 space-y-0.5"
-            >
-              <button 
-                @click="navigateTo('/pendidikan#pendidikan-deep-learning')"
-                class="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-800 transition flex items-center gap-2.5 cursor-pointer"
-              >
-                <span class="text-emerald-600">🧠</span>
-                <div>
-                  <div class="font-bold text-slate-800">Pendidikan Berbasis Deep Learning</div>
-                  <div class="text-[10px] text-slate-400">Mindful, Meaningful, & Joyful Learning</div>
-                </div>
-              </button>
-              <button 
-                @click="navigateTo('/pendidikan#membangun-peradaban')"
-                class="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-800 transition flex items-center gap-2.5 cursor-pointer"
-              >
-                <span class="text-teal-600">🌍</span>
-                <div>
-                  <div class="font-bold text-slate-800">Membangun Peradaban</div>
-                  <div class="text-[10px] text-slate-400">Tujuan hakiki pendidikan islam</div>
-                </div>
-              </button>
-            </div>
-          </transition>
-        </div>
+          <span>Pendidikan</span>
+          <span v-if="route.path.startsWith('/pendidikan')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
+        </router-link>
 
         <!-- 3. Artikel -->
         <router-link 
@@ -289,37 +175,13 @@ const handlePortalClick = () => {
         Beranda
       </button>
 
-      <!-- Mobile Profil Accordion -->
-      <div class="py-1 border-y border-slate-100">
-        <div class="font-bold text-xs uppercase tracking-wider text-slate-400 py-1">1. Profil Sekolah</div>
-        <div class="pl-3 space-y-1.5 pt-1">
-          <button @click="navigateTo('/profil?tab=profil')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
-            • Profil Singkat Sekolah
-          </button>
-          <button @click="navigateTo('/profil?tab=visi')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
-            • Visi & Misi
-          </button>
-          <button @click="navigateTo('/profil?tab=guru')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
-            • Tenaga Pendidik & Kependidikan
-          </button>
-          <button @click="navigateTo('/profil?tab=janji')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
-            • Janji Siswa SDI BIM
-          </button>
-        </div>
-      </div>
+      <button @click="navigateTo('/profil')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
+        1. Profil
+      </button>
 
-      <!-- Mobile Pendidikan Accordion -->
-      <div class="py-1 border-b border-slate-100">
-        <div class="font-bold text-xs uppercase tracking-wider text-slate-400 py-1">2. Pendidikan</div>
-        <div class="pl-3 space-y-1.5 pt-1">
-          <button @click="navigateTo('/pendidikan#pendidikan-deep-learning')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
-            • Pendidikan Berbasis Deep Learning
-          </button>
-          <button @click="navigateTo('/pendidikan#membangun-peradaban')" class="block w-full text-left py-1 text-slate-600 hover:text-emerald-700 text-xs font-medium">
-            • Tujuan Pendidikan: Membangun Peradaban
-          </button>
-        </div>
-      </div>
+      <button @click="navigateTo('/pendidikan')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
+        2. Pendidikan
+      </button>
 
       <button @click="navigateTo('/artikel')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
         3. Artikel & Warta
