@@ -132,7 +132,7 @@ const getGeoLocation = (showFeedback = false) => {
 }
 
 // Validasi sebelum membuka modal kamera
-const validateBeforeAttendance = (type: 'masuk' | 'pulang'): boolean => {
+const validateBeforeAttendance = (_type: 'masuk' | 'pulang'): boolean => {
   if (currentLat.value === null || currentLng.value === null) {
     showError(
       'Lokasi GPS Wajib Aktif',

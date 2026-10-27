@@ -17,7 +17,6 @@ const auth = useAuthStore()
 
 const isMobileMenuOpen = ref(false)
 
-const computedPortalLabel = ref('')
 const getPortalLabel = () => {
   if (props.userPortalLabel) return props.userPortalLabel
   if (!auth.isAuthenticated) return 'Masuk SIM-BIM'
