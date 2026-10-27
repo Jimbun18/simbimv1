@@ -12,10 +12,10 @@ import { achievementsData } from './landingData'
           Jejak Karya & Keunggulan
         </span>
         <h2 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-          Prestasi Santri & Sekolah
+          Prestasi Siswa & Sekolah
         </h2>
         <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
-          Kompilasi dedikasi dan bakat unggul santri SDI Bina Insan Mandiri Purwokerto dalam bidang Al-Qur'an, sains, teknologi, serta seni budaya islami.
+          Kompilasi dedikasi dan bakat unggul siswa SDI Bina Insan Mandiri Purwokerto dalam bidang Al-Qur'an, sains, teknologi, serta seni budaya islami.
         </p>
       </div>
 

@@ -35,16 +35,16 @@ const handlePortalAccess = () => {
     <LandingNavbar @open-portal="handlePortalAccess" />
 
     <main>
-      <!-- Page Header Banner dengan Background Foto Kegiatan Santri Pramuka & Deep Learning -->
+      <!-- Page Header Banner dengan Background Foto Kegiatan Siswa Pramuka & Deep Learning -->
       <section class="relative text-white py-20 sm:py-28 overflow-hidden">
         <!-- Background Image Galeri -->
         <div class="absolute inset-0 z-0">
           <img 
             :src="galeriBg" 
-            alt="Dokumentasi Kegiatan Belajar Santri SDI Bina Insan Mandiri" 
+            alt="Dokumentasi Kegiatan Belajar Siswa SDI Bina Insan Mandiri" 
             class="w-full h-full object-cover object-center scale-105 filter blur-[1.5px]"
           />
-          <!-- Overlay Transparan Lembut: Foto Santri Jelas & Teks Terbaca Tajam -->
+          <!-- Overlay Transparan Lembut: Foto Siswa Jelas & Teks Terbaca Tajam -->
           <div class="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/55 to-slate-950/35"></div>
           <div class="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-transparent to-black/30"></div>
         </div>
@@ -57,10 +57,10 @@ const handlePortalAccess = () => {
           </div>
 
           <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-lg">
-            Galeri Dokumentasi Santri
+            Galeri Dokumentasi Siswa
           </h1>
           <p class="text-sm sm:text-base md:text-lg text-slate-100 max-w-3xl mt-3 leading-relaxed drop-shadow-md">
-            Merekam jejak ekspresi bahagia, kerjasama, dan pembentukan karakter mulia para santri SDI Bina Insan Mandiri Purwokerto.
+            Merekam jejak ekspresi bahagia, kerjasama, dan pembentukan karakter mulia para siswa SDI Bina Insan Mandiri Purwokerto.
           </p>
         </div>
       </section>

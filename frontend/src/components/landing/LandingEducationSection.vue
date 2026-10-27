@@ -19,7 +19,7 @@ import pendidikanBawahBg from '../../assets/pendidikan bawah.jpeg'
             Pendidikan Berbasis Deep Learning
           </h2>
           <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
-            Mewujudkan pembelajaran mendalam melalui sinergi <strong>Mindful Learning</strong> (kesadaran batin & tauhid), <strong>Meaningful Learning</strong> (bermakna & kontekstual), dan <strong>Joyful Learning</strong> (menggembirakan) agar ilmu meresap kokoh di hati santri.
+            Mewujudkan pembelajaran mendalam melalui sinergi <strong>Mindful Learning</strong> (kesadaran batin & tauhid), <strong>Meaningful Learning</strong> (bermakna & kontekstual), dan <strong>Joyful Learning</strong> (menggembirakan) agar ilmu meresap kokoh di hati siswa.
           </p>
         </div>
 
@@ -81,7 +81,7 @@ import pendidikanBawahBg from '../../assets/pendidikan bawah.jpeg'
           <div class="absolute inset-0 z-0">
             <img 
               :src="pendidikanBawahBg" 
-              alt="Suasana KBM Belajar Santri SDI BIM" 
+              alt="Suasana KBM Belajar Siswa SDI BIM" 
               class="w-full h-full object-cover object-center scale-105 filter blur-[1.5px]"
             />
             <!-- Dark Emerald & Charcoal Gradient Overlay agar teks sangat tajam & kontras -->

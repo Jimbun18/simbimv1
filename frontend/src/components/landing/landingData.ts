@@ -100,7 +100,7 @@ export const teachersData: TeacherProfile[] = [
     role: 'Guru Kelas 4 & Koordinator Kurikulum Deep Learning',
     category: 'Guru Kelas',
     education: 'S1 Pendidikan',
-    quote: 'Menumbuhkan rasa ingin tahu dan nalar kritis santri melalui pembelajaran kontekstual yang menyenangkan.',
+    quote: 'Menumbuhkan rasa ingin tahu dan nalar kritis siswa melalui pembelajaran kontekstual yang menyenangkan.',
     avatarBg: 'from-teal-600 to-emerald-700',
   },
   {
@@ -124,7 +124,7 @@ export const teachersData: TeacherProfile[] = [
   {
     id: 9,
     name: 'Rusydah Hasnaa Taqiyah Hastuti, S.Pd.',
-    role: 'Guru Kelas 1 & Pembina Karakter Santri',
+    role: 'Guru Kelas 1 & Pembina Karakter Siswa',
     category: 'Guru Kelas',
     education: 'S1 Pendidikan',
     quote: 'Masa transisi awal sekolah yang hangat, penuh kasih, dan sarat nilai adab mulia.',
@@ -217,7 +217,7 @@ export const deepLearningPillars: DeepLearningPillar[] = [
   {
     title: 'Meaningful Learning (Pembelajaran Bermakna & Kontekstual)',
     subtitle: 'Mengaitkan Pengetahuan dengan Realitas Kehidupan & Pemecahan Masalah',
-    desc: 'Setiap konsep dipelajari secara mendalam (deep inquiry), relevan dengan keseharian, dan aplikatif. Santri didorong memahami "mengapa" dan "bagaimana" suatu konsep bekerja, bukan sekadar "apa" definisi teks semata.',
+    desc: 'Setiap konsep dipelajari secara mendalam (deep inquiry), relevan dengan keseharian, dan aplikatif. Siswa didorong memahami "mengapa" dan "bagaimana" suatu konsep bekerja, bukan sekadar "apa" definisi teks semata.',
     practices: [
       'Pembelajaran Berbasis Proyek Nyata (Project-Based Learning) & Sains Terapan',
       'Eksplorasi eksperimen langsung di laboratorium alam terbuka sekolah',
@@ -243,9 +243,9 @@ export const deepLearningPillars: DeepLearningPillar[] = [
   {
     title: 'Mastery & Collaboration (Penguasaan Mendalam & Kolaboratif)',
     subtitle: 'Membangun Kompetensi Abad 21 & Karakter Pembina Peradaban',
-    desc: 'Pendidikan deep learning mengasah kecakapan kolaborasi, komunikasi, dan ketuntasan materi secara bertahap. Santri dilatih bekerja sama saling melengkapi, peduli sesama, dan berani tampil percaya diri memimpin kebaikan.',
+    desc: 'Pendidikan deep learning mengasah kecakapan kolaborasi, komunikasi, dan ketuntasan materi secara bertahap. Siswa dilatih bekerja sama saling melengkapi, peduli sesama, dan berani tampil percaya diri memimpin kebaikan.',
     practices: [
-      'Kerja kelompok kolaboratif, presentasi karya, dan musyawarah santri',
+      'Kerja kelompok kolaboratif, presentasi karya, dan musyawarah siswa',
       'Bimbingan Tahsin Tartil berulang & Tahfidz Mutqin dengan pendampingan personal',
       'Penyaluran minat bakat: Robotik, Panahan, Seni Kaligrafi, & Muhadharah (Public Speaking)',
       'Program kepemimpinan sosial dan kepedulian lingkungan sekitar',
@@ -272,7 +272,7 @@ export const civilizationPoints = [
   },
   {
     title: 'Kemandirian & Ketangguhan Karakter',
-    desc: 'Santri dilatih mandiri, berani mengambil keputusan, jujur, bertanggung jawab, dan memiliki kepekaan sosial untuk peduli pada permasalahan lingkungan sekitarnya.',
+    desc: 'Siswa dilatih mandiri, berani mengambil keputusan, jujur, bertanggung jawab, dan memiliki kepekaan sosial untuk peduli pada permasalahan lingkungan sekitarnya.',
     icon: '🌟',
   },
   {
@@ -408,10 +408,10 @@ export const articlesData: ArticleItem[] = [
     authorRole: 'Koordinator Tahfidz SDI BIM',
     date: '14 Oktober 2026',
     readTime: '5 menit baca',
-    summary: 'Metode praktis mendampingi hafalan Al-Qur\'an santri di rumah dengan riang gembira dan ikatan kasih sayang yang erat.',
-    tags: ['Tahfidz', 'Muroja\'ah', 'Tips Santri'],
+    summary: 'Metode praktis mendampingi hafalan Al-Qur\'an siswa di rumah dengan riang gembira dan ikatan kasih sayang yang erat.',
+    tags: ['Tahfidz', 'Muroja\'ah', 'Tips Siswa'],
     content: [
-      'Menghafal Al-Qur\'an adalah perjalanan cinta, bukan perlombaan kecepatan semata. Banyak santri yang merasa tertekan saat muroja\'ah karena suasana belajar yang tegang dan penuh target angka.',
+      'Menghafal Al-Qur\'an adalah perjalanan cinta, bukan perlombaan kecepatan semata. Banyak siswa yang merasa tertekan saat muroja\'ah karena suasana belajar yang tegang dan penuh target angka.',
       'Di SDI BIM, kami menerapkan pendekatan "Tahsin Tartil Berulang dengan Nada yang Indah". Anak diajak mendengarkan bacaan berulang-ulang hingga ayat tersebut akrab di telinga mereka sebelum mulai melafalkannya.',
       'Bagi para orang tua, jadikan momen muroja\'ah sebagai quality time bersama ananda. Selipkan hadiah pelukan hangat, dengarkan bacaannya dengan penuh antusias, dan bacakan terjemahan kisah menarik di balik surat yang sedang dihafal.',
       'Dengan demikian, Al-Qur\'an akan menjadi sahabat terbaik anak yang menentramkan hatinya hingga tumbuh dewasa kelak.',
@@ -441,10 +441,10 @@ export const articlesData: ArticleItem[] = [
     authorRole: 'Koordinator Kesiswaan',
     date: '01 Oktober 2026',
     readTime: '3 menit baca',
-    summary: 'Serunya santri belajar matematika praktis, kreativitas produk, serta adab kejujuran jual beli dalam program Market Day tahunan.',
+    summary: 'Serunya siswa belajar matematika praktis, kreativitas produk, serta adab kejujuran jual beli dalam program Market Day tahunan.',
     tags: ['Market Day', 'Kemandirian', 'KBM Kreatif'],
     content: [
-      'Halaman kampus SDI Bina Insan Mandiri Purwokerto semarak dengan gelaran tahunan Market Day. Santri dari berbagai jenjang belajar merancang produk jajanan sehat, kerajinan tangan, hingga mempraktikkan proses jual beli.',
+      'Halaman kampus SDI Bina Insan Mandiri Purwokerto semarak dengan gelaran tahunan Market Day. Siswa dari berbagai jenjang belajar merancang produk jajanan sehat, kerajinan tangan, hingga mempraktikkan proses jual beli.',
       'Bukan sekadar perputaran uang koin, kegiatan ini mengajarkan nilai kejujuran timbangan, keramahan melayani pembeli, mengucapkan terima kasih dan doa keberkahan, serta menghitung kembalian uang secara mandiri.',
       'Kegiatan seperti ini membuktikan bahwa pembelajaran tematik terpadu dapat dihidupkan dengan begitu bermakna dan berkesan bagi seluruh siswa.',
     ],
@@ -459,7 +459,7 @@ export const galleryItems: GalleryItem[] = [
     category: 'kbm',
     categoryLabel: 'KBM Sains & Alam',
     date: 'Oktober 2026',
-    desc: 'Santri mengamati siklus fotosintesis dan keanekaragaman flora di lingkungan hijau sekolah.',
+    desc: 'Siswa mengamati siklus fotosintesis dan keanekaragaman flora di lingkungan hijau sekolah.',
     color: 'from-emerald-700 to-teal-900',
     icon: '🌿',
   },
@@ -489,17 +489,17 @@ export const galleryItems: GalleryItem[] = [
     category: 'outbound',
     categoryLabel: 'Outbound & Rihlah',
     date: 'Agustus 2026',
-    desc: 'Melatih kepemimpinan, kerjasama regu, dan ketangkasan fisik santri di alam terbuka.',
+    desc: 'Melatih kepemimpinan, kerjasama regu, dan ketangkasan fisik siswa di alam terbuka.',
     color: 'from-cyan-700 to-slate-900',
     icon: '⛺',
   },
   {
     id: 5,
-    title: 'Peringatan Hari Santri & Unjuk Seni Kaligrafi',
+    title: 'Pentas Seni Siswa & Kaligrafi Islami',
     category: 'kbm',
     categoryLabel: 'KBM Seni Islami',
     date: 'Agustus 2026',
-    desc: 'Pameran karya kaligrafi santri dan pawai budaya islami menyemarakkan ukhuwah.',
+    desc: 'Pameran karya kaligrafi siswa dan pawai budaya islami menyemarakkan ukhuwah.',
     color: 'from-emerald-800 to-teal-900',
     icon: '🎨',
   },
@@ -515,7 +515,7 @@ export const galleryItems: GalleryItem[] = [
   },
 ]
 
-// 7. DATA PRESTASI SANTRI & SEKOLAH
+// 7. DATA PRESTASI SISWA & SEKOLAH
 export const achievementsData: AchievementItem[] = [
   {
     id: 1,
@@ -557,7 +557,7 @@ export const achievementsData: AchievementItem[] = [
     rank: 'Harapan 1',
     level: 'Provinsi Jawa Tengah',
     year: '2025',
-    recipient: 'Tim Robotik Santri SDI BIM',
+    recipient: 'Tim Robotik Siswa SDI BIM',
     desc: 'Merancang inovasi sensor pengingat adzan otomatis berbasis mikrokontroler ramah anak.',
     badgeColor: 'bg-sky-100 text-sky-900 border-sky-300',
   },
@@ -592,7 +592,7 @@ export const spmbSteps = [
   {
     step: 5,
     title: 'Daftar Ulang & Pengambilan Seragam',
-    desc: 'Penyelesaian administrasi pendaftaran, pengukuran perlengkapan seragam, dan penyambutan Masa Ta\'aruf Santri Baru.',
+    desc: 'Penyelesaian administrasi pendaftaran, pengukuran perlengkapan seragam, dan penyambutan Masa Ta\'aruf Siswa Baru.',
     icon: '🎒',
   },
 ]
@@ -622,8 +622,8 @@ export const spmbWaves = [
 ]
 
 export const spmbRequirements = [
-  'Usia calon santri minimal 6 tahun pada bulan Juli 2026',
-  'Fotokopi Akta Kelahiran calon santri (2 lembar)',
+  'Usia calon siswa minimal 6 tahun pada bulan Juli 2026',
+  'Fotokopi Akta Kelahiran calon siswa (2 lembar)',
   'Fotokopi Kartu Keluarga (KK) yang masih berlaku (2 lembar)',
   'Fotokopi KTP kedua orang tua / wali murid (2 lembar)',
   'Pas foto berwarna ukuran 3x4 (3 lembar)',

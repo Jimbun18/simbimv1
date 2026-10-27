@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen relative flex items-center justify-center p-3 sm:p-6 lg:p-8 overflow-hidden">
-    <!-- BACKGROUND UTAMA: Foto Santri & Guru SDI BIM (login.jpeg) -->
+    <!-- BACKGROUND UTAMA: Foto Siswa & Guru SDI BIM (login.jpeg) -->
     <div class="absolute inset-0 z-0">
       <img 
         :src="loginBg" 
@@ -17,11 +17,11 @@
       
       <!-- DESKTOP / WIDE MONITOR LEFT BRANDING SIDEBAR (Visible on Monitor >= 1024px) -->
       <div class="hidden lg:flex lg:col-span-5 p-8 flex-col justify-between text-white relative overflow-hidden">
-        <!-- Background Image Foto Santri & Pendidik SDI BIM -->
+        <!-- Background Image Foto Siswa & Pendidik SDI BIM -->
         <div class="absolute inset-0 z-0">
           <img 
             :src="loginBg" 
-            alt="Santri & Pendidik SDI Bina Insan Mandiri" 
+            alt="Siswa & Pendidik SDI Bina Insan Mandiri" 
             class="w-full h-full object-cover object-top scale-105"
           />
           <!-- Overlay Gelap Zamrud Elegan agar Teks Sangat Jelas Terbaca -->

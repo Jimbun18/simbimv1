@@ -282,13 +282,13 @@ watch(
         <div class="bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl">
           <div class="max-w-3xl mx-auto text-center space-y-3 mb-10">
             <span class="px-3 py-1 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 text-xs font-bold uppercase tracking-wider">
-              Ikrar Santri Peradaban
+              Ikrar Siswa Peradaban
             </span>
             <h3 class="text-2xl sm:text-3xl font-black text-white">
               6 Janji Siswa SDI Bina Insan Mandiri Purwokerto
             </h3>
             <p class="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
-              Ikrar khidmat yang diucapkan dan dihayati seluruh santri setiap apel pagi untuk meneguhkan komitmen taqwa, adab, dan kemandirian.
+              Ikrar khidmat yang diucapkan dan dihayati seluruh siswa setiap apel pagi untuk meneguhkan komitmen taqwa, adab, dan kemandirian.
             </p>
           </div>
 
@@ -315,7 +315,7 @@ watch(
           </div>
 
           <div class="mt-8 text-center pt-6 border-t border-white/10 text-xs text-emerald-200/80">
-            Semoga Allah Subhanahu wa Ta'ala meridhoi dan menguatkan ikhtiar setiap santri dalam menepati janji mulia ini.
+            Semoga Allah Subhanahu wa Ta'ala meridhoi dan menguatkan ikhtiar setiap siswa dalam menepati janji mulia ini.
           </div>
         </div>
       </div>

@@ -131,7 +131,7 @@ const handleQuickRegister = () => {
             </div>
             <div>
               <h3 class="text-lg font-black text-slate-900">Syarat & Berkas Pendaftaran</h3>
-              <p class="text-xs text-slate-500">Persyaratan administrasi calon santri baru</p>
+              <p class="text-xs text-slate-500">Persyaratan administrasi calon siswa baru</p>
             </div>
           </div>
 
@@ -171,7 +171,7 @@ const handleQuickRegister = () => {
 
           <form @submit.prevent="handleQuickRegister" class="space-y-4">
             <div>
-              <label class="block text-xs font-semibold text-emerald-200 mb-1">Nama Lengkap Calon Santri *</label>
+              <label class="block text-xs font-semibold text-emerald-200 mb-1">Nama Lengkap Calon Siswa *</label>
               <input 
                 v-model="studentName"
                 type="text" 
@@ -198,7 +198,7 @@ const handleQuickRegister = () => {
                 v-model="selectedClass"
                 class="w-full px-4 py-3 rounded-xl bg-emerald-950 border border-white/20 text-white text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-400 transition"
               >
-                <option value="Kelas 1 SD">Kelas 1 SD (Santri Baru)</option>
+                <option value="Kelas 1 SD">Kelas 1 SD (Siswa Baru)</option>
                 <option value="Pindahan Kelas 2-5">Pindahan / Mutasi (Kelas 2 s/d 5)</option>
               </select>
             </div>

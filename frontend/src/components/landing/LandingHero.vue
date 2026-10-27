@@ -13,11 +13,11 @@ const emit = defineEmits<{
 
 <template>
   <section id="hero" class="relative overflow-hidden pt-16 pb-24 md:pt-24 md:pb-36 text-white">
-    <!-- Background Image Foto Dokumentasi Santri SDI BIM -->
+    <!-- Background Image Foto Dokumentasi Siswa SDI BIM -->
     <div class="absolute inset-0 z-0">
       <img 
         :src="heroBg" 
-        alt="Santri SDI Bina Insan Mandiri Purwokerto" 
+        alt="Siswa SDI Bina Insan Mandiri Purwokerto" 
         class="w-full h-full object-cover object-center scale-105 filter blur-[2.5px]"
       />
       <!-- Soft Vignette & Subtle Overlay agar Teks di Tengah Terbaca Nyaman -->

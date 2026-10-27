@@ -71,7 +71,7 @@ const handlePortalAccess = () => {
                 Mendidik dengan Hati, Menumbuhkan Fitrah
               </h2>
               <p class="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl">
-                Sekilas tentang SDI Bina Insan Mandiri Purwokerto, cita-cita visi misi, tenaga pendidik, dan ikrar santri.
+                Sekilas tentang SDI Bina Insan Mandiri Purwokerto, cita-cita visi misi, tenaga pendidik, dan ikrar siswa.
               </p>
             </div>
 
@@ -132,10 +132,10 @@ const handlePortalAccess = () => {
                 </div>
                 <h3 class="font-black text-base text-slate-900">Pendidik & Janji Siswa</h3>
                 <p class="text-xs text-slate-600 leading-relaxed">
-                  Didampingi {{ teachersData.length }}+ dewan asatidz dan pendidik kompeten, serta 6 ikrar janji santri peradaban yang dihayati dalam keseharian sekolah.
+                  Didampingi {{ teachersData.length }}+ dewan asatidz dan pendidik kompeten, serta 6 ikrar janji siswa peradaban yang dihayati dalam keseharian sekolah.
                 </p>
                 <div class="pt-2 text-[11px] text-amber-800 font-semibold">
-                  6 Ikrar Santri • Guru Berdedikasi
+                  6 Ikrar Siswa • Guru Berdedikasi
                 </div>
               </div>
               <router-link to="/profil?tab=janji" class="mt-4 text-xs font-bold text-amber-700 hover:underline">
@@ -287,10 +287,10 @@ const handlePortalAccess = () => {
                 Galeri Kegiatan
               </span>
               <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Dokumentasi Kegiatan Santri
+                Dokumentasi Kegiatan Siswa
               </h2>
               <p class="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl">
-                Potret keceriaan dan pengalaman belajar nyata santri di dalam dan luar ruangan.
+                Potret keceriaan dan pengalaman belajar nyata siswa di dalam dan luar ruangan.
               </p>
             </div>
 
@@ -337,13 +337,13 @@ const handlePortalAccess = () => {
           <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <span class="px-3.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">
-                Prestasi Santri
+                Prestasi Siswa
               </span>
               <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Pencapaian Prestasi Santri
+                Pencapaian Prestasi Siswa
               </h2>
               <p class="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl">
-                Bukti keunggulan santri dalam bidang tahfidz Al-Qur'an, olimpiade sains, pidato, dan robotik.
+                Bukti keunggulan siswa dalam bidang tahfidz Al-Qur'an, olimpiade sains, pidato, dan robotik.
               </p>
             </div>
 

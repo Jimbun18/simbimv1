@@ -35,16 +35,16 @@ const handlePortalAccess = () => {
     <LandingNavbar @open-portal="handlePortalAccess" />
 
     <main>
-      <!-- Page Header Banner dengan Background Foto Santri Peraih Juara Haflatul Qur'an -->
+      <!-- Page Header Banner dengan Background Foto Siswa Peraih Juara Haflatul Qur'an -->
       <section class="relative text-white py-20 sm:py-28 overflow-hidden">
         <!-- Background Image Prestasi -->
         <div class="absolute inset-0 z-0">
           <img 
             :src="prestasiBg" 
-            alt="Santri Berprestasi SDI Bina Insan Mandiri Purwokerto" 
+            alt="Siswa Berprestasi SDI Bina Insan Mandiri Purwokerto" 
             class="w-full h-full object-cover object-center scale-105 filter blur-[1.5px]"
           />
-          <!-- Overlay Transparan Lembut: Foto Santri Jelas & Teks Terbaca Tajam -->
+          <!-- Overlay Transparan Lembut: Foto Siswa Jelas & Teks Terbaca Tajam -->
           <div class="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/55 to-slate-950/35"></div>
           <div class="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-transparent to-black/30"></div>
         </div>
@@ -57,10 +57,10 @@ const handlePortalAccess = () => {
           </div>
 
           <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-lg">
-            Prestasi Santri & Lembaga
+            Prestasi Siswa & Lembaga
           </h1>
           <p class="text-sm sm:text-base md:text-lg text-slate-100 max-w-3xl mt-3 leading-relaxed drop-shadow-md">
-            Daftar raihan juara dan apresiasi membanggakan santri SDI Bina Insan Mandiri Purwokerto di kancah daerah hingga provinsi.
+            Daftar raihan juara dan apresiasi membanggakan siswa SDI Bina Insan Mandiri Purwokerto di kancah daerah hingga provinsi.
           </p>
         </div>
       </section>

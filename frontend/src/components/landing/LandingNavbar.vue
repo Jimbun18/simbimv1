@@ -189,7 +189,7 @@ const handlePortalClick = () => {
         Galeri Kegiatan
       </button>
       <button @click="navigateTo('/prestasi')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
-        Prestasi Santri
+        Prestasi Siswa
       </button>
       <button @click="navigateTo('/spmb')" class="block w-full text-left py-2 font-bold text-emerald-800 hover:text-emerald-950 flex items-center justify-between">
         <span>Info SPMB 2026/2027</span>

@@ -136,12 +136,12 @@ const getPortalLabel = () => {
             </li>
             <li>
               <router-link to="/galeri" class="hover:text-amber-300 transition">
-                • Galeri Kegiatan Santri
+                • Galeri Kegiatan Siswa
               </router-link>
             </li>
             <li>
               <router-link to="/prestasi" class="hover:text-amber-300 transition">
-                • Prestasi Santri & Sekolah
+                • Prestasi Siswa & Sekolah
               </router-link>
             </li>
             <li>

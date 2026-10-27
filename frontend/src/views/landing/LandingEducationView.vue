@@ -35,7 +35,7 @@ const handlePortalAccess = () => {
     <LandingNavbar @open-portal="handlePortalAccess" />
 
     <main>
-      <!-- Page Header Banner dengan Background Foto Kegiatan Mengaji/KBM Santri -->
+      <!-- Page Header Banner dengan Background Foto Kegiatan Mengaji/KBM Siswa -->
       <section class="relative text-white py-20 sm:py-28 overflow-hidden">
         <!-- Background Image Pendidikan Atas -->
         <div class="absolute inset-0 z-0">
@@ -44,7 +44,7 @@ const handlePortalAccess = () => {
             alt="Pendidikan SDI Bina Insan Mandiri Purwokerto" 
             class="w-full h-full object-cover object-center scale-105 filter blur-[1.5px]"
           />
-          <!-- Overlay Transparan Lembut: Foto Santri Jelas & Teks Terbaca Tajam -->
+          <!-- Overlay Transparan Lembut: Foto Siswa Jelas & Teks Terbaca Tajam -->
           <div class="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/55 to-slate-950/35"></div>
           <div class="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-transparent to-black/30"></div>
         </div>

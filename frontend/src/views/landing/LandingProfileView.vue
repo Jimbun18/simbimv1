@@ -76,7 +76,7 @@ const handlePortalAccess = () => {
             Profil SDI Bina Insan Mandiri
           </h1>
           <p class="text-sm sm:text-base md:text-lg text-slate-100 max-w-3xl mt-3 leading-relaxed drop-shadow-md">
-            Menelusuri sejarah pendirian, visi luhur, dedikasi tenaga pendidik, dan 6 ikrar janji santri peradaban di SDI Bina Insan Mandiri Purwokerto.
+            Menelusuri sejarah pendirian, visi luhur, dedikasi tenaga pendidik, dan 6 ikrar janji siswa peradaban di SDI Bina Insan Mandiri Purwokerto.
           </p>
         </div>
       </section>

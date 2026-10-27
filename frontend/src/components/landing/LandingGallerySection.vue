@@ -29,10 +29,10 @@ const closeLightbox = () => {
           Dokumentasi Sekolah
         </span>
         <h2 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-          Galeri Kegiatan Santri
+          Galeri Kegiatan Siswa
         </h2>
         <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
-          Potret keceriaan, semangat belajar fitrah, dan ragam aktivitas bermakna santri SDI Bina Insan Mandiri Purwokerto di dalam maupun luar kelas.
+          Potret keceriaan, semangat belajar fitrah, dan ragam aktivitas bermakna siswa SDI Bina Insan Mandiri Purwokerto di dalam maupun luar kelas.
         </p>
 
         <!-- Category Filters -->
