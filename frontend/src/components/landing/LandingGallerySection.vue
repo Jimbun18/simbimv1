@@ -1,16 +1,65 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { galleryItems, type GalleryItem } from './landingData'
+import { ref, computed, onMounted } from 'vue'
+import { galleryItems as defaultGalleryItems, type GalleryItem } from './landingData'
+import api from '../../services/api'
+
+interface DynamicGalleryItem {
+  id: number
+  title: string
+  category: string
+  categoryLabel: string
+  date: string
+  desc: string
+  color: string
+  icon: string
+  image?: string
+}
 
 const selectedCategory = ref<string>('all')
-const activeModalItem = ref<GalleryItem | null>(null)
+const activeModalItem = ref<DynamicGalleryItem | null>(null)
+const items = ref<DynamicGalleryItem[]>([...defaultGalleryItems])
 
-const filteredItems = computed(() => {
-  if (selectedCategory.value === 'all') return galleryItems
-  return galleryItems.filter(item => item.category === selectedCategory.value)
+const fetchCmsGalleries = async () => {
+  try {
+    const res = await api.get('/public/galleries')
+    if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      const cmsList: DynamicGalleryItem[] = res.data.data.map((item: any) => {
+        const d = new Date(item.created_at)
+        const dateFormatted = new Intl.DateTimeFormat('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        }).format(d)
+
+        return {
+          id: item.id,
+          title: item.activity_type || 'Kegiatan Siswa',
+          category: 'all',
+          categoryLabel: item.activity_type || 'Kegiatan Siswa',
+          date: dateFormatted,
+          desc: 'Dokumentasi kegiatan siswa SDI Bina Insan Mandiri Purwokerto.',
+          color: 'from-emerald-800 to-teal-950',
+          icon: '📸',
+          image: item.image_url,
+        }
+      })
+      items.value = cmsList
+    }
+  } catch (e) {
+    // Fallback ke default items
+  }
+}
+
+onMounted(() => {
+  fetchCmsGalleries()
 })
 
-const openLightbox = (item: GalleryItem) => {
+const filteredItems = computed(() => {
+  if (selectedCategory.value === 'all') return items.value
+  return items.value.filter(item => item.category === selectedCategory.value)
+})
+
+const openLightbox = (item: DynamicGalleryItem) => {
   activeModalItem.value = item
 }
 
@@ -84,9 +133,15 @@ const closeLightbox = () => {
           class="group relative rounded-3xl overflow-hidden bg-gradient-to-tr text-white p-7 h-64 sm:h-72 flex flex-col justify-between shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
           :class="item.color"
         >
-          <!-- Background Abstract Pattern -->
-          <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
-          <div class="absolute -right-8 -top-8 w-36 h-36 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition-transform"></div>
+          <!-- Background Real Photo (from CMS) or Abstract Pattern -->
+          <img 
+            v-if="item.image" 
+            :src="item.image" 
+            :alt="item.title"
+            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/40 to-black/30 group-hover:from-slate-950/80 transition-colors"></div>
+          <div v-if="!item.image" class="absolute -right-8 -top-8 w-36 h-36 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition-transform"></div>
 
           <!-- Top Badge & Icon -->
           <div class="relative z-10 flex items-center justify-between">
@@ -98,7 +153,9 @@ const closeLightbox = () => {
 
           <!-- Bottom Content -->
           <div class="relative z-10 space-y-1.5">
-            <div class="text-[10px] text-emerald-200 font-mono">{{ item.date }}</div>
+            <div class="text-[10px] text-emerald-300 font-mono flex items-center gap-1">
+              <span>🕒 Diposting:</span> {{ item.date }}
+            </div>
             <h3 class="font-black text-lg sm:text-xl text-white leading-snug group-hover:text-emerald-200 transition-colors">
               {{ item.title }}
             </h3>
@@ -106,7 +163,7 @@ const closeLightbox = () => {
               {{ item.desc }}
             </p>
             <div class="pt-2 flex items-center gap-1.5 text-xs font-bold text-emerald-300 opacity-90 group-hover:opacity-100">
-              <span>Klik untuk melihat dokumentasi</span>
+              <span>Lihat Foto Selengkapnya</span>
               <span>&rarr;</span>
             </div>
           </div>
@@ -131,25 +188,32 @@ const closeLightbox = () => {
             
             <!-- Modal Header Media Banner -->
             <div 
-              class="h-56 bg-gradient-to-tr text-white p-6 flex flex-col justify-between relative overflow-hidden"
-              :class="activeModalItem.color"
+              class="relative bg-gradient-to-tr text-white overflow-hidden"
+              :class="activeModalItem.image ? 'h-64 sm:h-80' : 'h-56 ' + activeModalItem.color"
             >
-              <div class="flex items-center justify-between relative z-10">
+              <img 
+                v-if="activeModalItem.image" 
+                :src="activeModalItem.image" 
+                :alt="activeModalItem.title" 
+                class="w-full h-full object-cover" 
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/40"></div>
+
+              <div class="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
                 <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur-md">
                   {{ activeModalItem.categoryLabel }}
                 </span>
                 <button
                   type="button"
                   @click="closeLightbox"
-                  class="w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center text-lg font-bold cursor-pointer"
+                  class="w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center text-lg font-bold cursor-pointer"
                 >
                   &times;
                 </button>
               </div>
 
-              <div class="relative z-10">
-                <span class="text-4xl block mb-2">{{ activeModalItem.icon }}</span>
-                <h3 class="text-xl sm:text-2xl font-black text-white leading-tight">
+              <div class="absolute bottom-4 left-4 right-4 z-10">
+                <h3 class="text-xl sm:text-2xl font-black text-white leading-tight drop-shadow">
                   {{ activeModalItem.title }}
                 </h3>
               </div>

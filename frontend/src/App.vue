@@ -906,10 +906,26 @@ const handleLogout = async () => {
           <!-- GROUP: PENGATURAN & KEAMANAN -->
           <div v-if="auth.isAdmin">
             <div v-show="isSidebarOpen" class="px-3 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Sistem
+              Web & Sistem
             </div>
             <div v-show="!isSidebarOpen" class="h-px bg-slate-100 my-1 mx-2"></div>
             <nav class="space-y-1">
+              <!-- CMS Web Landing Page -->
+              <router-link
+                to="/cms"
+                class="flex items-center rounded-xl font-medium transition-all group"
+                :class="[
+                  isSidebarOpen ? 'gap-3 px-3 py-2' : 'justify-center py-2 px-0 w-11 h-10 mx-auto',
+                  route.path === '/cms' ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-emerald-50/70 hover:text-emerald-800'
+                ]"
+                title="CMS Web Sekolah (Galeri, Prestasi, Artikel)"
+              >
+                <svg class="w-5 h-5 shrink-0 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+                <span v-show="isSidebarOpen" class="truncate">CMS Web Sekolah</span>
+              </router-link>
+
               <!-- Pengguna & Geofence (Dengan Sub-menu) -->
               <div class="space-y-0.5">
                 <div class="flex items-center">
@@ -1769,10 +1785,23 @@ const handleLogout = async () => {
                   </div>
                 </div>
 
-                <!-- Group 5: Sistem -->
+                <!-- Group 5: Web & Sistem -->
                 <div v-if="auth.isAdmin">
-                  <div class="px-2 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sistem</div>
+                  <div class="px-2 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Web & Sistem</div>
                   <div class="space-y-1">
+                    <!-- CMS Web Sekolah -->
+                    <router-link 
+                      to="/cms" 
+                      class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-all"
+                      :class="route.path === '/cms' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-700 hover:bg-slate-100'"
+                      @click="isMobileDrawerOpen = false"
+                    >
+                      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                      </svg>
+                      <span>CMS Web Sekolah</span>
+                    </router-link>
+
                     <!-- Pengguna & Geofence (Mobile Sub-menu) -->
                     <div class="space-y-0.5">
                       <div class="flex items-center">

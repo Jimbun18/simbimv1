@@ -1,18 +1,76 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { articlesData, type ArticleItem } from './landingData'
+import { ref, computed, onMounted } from 'vue'
+import { articlesData as defaultArticlesData, type ArticleItem } from './landingData'
+import api from '../../services/api'
+
+interface DynamicArticle {
+  id: number
+  title: string
+  category: string
+  author: string
+  authorRole: string
+  date: string
+  readTime: string
+  summary: string
+  tags: string[]
+  content: string[]
+  image?: string
+}
 
 const selectedCategory = ref<string>('Semua')
-const selectedArticle = ref<ArticleItem | null>(null)
+const selectedArticle = ref<DynamicArticle | null>(null)
+const items = ref<DynamicArticle[]>([...defaultArticlesData])
+const isCmsMode = ref(false)
 
-const categories = ['Semua', 'Edukasi & Karakter', 'Edukasi Qur\'ani', 'Warta Sekolah', 'Kegiatan Siswa']
+const categories = ['Semua', 'Warta Sekolah', 'Edukasi & Karakter', 'Edukasi Qur\'ani', 'Kegiatan Siswa']
 
-const filteredArticles = computed(() => {
-  if (selectedCategory.value === 'Semua') return articlesData
-  return articlesData.filter(a => a.category === selectedCategory.value)
+const fetchCmsArticles = async () => {
+  try {
+    const res = await api.get('/public/articles')
+    if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      items.value = res.data.data.map((item: any) => {
+        const d = new Date(item.created_at)
+        const dateFormatted = new Intl.DateTimeFormat('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }).format(d)
+
+        const paragraphs = item.description ? item.description.split('\n').filter((p: string) => p.trim()) : []
+
+        return {
+          id: item.id,
+          title: item.title,
+          category: 'Warta Sekolah',
+          author: 'Redaksi SDI BIM',
+          authorRole: 'Humas & Publikasi',
+          date: dateFormatted,
+          readTime: '3 menit baca',
+          summary: item.description,
+          tags: ['Warta', 'SDI BIM'],
+          content: paragraphs.length > 0 ? paragraphs : [item.description],
+          image: item.image_url,
+        }
+      })
+      isCmsMode.value = true
+    }
+  } catch (e) {
+    // Fallback default
+  }
+}
+
+onMounted(() => {
+  fetchCmsArticles()
 })
 
-const openArticle = (article: ArticleItem) => {
+const filteredArticles = computed(() => {
+  if (selectedCategory.value === 'Semua') return items.value
+  return items.value.filter(a => a.category === selectedCategory.value)
+})
+
+const openArticle = (article: DynamicArticle) => {
   selectedArticle.value = article
 }
 
@@ -56,43 +114,59 @@ const closeArticle = () => {
         <article
           v-for="article in filteredArticles"
           :key="article.id"
-          class="bg-slate-50 rounded-3xl border border-slate-200/80 p-6 hover:shadow-xl hover:border-emerald-300 transition-all flex flex-col justify-between group"
+          class="bg-slate-50 rounded-3xl border border-slate-200/80 p-5 hover:shadow-xl hover:border-emerald-300 transition-all flex flex-col justify-between group overflow-hidden"
         >
-          <div class="space-y-3">
-            <div class="flex items-center justify-between text-[11px] text-slate-400 font-medium">
-              <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold uppercase text-[10px]">
-                {{ article.category }}
-              </span>
-              <span>{{ article.readTime }}</span>
+          <div>
+            <!-- Foto Sampul (Jika dari CMS) -->
+            <div 
+              v-if="article.image" 
+              @click="openArticle(article)"
+              class="aspect-16/9 w-full bg-slate-200 rounded-2xl overflow-hidden mb-3.5 cursor-pointer relative"
+            >
+              <img 
+                :src="article.image" 
+                :alt="article.title" 
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                loading="lazy" 
+              />
             </div>
 
-            <h3 
-              @click="openArticle(article)"
-              class="font-black text-base text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 cursor-pointer leading-snug"
-            >
-              {{ article.title }}
-            </h3>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between text-[11px] text-slate-400 font-medium">
+                <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold uppercase text-[10px]">
+                  {{ article.category }}
+                </span>
+                <span>{{ article.readTime }}</span>
+              </div>
 
-            <p class="text-xs text-slate-600 leading-relaxed line-clamp-3">
-              {{ article.summary }}
-            </p>
-
-            <!-- Tags -->
-            <div class="flex flex-wrap gap-1.5 pt-1">
-              <span 
-                v-for="tag in article.tags" 
-                :key="tag" 
-                class="text-[10px] bg-white px-2 py-0.5 rounded-md text-slate-500 border border-slate-200/70"
+              <h3 
+                @click="openArticle(article)"
+                class="font-black text-base text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 cursor-pointer leading-snug"
               >
-                #{{ tag }}
-              </span>
+                {{ article.title }}
+              </h3>
+
+              <p class="text-xs text-slate-600 leading-relaxed line-clamp-3">
+                {{ article.summary }}
+              </p>
+
+              <!-- Tags -->
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                <span 
+                  v-for="tag in article.tags" 
+                  :key="tag" 
+                  class="text-[10px] bg-white px-2 py-0.5 rounded-md text-slate-500 border border-slate-200/70"
+                >
+                  #{{ tag }}
+                </span>
+              </div>
             </div>
           </div>
 
           <div class="mt-6 pt-4 border-t border-slate-200/80 flex items-center justify-between">
             <div>
               <div class="text-xs font-bold text-slate-800">{{ article.author }}</div>
-              <div class="text-[10px] text-slate-400">{{ article.date }}</div>
+              <div class="text-[10px] text-slate-400 font-mono">{{ article.date }}</div>
             </div>
             <button
               type="button"
@@ -149,8 +223,17 @@ const closeArticle = () => {
               </button>
             </div>
 
+            <!-- Foto Sampul Modal Jika Ada -->
+            <div v-if="selectedArticle.image" class="aspect-16/9 w-full bg-slate-100 rounded-2xl overflow-hidden shadow-xs">
+              <img 
+                :src="selectedArticle.image" 
+                :alt="selectedArticle.title" 
+                class="w-full h-full object-cover" 
+              />
+            </div>
+
             <!-- Modal Content Paragraphs -->
-            <div class="space-y-3.5 text-sm sm:text-base text-slate-700 leading-relaxed">
+            <div class="space-y-3.5 text-sm sm:text-base text-slate-700 leading-relaxed whitespace-pre-line">
               <p v-for="(p, i) in selectedArticle.content" :key="i">
                 {{ p }}
               </p>

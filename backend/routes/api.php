@@ -36,11 +36,15 @@ use App\Http\Controllers\Api\TeacherController;
 use App\Http\Controllers\Api\TeachingEvidenceController;
 use App\Http\Controllers\Api\TimeSlotController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\CmsController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     // Public routes
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+    Route::get('/public/galleries', [CmsController::class, 'getPublicGalleries']);
+    Route::get('/public/achievements', [CmsController::class, 'getPublicAchievements']);
+    Route::get('/public/articles', [CmsController::class, 'getPublicArticles']);
 
     // Protected routes (Sanctum)
     Route::middleware('auth:sanctum')->group(function () {
@@ -276,6 +280,21 @@ Route::prefix('v1')->group(function () {
                 Route::get('/{id}/download', [BackupController::class, 'download']);
                 Route::post('/{id}/restore', [BackupController::class, 'restore']);
                 Route::delete('/{id}', [BackupController::class, 'destroy']);
+            });
+
+            // CMS Web Sekolah (Fase 2: Galeri, Prestasi, Warta/Artikel)
+            Route::prefix('cms')->group(function () {
+                Route::get('/galleries', [CmsController::class, 'indexGalleries']);
+                Route::post('/galleries', [CmsController::class, 'storeGallery']);
+                Route::delete('/galleries/{id}', [CmsController::class, 'destroyGallery']);
+
+                Route::get('/achievements', [CmsController::class, 'indexAchievements']);
+                Route::post('/achievements', [CmsController::class, 'storeAchievement']);
+                Route::delete('/achievements/{id}', [CmsController::class, 'destroyAchievement']);
+
+                Route::get('/articles', [CmsController::class, 'indexArticles']);
+                Route::post('/articles', [CmsController::class, 'storeArticle']);
+                Route::delete('/articles/{id}', [CmsController::class, 'destroyArticle']);
             });
         });
 

@@ -1,5 +1,54 @@
 <script setup lang="ts">
-import { achievementsData } from './landingData'
+import { ref, onMounted } from 'vue'
+import { achievementsData as defaultAchievements } from './landingData'
+import api from '../../services/api'
+
+interface DynamicAchievement {
+  id: number
+  title: string
+  image?: string
+  date?: string
+  rank?: string
+  recipient?: string
+  level?: string
+  desc?: string
+  badgeColor?: string
+  year?: string
+  category?: string
+}
+
+const items = ref<DynamicAchievement[]>([...defaultAchievements])
+const isCmsMode = ref(false)
+
+const fetchCmsAchievements = async () => {
+  try {
+    const res = await api.get('/public/achievements')
+    if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      items.value = res.data.data.map((item: any) => {
+        const d = new Date(item.created_at)
+        const dateFormatted = new Intl.DateTimeFormat('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        }).format(d)
+
+        return {
+          id: item.id,
+          title: item.title,
+          image: item.image_url,
+          date: dateFormatted,
+        }
+      })
+      isCmsMode.value = true
+    }
+  } catch (e) {
+    // Fallback default
+  }
+}
+
+onMounted(() => {
+  fetchCmsAchievements()
+})
 </script>
 
 <template>
@@ -19,10 +68,46 @@ import { achievementsData } from './landingData'
         </p>
       </div>
 
-      <!-- Grid Prestasi Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Mode CMS: Foto + Judul + Waktu Posting -->
+      <div v-if="isCmsMode" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         <div 
-          v-for="item in achievementsData" 
+          v-for="item in items" 
+          :key="item.id"
+          class="bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-amber-400 transition-all group flex flex-col"
+        >
+          <div class="aspect-4/3 w-full bg-slate-100 overflow-hidden relative">
+            <img 
+              :src="item.image" 
+              :alt="item.title"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy" 
+            />
+            <div class="absolute top-3 left-3">
+              <span class="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-amber-300 text-[10px] font-bold uppercase tracking-wider border border-white/20">
+                🏆 Prestasi Siswa
+              </span>
+            </div>
+          </div>
+
+          <div class="p-5 flex-1 flex flex-col justify-between space-y-3">
+            <h3 class="font-black text-base text-slate-900 group-hover:text-amber-800 transition-colors leading-snug">
+              {{ item.title }}
+            </h3>
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+              <span class="flex items-center gap-1 font-mono">
+                <span>🕒 Diposting:</span> {{ item.date }}
+              </span>
+              <span class="text-amber-600 font-bold">SDI BIM</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode Fallback Default (Jika CMS belum ada data) -->
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div 
+          v-for="item in items" 
           :key="item.id"
           class="bg-slate-50 rounded-3xl border border-slate-200/90 p-6 hover:shadow-xl hover:border-amber-300 transition-all flex flex-col justify-between group"
         >

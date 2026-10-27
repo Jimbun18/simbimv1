@@ -151,6 +151,12 @@ const routes = [
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
   },
   {
+    path: '/cms',
+    name: 'cms',
+    component: () => import('../views/CmsView.vue'),
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
+  },
+  {
     path: '/portal-wali',
     name: 'portal-wali',
     component: () => import('../views/ParentPortalView.vue'),
