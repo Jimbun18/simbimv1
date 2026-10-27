@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { articlesData as defaultArticlesData } from './landingData'
 import api from '../../services/api'
 
@@ -13,16 +14,15 @@ interface DynamicArticle {
   readTime: string
   summary: string
   tags: string[]
-  content: string[]
   image?: string
 }
 
+const router = useRouter()
 const selectedCategory = ref<string>('Semua')
-const selectedArticle = ref<DynamicArticle | null>(null)
 const items = ref<DynamicArticle[]>([...defaultArticlesData])
 const isCmsMode = ref(false)
 
-const categories = ['Semua', 'Warta Sekolah', 'Edukasi & Karakter', 'Edukasi Qur\'ani', 'Kegiatan Siswa']
+const categories = ['Semua', 'Prestasi Siswa', 'Warta Sekolah', 'Edukasi & Karakter']
 
 const fetchCmsArticles = async () => {
   try {
@@ -34,23 +34,20 @@ const fetchCmsArticles = async () => {
           day: 'numeric',
           month: 'short',
           year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
         }).format(d)
 
-        const paragraphs = item.description ? item.description.split('\n').filter((p: string) => p.trim()) : []
+        const isPrestasi = item.category === 'Prestasi'
 
         return {
           id: item.id,
           title: item.title,
-          category: 'Warta Sekolah',
-          author: 'Redaksi SDI BIM',
-          authorRole: 'Humas & Publikasi',
+          category: isPrestasi ? 'Prestasi Siswa' : (item.category || 'Warta Sekolah'),
+          author: item.creator?.nama || 'SDI BIM PWT',
+          authorRole: isPrestasi ? 'Pembina Prestasi' : 'Humas & Publikasi',
           date: dateFormatted,
           readTime: '3 menit baca',
-          summary: item.description,
-          tags: ['Warta', 'SDI BIM'],
-          content: paragraphs.length > 0 ? paragraphs : [item.description],
+          summary: item.description || '',
+          tags: isPrestasi ? ['Prestasi', 'Juara', 'SDI BIM'] : ['Warta', 'Edukasi', 'SDI BIM'],
           image: item.image_url,
         }
       })
@@ -70,12 +67,8 @@ const filteredArticles = computed(() => {
   return items.value.filter(a => a.category === selectedCategory.value)
 })
 
-const openArticle = (article: DynamicArticle) => {
-  selectedArticle.value = article
-}
-
-const closeArticle = () => {
-  selectedArticle.value = null
+const goToArticleDetail = (article: DynamicArticle) => {
+  router.push(`/artikel/${article.id}`)
 }
 </script>
 
@@ -89,13 +82,13 @@ const closeArticle = () => {
         class="text-center max-w-3xl mx-auto space-y-3"
       >
         <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-          Wawasan & Warta Sekolah
+          Pusat Informasi & Prestasi
         </span>
         <h2 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-          Artikel & Kabar Sekolah
+          Warta & Prestasi Siswa
         </h2>
         <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
-          Kumpulan tulisan inspiratif seputar pembelajaran mendalam (deep learning), kiat muroja'ah Al-Qur'an, edukasi anak islami, serta dokumentasi warta kegiatan civitas SDI Bina Insan Mandiri.
+          Kumpulan kabar terbaru, catatan inspiratif pembelajaran fitrah, serta deretan torehan prestasi membanggakan siswa SDI Bina Insan Mandiri Purwokerto.
         </p>
 
         <!-- Category Filter Badges with Splash Animation -->
@@ -122,10 +115,10 @@ const closeArticle = () => {
           class="bg-slate-50 hover:bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 hover:border-emerald-300 hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group overflow-hidden p-3.5 sm:p-5"
         >
           <div>
-            <!-- Foto Sampul (Jika dari CMS) -->
+            <!-- Foto Sampul -->
             <div 
               v-if="article.image" 
-              @click="openArticle(article)"
+              @click="goToArticleDetail(article)"
               class="aspect-16/9 w-full bg-slate-200 rounded-xl sm:rounded-2xl overflow-hidden mb-2.5 sm:mb-3.5 cursor-pointer relative"
             >
               <img 
@@ -138,14 +131,19 @@ const closeArticle = () => {
 
             <div class="space-y-1.5 sm:space-y-3">
               <div class="flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400 font-medium">
-                <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold uppercase text-[8px] sm:text-[10px]">
+                <span 
+                  class="px-2 py-0.5 rounded-full font-bold uppercase text-[8px] sm:text-[10px]"
+                  :class="article.category.includes('Prestasi') 
+                    ? 'bg-amber-100 text-amber-900 border border-amber-200' 
+                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200'"
+                >
                   {{ article.category }}
                 </span>
                 <span class="hidden sm:inline">{{ article.readTime }}</span>
               </div>
 
               <h3 
-                @click="openArticle(article)"
+                @click="goToArticleDetail(article)"
                 class="font-black text-xs sm:text-base text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 cursor-pointer leading-snug"
               >
                 {{ article.title }}
@@ -175,97 +173,14 @@ const closeArticle = () => {
             </div>
             <button
               type="button"
-              @click="openArticle(article)"
+              @click="goToArticleDetail(article)"
               class="text-[11px] sm:text-xs font-bold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer shrink-0"
             >
-              <span>Baca &rarr;</span>
+              <span>Buka Halaman &rarr;</span>
             </button>
           </div>
         </article>
       </div>
-
-      <!-- MODAL BACA ARTIKEL LENGKAP -->
-      <transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div 
-          v-if="selectedArticle"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
-          @click.self="closeArticle"
-        >
-          <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100 p-6 sm:p-8 space-y-6 animate-scaleUp">
-            
-            <!-- Modal Header -->
-            <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
-              <div>
-                <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold uppercase text-[10px]">
-                  {{ selectedArticle.category }}
-                </span>
-                <h3 class="text-xl sm:text-2xl font-black text-slate-900 mt-2 leading-tight">
-                  {{ selectedArticle.title }}
-                </h3>
-                <div class="flex items-center gap-3 text-xs text-slate-400 mt-2">
-                  <span class="font-bold text-slate-700">{{ selectedArticle.author }} ({{ selectedArticle.authorRole }})</span>
-                  <span>•</span>
-                  <span>{{ selectedArticle.date }}</span>
-                  <span>•</span>
-                  <span>{{ selectedArticle.readTime }}</span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                @click="closeArticle"
-                class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-lg font-bold shrink-0 cursor-pointer"
-              >
-                &times;
-              </button>
-            </div>
-
-            <!-- Foto Sampul Modal Jika Ada -->
-            <div v-if="selectedArticle.image" class="aspect-16/9 w-full bg-slate-100 rounded-2xl overflow-hidden shadow-xs">
-              <img 
-                :src="selectedArticle.image" 
-                :alt="selectedArticle.title" 
-                class="w-full h-full object-cover" 
-              />
-            </div>
-
-            <!-- Modal Content Paragraphs -->
-            <div class="space-y-3.5 text-sm sm:text-base text-slate-700 leading-relaxed whitespace-pre-line">
-              <p v-for="(p, i) in selectedArticle.content" :key="i">
-                {{ p }}
-              </p>
-            </div>
-
-            <!-- Modal Footer -->
-            <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-              <div class="flex flex-wrap gap-1.5">
-                <span 
-                  v-for="t in selectedArticle.tags" 
-                  :key="t" 
-                  class="text-xs bg-slate-100 px-2.5 py-1 rounded-lg text-slate-600 font-medium"
-                >
-                  #{{ t }}
-                </span>
-              </div>
-              <button
-                type="button"
-                @click="closeArticle"
-                class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition cursor-pointer"
-              >
-                Tutup Artikel
-              </button>
-            </div>
-
-          </div>
-        </div>
-      </transition>
 
     </div>
   </section>

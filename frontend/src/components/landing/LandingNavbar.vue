@@ -91,14 +91,14 @@ const handlePortalClick = () => {
           <span v-if="route.path.startsWith('/pendidikan')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
         </router-link>
 
-        <!-- 3. Artikel -->
+        <!-- 3. Warta & Prestasi (Gabungan Artikel & Prestasi) -->
         <router-link 
           to="/artikel" 
           class="hover:text-emerald-700 transition-colors py-2 relative"
-          :class="route.path.startsWith('/artikel') ? 'text-emerald-700 font-bold' : ''"
+          :class="route.path.startsWith('/artikel') || route.path.startsWith('/prestasi') ? 'text-emerald-700 font-bold' : ''"
         >
-          <span>Artikel</span>
-          <span v-if="route.path.startsWith('/artikel')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
+          <span>Warta & Prestasi</span>
+          <span v-if="route.path.startsWith('/artikel') || route.path.startsWith('/prestasi')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
         </router-link>
 
         <!-- 4. Galeri -->
@@ -109,16 +109,6 @@ const handlePortalClick = () => {
         >
           <span>Galeri</span>
           <span v-if="route.path.startsWith('/galeri')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
-        </router-link>
-
-        <!-- 5. Prestasi -->
-        <router-link 
-          to="/prestasi" 
-          class="hover:text-emerald-700 transition-colors py-2 relative"
-          :class="route.path.startsWith('/prestasi') ? 'text-emerald-700 font-bold' : ''"
-        >
-          <span>Prestasi</span>
-          <span v-if="route.path.startsWith('/prestasi')" class="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></span>
         </router-link>
 
         <!-- 6. Info SPMB -->
@@ -184,13 +174,10 @@ const handlePortalClick = () => {
       </button>
 
       <button @click="navigateTo('/artikel')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
-        Artikel & Warta
+        Warta & Prestasi Siswa
       </button>
       <button @click="navigateTo('/galeri')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
         Galeri Kegiatan
-      </button>
-      <button @click="navigateTo('/prestasi')" class="block w-full text-left py-2 font-semibold text-slate-700 hover:text-emerald-700">
-        Prestasi Siswa
       </button>
       <button @click="navigateTo('/spmb')" class="block w-full text-left py-2 font-bold text-emerald-800 hover:text-emerald-950 flex items-center justify-between">
         <span>Info SPMB 2026/2027</span>

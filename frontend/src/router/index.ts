@@ -27,6 +27,12 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'landing' },
   },
   {
+    path: '/artikel/:id',
+    name: 'landing-article-detail',
+    component: () => import('../views/landing/LandingArticleDetailView.vue'),
+    meta: { layout: 'landing' },
+  },
+  {
     path: '/galeri',
     name: 'landing-gallery',
     component: () => import('../views/landing/LandingGalleryView.vue'),
@@ -34,9 +40,11 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/prestasi',
-    name: 'landing-achievements',
-    component: () => import('../views/landing/LandingAchievementsView.vue'),
-    meta: { layout: 'landing' },
+    redirect: '/artikel?kategori=Prestasi',
+  },
+  {
+    path: '/prestasi/:id',
+    redirect: (to) => `/artikel/${to.params.id}`,
   },
   {
     path: '/spmb',

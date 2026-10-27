@@ -38,13 +38,40 @@ class CmsController extends Controller
         ]);
     }
 
-    public function getPublicArticles(): JsonResponse
+    public function getPublicArticles(Request $request): JsonResponse
     {
-        $articles = CmsArticle::orderByDesc('created_at')->get();
+        $query = CmsArticle::with('creator:id,nama')->orderByDesc('created_at');
+
+        if ($request->filled('category') && $request->input('category') !== 'all') {
+            $query->where('category', $request->input('category'));
+        }
+
+        $articles = $query->get();
+
         return response()->json([
             'success' => true,
-            'message' => 'Daftar warta & artikel berhasil diambil.',
+            'message' => 'Daftar warta, artikel, dan prestasi berhasil diambil.',
             'data' => $articles,
+        ]);
+    }
+
+    public function getPublicArticleDetail(int $id): JsonResponse
+    {
+        $article = CmsArticle::with('creator:id,nama')->findOrFail($id);
+
+        // Ambil rekomendasi artikel/prestasi lain
+        $related = CmsArticle::where('id', '!=', $id)
+            ->orderByDesc('created_at')
+            ->limit(4)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail artikel & prestasi berhasil diambil.',
+            'data' => [
+                'article' => $article,
+                'related' => $related,
+            ],
         ]);
     }
 
@@ -216,6 +243,7 @@ class CmsController extends Controller
         $request->validate([
             'foto' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
             'title' => ['required', 'string', 'max:255'],
+            'category' => ['nullable', 'string', 'max:100'],
             'description' => ['required', 'string'],
         ]);
 
@@ -223,6 +251,7 @@ class CmsController extends Controller
 
         $article = CmsArticle::create([
             'title' => $request->input('title'),
+            'category' => $request->input('category', 'Artikel'),
             'description' => $request->input('description'),
             'image_path' => $path,
             'created_by' => auth()->id(),

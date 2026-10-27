@@ -160,18 +160,15 @@ const closeLightbox = () => {
             <span class="text-xl sm:text-3xl filter drop-shadow">{{ item.icon }}</span>
           </div>
 
-          <!-- Bottom Content -->
-          <div class="relative z-10 space-y-0.5 sm:space-y-1.5">
+          <!-- Bottom Content (Bersih: Hanya Tanggal & Jenis Kegiatan) -->
+          <div class="relative z-10 space-y-0.5 sm:space-y-1">
             <div class="text-[9px] sm:text-[10px] text-emerald-300 font-mono flex items-center gap-1">
               <span>🕒</span> {{ item.date }}
             </div>
-            <h3 class="font-black text-xs sm:text-xl text-white leading-snug group-hover:text-emerald-200 transition-colors line-clamp-2">
+            <h3 class="font-black text-xs sm:text-lg text-white leading-snug group-hover:text-emerald-200 transition-colors line-clamp-2 drop-shadow-sm">
               {{ item.title }}
             </h3>
-            <p class="text-[11px] sm:text-xs text-white/80 line-clamp-1 sm:line-clamp-2 leading-relaxed hidden sm:block">
-              {{ item.desc }}
-            </p>
-            <div class="pt-1 sm:pt-2 flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-emerald-300 opacity-90 group-hover:opacity-100">
+            <div class="pt-1 flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-emerald-300 opacity-90 group-hover:opacity-100">
               <span>Buka Foto</span>
               <span>&rarr;</span>
             </div>
@@ -179,7 +176,7 @@ const closeLightbox = () => {
         </div>
       </div>
 
-      <!-- LIGHTBOX MODAL DOKUMENTASI -->
+      <!-- LIGHTBOX MODAL FOTO BERSIH (Murni Foto Tanpa Keterangan) -->
       <transition
         enter-active-class="transition duration-200 ease-out"
         enter-from-class="opacity-0"
@@ -190,66 +187,48 @@ const closeLightbox = () => {
       >
         <div 
           v-if="activeModalItem"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
+          class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md"
           @click.self="closeLightbox"
         >
-          <div class="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-slate-100 animate-scaleUp">
+          <!-- Tombol Tutup Mengambang di Pojok Kanan Atas Layar -->
+          <button
+            type="button"
+            @click="closeLightbox"
+            class="fixed top-4 right-4 z-50 w-11 h-11 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center text-2xl font-bold backdrop-blur-md transition-all shadow-xl cursor-pointer"
+            aria-label="Tutup Foto"
+          >
+            &times;
+          </button>
+
+          <!-- Frame Foto Bersih -->
+          <div class="relative max-w-5xl w-full flex flex-col items-center animate-scaleUp">
             
-            <!-- Modal Header Media Banner -->
-            <div 
-              class="relative bg-gradient-to-tr text-white overflow-hidden"
-              :class="activeModalItem.image ? 'h-64 sm:h-80' : 'h-56 ' + activeModalItem.color"
-            >
+            <!-- Foto Utama Bersih -->
+            <div class="relative rounded-2xl overflow-hidden shadow-2xl bg-black/50 border border-white/10 max-h-[82vh] flex items-center justify-center">
               <img 
                 v-if="activeModalItem.image" 
                 :src="activeModalItem.image" 
                 :alt="activeModalItem.title" 
-                class="w-full h-full object-cover" 
+                class="w-auto h-auto max-h-[82vh] max-w-full object-contain" 
               />
-              <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/40"></div>
-
-              <div class="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-                <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur-md">
-                  {{ activeModalItem.categoryLabel }}
-                </span>
-                <button
-                  type="button"
-                  @click="closeLightbox"
-                  class="w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center text-lg font-bold cursor-pointer"
-                >
-                  &times;
-                </button>
-              </div>
-
-              <div class="absolute bottom-4 left-4 right-4 z-10">
-                <h3 class="text-xl sm:text-2xl font-black text-white leading-tight drop-shadow">
-                  {{ activeModalItem.title }}
-                </h3>
+              <div 
+                v-else 
+                class="w-80 h-80 sm:w-96 sm:h-96 flex flex-col items-center justify-center p-6 text-center text-white"
+                :class="activeModalItem.color"
+              >
+                <span class="text-6xl mb-4">{{ activeModalItem.icon }}</span>
+                <h3 class="text-xl font-bold">{{ activeModalItem.title }}</h3>
               </div>
             </div>
 
-            <!-- Modal Body Description -->
-            <div class="p-6 space-y-4">
-              <div class="text-xs font-mono text-slate-400">
-                Waktu Pelaksanaan: {{ activeModalItem.date }} • Lokasi: SDI Bina Insan Mandiri Purwokerto
-              </div>
-              <p class="text-sm text-slate-700 leading-relaxed">
-                {{ activeModalItem.desc }}
-              </p>
-              <p class="text-xs text-slate-500 leading-relaxed">
-                Kegiatan ini dirancang untuk mewujudkan keseimbangan antara perkembangan akal (intelektual), hati (spiritualitas dan ketenangan batin), serta raga (keterampilan motorik dan kemandirian) ananda tercinta.
-              </p>
-
-              <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                <span class="text-xs font-bold text-emerald-800">Dokumentasi Resmi SDI BIM</span>
-                <button
-                  type="button"
-                  @click="closeLightbox"
-                  class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition cursor-pointer"
-                >
-                  Tutup
-                </button>
-              </div>
+            <!-- Keterangan Minimalis Mengambang di Bawah (Hanya Judul & Badge) -->
+            <div class="mt-3.5 flex flex-wrap items-center justify-center gap-2.5 text-center px-4">
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur-md text-white border border-white/20">
+                {{ activeModalItem.categoryLabel }}
+              </span>
+              <span class="text-xs sm:text-sm text-white/90 font-medium drop-shadow-md">
+                {{ activeModalItem.title }}
+              </span>
             </div>
 
           </div>

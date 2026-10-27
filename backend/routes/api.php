@@ -45,6 +45,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/public/galleries', [CmsController::class, 'getPublicGalleries']);
     Route::get('/public/achievements', [CmsController::class, 'getPublicAchievements']);
     Route::get('/public/articles', [CmsController::class, 'getPublicArticles']);
+    Route::get('/public/articles/{id}', [CmsController::class, 'getPublicArticleDetail']);
 
     // Protected routes (Sanctum)
     Route::middleware('auth:sanctum')->group(function () {

@@ -14,6 +14,7 @@ class CmsArticle extends Model
 
     protected $fillable = [
         'title',
+        'category',
         'description',
         'image_path',
         'created_by',

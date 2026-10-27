@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import api from '../services/api'
 
 import LandingNavbar from '../components/landing/LandingNavbar.vue'
 import LandingHero from '../components/landing/LandingHero.vue'
@@ -19,6 +20,74 @@ import {
 
 const auth = useAuthStore()
 const router = useRouter()
+
+// Gabungan data artikel & prestasi untuk beranda
+interface HomePost {
+  id: number
+  title: string
+  category: string
+  date: string
+  author: string
+  image_url?: string
+  readTime?: string
+  summary?: string
+}
+
+const homePosts = ref<HomePost[]>([])
+
+const fetchHomePosts = async () => {
+  try {
+    const res = await api.get('/public/articles')
+    if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      homePosts.value = res.data.data.slice(0, 4).map((item: any) => {
+        const d = new Date(item.created_at)
+        const dateFormatted = new Intl.DateTimeFormat('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        }).format(d)
+
+        return {
+          id: item.id,
+          title: item.title,
+          category: item.category || 'Warta',
+          date: dateFormatted,
+          author: item.creator?.nama || 'SDI BIM PWT',
+          image_url: item.image_url,
+          summary: item.description,
+        }
+      })
+      return
+    }
+  } catch (err) {
+    // fallback
+  }
+
+  // Fallback gabungan default articles & achievements jika API belum siap
+  const fallbackList: HomePost[] = [
+    ...articlesData.slice(0, 2).map((a: any) => ({
+      id: a.id,
+      title: a.title,
+      category: a.category || 'Warta',
+      date: a.date,
+      author: a.author,
+      summary: a.summary,
+    })),
+    ...achievementsData.slice(0, 2).map((ac: any) => ({
+      id: 100 + ac.id,
+      title: `${ac.rank} - ${ac.title}`,
+      category: 'Prestasi',
+      date: ac.year,
+      author: ac.recipient,
+      summary: `Tingkat ${ac.level} • Pembinaan intensif SDI BIM`,
+    }))
+  ]
+  homePosts.value = fallbackList
+}
+
+onMounted(() => {
+  fetchHomePosts()
+})
 
 // Label dinamis tombol portal SIM-BIM
 const userPortalLabel = computed(() => {
@@ -239,7 +308,7 @@ const handlePortalAccess = () => {
       <!-- 3. PROGRAM UNGGULAN SEKOLAH (8 PROGRAM) -->
       <LandingFeaturedProgramsSection :show-view-all-link="true" section-id="beranda-program-unggulan" />
 
-      <!-- 4. RINGKASAN ARTIKEL & WARTA -->
+      <!-- 4. RINGKASAN GALERI KEGIATAN SISWA (Bersih Tanpa Keterangan) -->
       <section class="py-20 bg-slate-50 border-b border-slate-200/80 overflow-hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           
@@ -249,76 +318,10 @@ const handlePortalAccess = () => {
           >
             <div>
               <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-                Artikel & Warta
+                Dokumentasi Kegiatan
               </span>
               <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Kabar Terbaru & Wawasan Parenting
-              </h2>
-              <p class="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl">
-                Wawasan seputar pengasuhan fitrah anak, tips tahfidz, dan berita terkini kegiatan sekolah.
-              </p>
-            </div>
-
-            <router-link
-              to="/artikel"
-              v-splash="'dark'"
-              class="btn-splash btn-sheen inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm transition-all shadow-sm hover:shadow-lg self-start md:self-auto shrink-0 cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
-            >
-              <span>Lihat Semua Artikel ({{ articlesData.length }})</span>
-              <span>&rarr;</span>
-            </router-link>
-          </div>
-
-          <!-- Grid 3 Artikel Terpilih (2 Kolom Mobile, 3 Desktop) -->
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6">
-            <article
-              v-for="(article, idx) in articlesData.slice(0, 3)"
-              :key="article.id"
-              v-reveal="{ type: 'fade-up', delay: 100 + idx * 100 }"
-              class="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-4 sm:p-6 flex flex-col justify-between hover:border-emerald-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-              :class="idx === 2 ? 'col-span-2 md:col-span-1' : ''"
-            >
-              <div class="space-y-2 sm:space-y-2.5">
-                <div class="flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400">
-                  <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold uppercase text-[9px] sm:text-[10px]">
-                    {{ article.category }}
-                  </span>
-                  <span>{{ article.readTime }}</span>
-                </div>
-                <h3 class="font-black text-xs sm:text-base text-slate-900 leading-snug line-clamp-2">
-                  {{ article.title }}
-                </h3>
-                <p class="text-[11px] sm:text-xs text-slate-600 line-clamp-2 sm:line-clamp-3 leading-relaxed">
-                  {{ article.summary }}
-                </p>
-              </div>
-
-              <div class="mt-3 sm:mt-5 pt-2.5 sm:pt-3 border-t border-slate-200/80 flex items-center justify-between">
-                <div class="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate max-w-[100px] sm:max-w-none">{{ article.author }}</div>
-                <router-link to="/artikel" class="text-[11px] sm:text-xs font-bold text-emerald-700 hover:underline shrink-0">
-                  Baca &rarr;
-                </router-link>
-              </div>
-            </article>
-          </div>
-
-        </div>
-      </section>
-
-      <!-- 4. RINGKASAN GALERI KEGIATAN -->
-      <section class="py-20 bg-slate-50 border-b border-slate-200/80 overflow-hidden">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          
-          <div 
-            v-reveal="{ type: 'fade-up', delay: 50 }"
-            class="flex flex-col md:flex-row md:items-end justify-between gap-4"
-          >
-            <div>
-              <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-                Galeri Kegiatan
-              </span>
-              <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Dokumentasi Kegiatan Siswa
+                Galeri Kegiatan Siswa
               </h2>
               <p class="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl">
                 Potret keceriaan dan pengalaman belajar nyata siswa di dalam dan luar ruangan.
@@ -335,12 +338,13 @@ const handlePortalAccess = () => {
             </router-link>
           </div>
 
-          <!-- Grid 3 Cuplikan Galeri (2 Kolom Mobile, 3 Desktop) -->
+          <!-- Grid 3 Cuplikan Galeri (2 Kolom Mobile, 3 Desktop) Bersih Tanpa Deskripsi Panjang -->
           <div class="grid grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6">
             <div 
               v-for="(item, idx) in galleryItems.slice(0, 3)"
               :key="item.id"
               v-reveal="{ type: 'fade-up', delay: 100 + idx * 100 }"
+              @click="router.push('/galeri')"
               class="rounded-2xl sm:rounded-3xl p-4 sm:p-6 bg-gradient-to-tr text-white shadow-md hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between h-44 sm:h-56 relative overflow-hidden group cursor-pointer"
               :class="[item.color, idx === 2 ? 'col-span-2 md:col-span-1' : '']"
             >
@@ -353,9 +357,9 @@ const handlePortalAccess = () => {
               <div class="relative z-10 space-y-0.5 sm:space-y-1">
                 <div class="text-[9px] sm:text-[10px] text-emerald-200 font-mono">{{ item.date }}</div>
                 <h3 class="font-bold text-xs sm:text-base text-white leading-snug line-clamp-2">{{ item.title }}</h3>
-                <router-link to="/galeri" class="inline-block text-[11px] sm:text-xs font-bold text-emerald-200 hover:text-white pt-1">
+                <span class="inline-block text-[11px] sm:text-xs font-bold text-emerald-200 group-hover:text-white pt-1">
                   Lihat Foto &rarr;
-                </router-link>
+                </span>
               </div>
             </div>
           </div>
@@ -363,7 +367,7 @@ const handlePortalAccess = () => {
         </div>
       </section>
 
-      <!-- 5. RINGKASAN PRESTASI -->
+      <!-- 5. RINGKASAN WARTA & PRESTASI SISWA (Gabungan Terpadu) -->
       <section class="py-20 bg-white border-b border-slate-200/80 overflow-hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           
@@ -372,51 +376,92 @@ const handlePortalAccess = () => {
             class="flex flex-col md:flex-row md:items-end justify-between gap-4"
           >
             <div>
-              <span class="px-3.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">
-                Prestasi Siswa
+              <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
+                Warta & Prestasi
               </span>
               <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Pencapaian Prestasi Siswa
+                Kabar Sekolah & Prestasi Siswa
               </h2>
               <p class="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl">
-                Bukti keunggulan siswa dalam bidang tahfidz Al-Qur'an, olimpiade sains, pidato, dan robotik.
+                Catatan inspiratif pengasuhan fitrah, warta kegiatan sekolah, serta jejak torehan juara siswa SDI Bina Insan Mandiri.
               </p>
             </div>
 
             <router-link
-              to="/prestasi"
-              v-splash="'amber'"
-              class="btn-splash inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs sm:text-sm transition-all border border-amber-300 self-start md:self-auto shrink-0 shadow-xs hover:shadow-md cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
+              to="/artikel"
+              v-splash="'emerald'"
+              class="btn-splash btn-sheen inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm transition-all shadow-sm hover:shadow-lg self-start md:self-auto shrink-0 cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
             >
-              <span>Lihat Semua Prestasi</span>
+              <span>Lihat Semua Warta & Prestasi</span>
               <span>&rarr;</span>
             </router-link>
           </div>
 
-          <!-- Grid 3 Prestasi Teratas (2 Kolom Mobile, 3 Desktop) -->
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6">
-            <div 
-              v-for="(item, idx) in achievementsData.slice(0, 3)" 
-              :key="item.id"
-              v-reveal="{ type: 'fade-up', delay: 100 + idx * 100 }"
-              class="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-amber-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
-              :class="idx === 2 ? 'col-span-2 md:col-span-1' : ''"
+          <!-- Grid 4 Postingan Gabungan (2 Kolom Mobile, 4 Desktop) -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+            <article
+              v-for="(post, idx) in homePosts"
+              :key="post.id"
+              v-reveal="{ type: 'fade-up', delay: 80 + idx * 80 }"
+              @click="router.push(`/artikel/${post.id}`)"
+              class="bg-slate-50 hover:bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 hover:border-emerald-300 hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group overflow-hidden p-3.5 sm:p-5 cursor-pointer"
             >
-              <div class="space-y-1.5 sm:space-y-2.5">
-                <div class="flex items-center justify-between">
-                  <span class="px-2 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider border truncate max-w-[80px] sm:max-w-none" :class="item.badgeColor">
-                    {{ item.rank }}
-                  </span>
-                  <span class="text-[10px] sm:text-xs text-slate-400 font-mono font-bold">{{ item.year }}</span>
+              <div class="space-y-2.5">
+                <!-- Foto Sampul jika ada -->
+                <div 
+                  v-if="post.image_url"
+                  class="aspect-16/10 w-full bg-slate-200 rounded-xl sm:rounded-2xl overflow-hidden relative"
+                >
+                  <img 
+                    :src="post.image_url" 
+                    :alt="post.title" 
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                    loading="lazy"
+                  />
+                  <div class="absolute top-2 left-2">
+                    <span 
+                      class="px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-bold uppercase tracking-wider backdrop-blur-md shadow-xs"
+                      :class="post.category.includes('Prestasi') 
+                        ? 'bg-amber-400 text-amber-950' 
+                        : 'bg-emerald-600 text-white'"
+                    >
+                      {{ post.category }}
+                    </span>
+                  </div>
                 </div>
-                <h3 class="font-bold text-xs sm:text-base text-slate-900 leading-snug line-clamp-2">{{ item.title }}</h3>
-                <div class="text-[11px] sm:text-xs font-bold text-emerald-800 truncate">{{ item.recipient }}</div>
-                <div class="text-[10px] sm:text-[11px] text-slate-500">Tingkat {{ item.level }}</div>
+
+                <div class="space-y-1.5">
+                  <div v-if="!post.image_url" class="flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400">
+                    <span 
+                      class="px-2 py-0.5 rounded-full font-bold uppercase text-[8px] sm:text-[9px]"
+                      :class="post.category.includes('Prestasi') 
+                        ? 'bg-amber-100 text-amber-900 border border-amber-200' 
+                        : 'bg-emerald-100 text-emerald-800 border border-emerald-200'"
+                    >
+                      {{ post.category }}
+                    </span>
+                    <span class="font-mono text-[9px] sm:text-[10px]">{{ post.date }}</span>
+                  </div>
+
+                  <div v-else class="text-[9px] sm:text-[10px] text-slate-400 font-mono">
+                    {{ post.date }}
+                  </div>
+
+                  <h3 class="font-black text-xs sm:text-sm text-slate-900 group-hover:text-emerald-700 leading-snug line-clamp-2 transition-colors">
+                    {{ post.title }}
+                  </h3>
+                  
+                  <p v-if="post.summary" class="text-[11px] sm:text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                    {{ post.summary }}
+                  </p>
+                </div>
               </div>
-              <router-link to="/prestasi" class="mt-3 sm:mt-4 text-[11px] sm:text-xs font-bold text-amber-800 hover:underline">
-                Rincian &rarr;
-              </router-link>
-            </div>
+
+              <div class="mt-3 pt-2.5 sm:pt-3 border-t border-slate-200/70 flex items-center justify-between text-[11px] sm:text-xs font-bold text-emerald-700 group-hover:text-emerald-800">
+                <span class="truncate max-w-[100px] text-[10px] text-slate-400 font-normal">{{ post.author }}</span>
+                <span>Buka Halaman &rarr;</span>
+              </div>
+            </article>
           </div>
 
         </div>

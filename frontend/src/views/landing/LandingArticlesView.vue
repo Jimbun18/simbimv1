@@ -53,14 +53,14 @@ const handlePortalAccess = () => {
           <div class="flex items-center gap-2 text-xs font-semibold text-emerald-300 mb-3 drop-shadow">
             <router-link to="/" class="hover:text-white transition">Beranda</router-link>
             <span>/</span>
-            <span class="text-white">Artikel & Warta</span>
+            <span class="text-white">Warta & Prestasi</span>
           </div>
 
           <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-lg">
-            Artikel, Opini & Warta Sekolah
+            Warta, Edukasi & Prestasi Siswa
           </h1>
           <p class="text-sm sm:text-base md:text-lg text-slate-100 max-w-3xl mt-3 leading-relaxed drop-shadow-md">
-            Wawasan seputar pembelajaran mendalam (deep learning), edukasi Al-Qur'an ramah anak, dan liputan aktivitas KBM tematik SDI Bina Insan Mandiri Purwokerto.
+            Menyajikan kabar inspiratif, perkembangan pendidikan fitrah, serta rekam jejak prestasi membanggakan generasi pembelajar SDI Bina Insan Mandiri Purwokerto.
           </p>
         </div>
       </section>
