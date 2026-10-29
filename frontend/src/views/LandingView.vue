@@ -193,16 +193,16 @@ const handlePortalAccess = () => {
                 <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center text-lg sm:text-xl font-bold">
                   🎯
                 </div>
-                <h3 class="font-black text-sm sm:text-base text-slate-900 leading-snug">Visi & Misi Luhur</h3>
-                <p class="text-[11px] sm:text-xs text-slate-600 leading-relaxed line-clamp-3 sm:line-clamp-none">
-                  "Terwujudnya Generasi Muslim Pembelajar yang Bertauhid Kokoh, Berakhlak Mulia, Tumbuh Sesuai Fitrahnya, Hafidz Al-Qur'an, dan Membangun Peradaban."
+                <h3 class="font-black text-sm sm:text-base text-slate-900 leading-snug">Visi & Misi Sekolah</h3>
+                <p class="text-[11px] sm:text-xs text-slate-600 leading-relaxed line-clamp-3 sm:line-clamp-none font-medium">
+                  "Menyiapkan Generasi Rabbani yang Cerdas, Santun dan Berwawasan Lingkungan."
                 </p>
                 <div class="pt-1 sm:pt-2 text-[10px] sm:text-[11px] text-teal-800 font-semibold truncate">
-                  4 Misi Berkelanjutan
+                  6 Misi Resmi Sekolah
                 </div>
               </div>
               <router-link to="/profil?tab=visi" class="mt-3 sm:mt-4 text-[11px] sm:text-xs font-bold text-teal-700 hover:underline">
-                Pelajari Visi &rarr;
+                Pelajari Visi &amp; Misi &rarr;
               </router-link>
             </div>
 

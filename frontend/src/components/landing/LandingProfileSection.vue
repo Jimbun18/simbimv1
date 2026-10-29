@@ -159,12 +159,12 @@ watch(
               </div>
               <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Cita-Cita Mulia</span>
               <h3 class="text-xl font-black text-slate-900 mt-1 mb-3">Visi Sekolah</h3>
-              <p class="text-sm text-slate-700 leading-relaxed font-medium bg-white p-4 rounded-2xl border border-slate-100 shadow-2xs">
-                "Terwujudnya Generasi Muslim Pembelajar yang Bertauhid Kokoh, Berakhlak Mulia, Tumbuh Sesuai Fitrahnya, Hafidz Al-Qur'an, dan Siap Membangun Peradaban."
+              <p class="text-sm text-slate-800 leading-relaxed font-bold bg-white p-5 rounded-2xl border border-emerald-100 shadow-2xs text-center sm:text-left">
+                "Menyiapkan Generasi Rabbani yang Cerdas, Santun dan Berwawasan Lingkungan"
               </p>
             </div>
             <div class="mt-6 pt-4 border-t border-slate-200 text-xs text-slate-500">
-              Visi peradaban berorientasi dunia & akhirat.
+              Visi pendidikan Rabbani berwawasan lingkungan hidup.
             </div>
           </div>
 
@@ -175,51 +175,71 @@ watch(
                 🎯
               </div>
               <span class="text-xs font-bold text-teal-700 uppercase tracking-wider">Langkah Nyata</span>
-              <h3 class="text-xl font-black text-slate-900 mt-1 mb-3">Misi Unggulan</h3>
+              <h3 class="text-xl font-black text-slate-900 mt-1 mb-3">Misi Sekolah</h3>
               <ul class="text-xs sm:text-sm text-slate-700 space-y-2.5">
                 <li class="flex items-start gap-2">
                   <span class="w-5 h-5 rounded-full bg-teal-100 text-teal-800 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">1</span>
-                  <span>Menumbuhkan dan merawat fitrah keimanan, fitrah belajar, dan fitrah bakat peserta didik.</span>
+                  <span>Membentuk pribadi siswa yang beriman dan bertaqwa kepada Allah, mencintai Rasulullah dengan berlandaskan Al Qur'an dan As Sunnah;</span>
                 </li>
                 <li class="flex items-start gap-2">
                   <span class="w-5 h-5 rounded-full bg-teal-100 text-teal-800 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">2</span>
-                  <span>Menyelenggarakan pembelajaran Al-Qur'an (Tahsin & Tahfidz) yang tartil dan mutqin.</span>
+                  <span>Meningkatkan prestasi akademik dan non akademik siswa;</span>
                 </li>
                 <li class="flex items-start gap-2">
                   <span class="w-5 h-5 rounded-full bg-teal-100 text-teal-800 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">3</span>
-                  <span>Menerapkan kurikulum tematik integratif yang berorientasi pada nalar kritis dan adab mulia.</span>
+                  <span>Mengembangkan minat, bakat dan kreatifitas siswa melalui inovasi pembelajaran yang aktif, kreatif, dan menyenangkan;</span>
                 </li>
                 <li class="flex items-start gap-2">
                   <span class="w-5 h-5 rounded-full bg-teal-100 text-teal-800 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">4</span>
-                  <span>Membangun kolaborasi Tri Sentra: Keluarga di rumah, Guru di sekolah, dan Masjid di masyarakat.</span>
+                  <span>Memperkenalkan lingkungan dan teknologi informasi sebagai salah satu sumber belajar;</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="w-5 h-5 rounded-full bg-teal-100 text-teal-800 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">5</span>
+                  <span>Menumbuhkan budaya sekolah menjadi nilai keteladanan dan kebersamaan dalam pembentukan akhlak mulia;</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="w-5 h-5 rounded-full bg-teal-100 text-teal-800 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">6</span>
+                  <span>Menjadikan lingkungan sekolah yang bersih, rapi, tertib, indah dan asri.</span>
                 </li>
               </ul>
             </div>
             <div class="mt-6 pt-4 border-t border-slate-200 text-xs text-slate-500">
-              4 Pilar Misi terukur dan terarah.
+              6 Misi resmi SDI Bina Insan Mandiri Purwokerto.
             </div>
           </div>
 
-          <!-- Card Nilai Dasar -->
+          <!-- Card Tujuan & Nilai Karakter -->
           <div class="p-8 rounded-3xl bg-slate-50 border border-slate-200/90 hover:shadow-lg transition-all group flex flex-col justify-between">
             <div>
               <div class="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-2xl mb-6 shadow-md shadow-amber-500/30">
                 💎
               </div>
-              <span class="text-xs font-bold text-amber-700 uppercase tracking-wider">Karakter Utama</span>
-              <h3 class="text-xl font-black text-slate-900 mt-1 mb-3">Nilai BIM</h3>
-              <div class="space-y-2.5">
-                <div class="p-3 bg-white rounded-xl border border-slate-100">
-                  <div class="font-bold text-xs text-slate-800">Qur'ani</div>
-                  <div class="text-[11px] text-slate-500">Al-Qur'an sebagai pedoman rasa, pikir, dan perilaku.</div>
+              <span class="text-xs font-bold text-amber-700 uppercase tracking-wider">Arah & Sasaran</span>
+              <h3 class="text-xl font-black text-slate-900 mt-1 mb-3">Tujuan Sekolah</h3>
+              <ul class="text-xs sm:text-sm text-slate-700 space-y-2 mb-4">
+                <li class="flex items-start gap-2">
+                  <span class="w-5 h-5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">✓</span>
+                  <span>Meningkatkan keimanan dan ketaqwaan kepada Allah, Tuhan Yang Maha Esa bagi segenap civitas akademika.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="w-5 h-5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">✓</span>
+                  <span>Memberikan bekal sikap (Attitude) dan pembiasaan (Habit) untuk membentuk karakter yang kuat sesuai nilai-nilai Islami.</span>
+                </li>
+              </ul>
+
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Pilar Karakter Rabbani</span>
+              <div class="space-y-2">
+                <div class="p-2.5 bg-white rounded-xl border border-slate-100">
+                  <div class="font-bold text-xs text-slate-800">Cerdas & Kreatif</div>
+                  <div class="text-[11px] text-slate-500">Prestasi akademik unggul dan inovatif.</div>
                 </div>
-                <div class="p-3 bg-white rounded-xl border border-slate-100">
-                  <div class="font-bold text-xs text-slate-800">Integritas & Adab</div>
-                  <div class="text-[11px] text-slate-500">Mendahulukan adab di atas ilmu, menjunjung tinggi kejujuran.</div>
+                <div class="p-2.5 bg-white rounded-xl border border-slate-100">
+                  <div class="font-bold text-xs text-slate-800">Santun Berakhlak</div>
+                  <div class="text-[11px] text-slate-500">Beriman, beradab mulia, dan berakhlakul karimah.</div>
                 </div>
-                <div class="p-3 bg-white rounded-xl border border-slate-100">
-                  <div class="font-bold text-xs text-slate-800">Mandiri & Berdaya</div>
-                  <div class="text-[11px] text-slate-500">Tangguh menyelesaikan tantangan dan berani memimpin kebaikan.</div>
+                <div class="p-2.5 bg-white rounded-xl border border-slate-100">
+                  <div class="font-bold text-xs text-slate-800">Berwawasan Lingkungan</div>
+                  <div class="text-[11px] text-slate-500">Cinta lingkungan yang bersih, tertib, dan asri.</div>
                 </div>
               </div>
             </div>
