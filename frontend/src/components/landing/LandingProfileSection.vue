@@ -1,12 +1,55 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { teachersData, studentPledges } from './landingData'
+import { ref, watch, onMounted } from 'vue'
+import api from '../../services/api'
+import { studentPledges } from './landingData'
 
 const props = defineProps<{
   activeTabProp?: 'profil' | 'visi' | 'guru' | 'janji'
 }>()
 
 const activeTab = ref<'profil' | 'visi' | 'guru' | 'janji'>(props.activeTabProp || 'profil')
+
+interface TeacherProfile {
+  id: number
+  name: string
+  role: string
+  foto_url?: string | null
+}
+
+const teachers = ref<TeacherProfile[]>([])
+const loadingTeachers = ref(false)
+
+const fetchPublicTeachers = async () => {
+  loadingTeachers.value = true
+  try {
+    const res = await api.get('/public/teachers')
+    if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      teachers.value = res.data.data
+    } else {
+      teachers.value = defaultTeachersFallback
+    }
+  } catch (err) {
+    console.error('Gagal mengambil data guru publik:', err)
+    teachers.value = defaultTeachersFallback
+  } finally {
+    loadingTeachers.value = false
+  }
+}
+
+const defaultTeachersFallback: TeacherProfile[] = [
+  { id: 1, name: 'Rasiti, S.Pd.', role: 'Kepala Sekolah', foto_url: null },
+  { id: 7, name: 'Hilda Anika Ramadhani, S.Pd.', role: 'Guru Kelas 2', foto_url: null },
+  { id: 8, name: 'Elsa Rahmawati, S.Pd.', role: 'Guru Kelas 3', foto_url: null },
+  { id: 13, name: 'Lulu Farihati, S.Pd.', role: 'Guru Kelas 4', foto_url: null },
+  { id: 9, name: 'Rusydah Hasnaa Taqiyyah Hastuti, S.Pd.', role: 'Guru Kelas', foto_url: null },
+  { id: 10, name: 'Abdul Rosyid Hamid, S.Pd.', role: 'Guru Kelas', foto_url: null },
+  { id: 12, name: 'Nur Kafi Ramadhani, S.Psi.', role: 'Guru BK', foto_url: null },
+  { id: 11, name: 'Bayu Caesario Nor Saputra', role: 'Staf Tata Usaha', foto_url: null },
+]
+
+onMounted(() => {
+  fetchPublicTeachers()
+})
 
 watch(
   () => props.activeTabProp,
@@ -262,44 +305,48 @@ watch(
           </p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Loading Indicator -->
+        <div v-if="loadingTeachers" class="py-12 text-center text-slate-400">
+          <div class="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+          <p class="text-xs">Memuat data tenaga pendidik...</p>
+        </div>
+
+        <!-- Teacher Cards (Hanya Foto + Nama + Jabatan) -->
+        <div v-else class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           <div 
-            v-for="teacher in teachersData" 
+            v-for="teacher in teachers" 
             :key="teacher.id"
-            class="p-5 rounded-3xl bg-slate-50 border border-slate-200/90 hover:shadow-lg hover:border-emerald-300 transition-all flex flex-col justify-between"
+            class="p-3.5 sm:p-4 rounded-3xl bg-white border border-slate-200/90 hover:shadow-xl hover:border-emerald-300 transition-all duration-300 flex flex-col group"
           >
-            <div>
-              <!-- Avatar Circle -->
+            <!-- 1. FOTO -->
+            <div class="aspect-4/5 w-full rounded-2xl overflow-hidden bg-slate-100 relative mb-3.5 shadow-xs border border-slate-100">
+              <img 
+                v-if="teacher.foto_url"
+                :src="teacher.foto_url" 
+                :alt="teacher.name" 
+                class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                loading="lazy"
+              />
               <div 
-                class="w-14 h-14 rounded-2xl bg-gradient-to-tr text-white flex items-center justify-center font-bold text-lg shadow-md mb-4"
-                :class="teacher.avatarBg"
+                v-else 
+                class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-800 via-teal-800 to-slate-900 text-white p-4 text-center select-none"
               >
-                {{ teacher.name.charAt(0) }}
+                <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-xl sm:text-2xl font-black text-emerald-200 shadow-inner mb-2 group-hover:scale-110 transition-transform">
+                  {{ teacher.name.charAt(0) }}
+                </div>
+                <span class="text-[10px] tracking-wider font-semibold text-emerald-200/90 uppercase">Asatidz & Tendik</span>
               </div>
-
-              <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800">
-                {{ teacher.category }}
-              </span>
-
-              <h4 class="font-bold text-sm text-slate-900 mt-2 leading-snug">
-                {{ teacher.name }}
-              </h4>
-              <p class="text-xs text-emerald-700 font-medium mt-0.5 leading-tight">
-                {{ teacher.role }}
-              </p>
-              <div class="text-[11px] text-slate-400 mt-1">
-                {{ teacher.education }}
-              </div>
-
-              <blockquote class="text-[11px] text-slate-600 mt-3 italic border-l-2 border-emerald-300 pl-2 leading-relaxed">
-                "{{ teacher.quote }}"
-              </blockquote>
             </div>
 
-            <div class="mt-4 pt-3 border-t border-slate-200/80 flex items-center justify-between text-[10px] text-slate-400 font-semibold">
-              <span>SDI Bina Insan Mandiri</span>
-              <span class="text-emerald-700 font-bold">Aktif Mengajar</span>
-            </div>
+            <!-- 2. NAMA -->
+            <h4 class="font-bold text-sm sm:text-base text-slate-900 group-hover:text-emerald-800 transition-colors leading-snug">
+              {{ teacher.name }}
+            </h4>
+
+            <!-- 3. JABATAN -->
+            <p class="text-xs font-semibold text-emerald-700 leading-tight mt-1">
+              {{ teacher.role }}
+            </p>
           </div>
         </div>
       </div>

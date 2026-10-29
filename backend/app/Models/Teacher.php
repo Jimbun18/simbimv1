@@ -117,7 +117,13 @@ class Teacher extends Model
     public function getNamaGelarAttribute(): string
     {
         $depan = $this->gelar_depan ? trim($this->gelar_depan) . ' ' : '';
-        $belakang = $this->gelar_belakang ? ', ' . trim($this->gelar_belakang) : '';
-        return $depan . $this->nama_lengkap . $belakang;
+        $nama = trim($this->nama_lengkap);
+        $belakang = $this->gelar_belakang ? trim($this->gelar_belakang) : '';
+
+        if ($belakang && !str_ends_with(strtolower($nama), strtolower($belakang))) {
+            return $depan . $nama . ', ' . $belakang;
+        }
+
+        return $depan . $nama;
     }
 }

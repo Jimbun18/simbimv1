@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CmsAchievement;
 use App\Models\CmsArticle;
 use App\Models\CmsGallery;
+use App\Models\Teacher;
 use App\Services\ActivityLogService;
 use App\Services\ImageCompressionService;
 use Illuminate\Http\JsonResponse;
@@ -72,6 +73,30 @@ class CmsController extends Controller
                 'article' => $article,
                 'related' => $related,
             ],
+        ]);
+    }
+
+    public function getPublicTeachers(): JsonResponse
+    {
+        $teachers = Teacher::where('status', 'aktif')
+            ->orderByRaw("CASE WHEN jabatan LIKE '%Kepala Sekolah%' THEN 0 ELSE 1 END")
+            ->orderBy('id', 'asc')
+            ->get(['id', 'nama_lengkap', 'gelar_depan', 'gelar_belakang', 'jabatan', 'jenis_ptk', 'foto_path']);
+
+        $data = $teachers->map(function ($t) {
+            $jabatan = $t->jabatan ?: ($t->jenis_ptk ? ucwords(str_replace('_', ' ', $t->jenis_ptk)) : 'Tenaga Pendidik');
+            return [
+                'id' => $t->id,
+                'name' => $t->nama_gelar,
+                'role' => $jabatan,
+                'foto_url' => $t->foto_url,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar tenaga pendidik berhasil diambil.',
+            'data' => $data,
         ]);
     }
 
@@ -298,6 +323,114 @@ class CmsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Warta & artikel berhasil dihapus.',
+        ]);
+    }
+
+    // ==========================================
+    // ADMIN CMS: 4. TENAGA PENDIDIK & FOTO
+    // ==========================================
+
+    public function indexTeachers(): JsonResponse
+    {
+        $teachers = Teacher::where('status', 'aktif')
+            ->orderByRaw("CASE WHEN jabatan LIKE '%Kepala Sekolah%' THEN 0 ELSE 1 END")
+            ->orderBy('id', 'asc')
+            ->get(['id', 'nama_lengkap', 'gelar_depan', 'gelar_belakang', 'jabatan', 'jenis_ptk', 'foto_path']);
+
+        $data = $teachers->map(function ($t) {
+            return [
+                'id' => $t->id,
+                'nama_lengkap' => $t->nama_lengkap,
+                'gelar_depan' => $t->gelar_depan,
+                'gelar_belakang' => $t->gelar_belakang,
+                'nama_gelar' => $t->nama_gelar,
+                'jabatan' => $t->jabatan ?: ($t->jenis_ptk ? ucwords(str_replace('_', ' ', $t->jenis_ptk)) : 'Tenaga Pendidik'),
+                'foto_url' => $t->foto_url,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar tenaga pendidik berhasil diambil.',
+            'data' => $data,
+        ]);
+    }
+
+    public function updateTeacher(Request $request, int $id): JsonResponse
+    {
+        $teacher = Teacher::findOrFail($id);
+
+        $request->validate([
+            'nama_lengkap' => ['nullable', 'string', 'max:150'],
+            'gelar_depan' => ['nullable', 'string', 'max:30'],
+            'gelar_belakang' => ['nullable', 'string', 'max:30'],
+            'jabatan' => ['nullable', 'string', 'max:100'],
+            'foto' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
+        ]);
+
+        $oldData = $teacher->toArray();
+
+        if ($request->has('nama_lengkap') && filled($request->input('nama_lengkap'))) {
+            $teacher->nama_lengkap = $request->input('nama_lengkap');
+        }
+        if ($request->has('gelar_depan')) {
+            $teacher->gelar_depan = $request->input('gelar_depan');
+        }
+        if ($request->has('gelar_belakang')) {
+            $teacher->gelar_belakang = $request->input('gelar_belakang');
+        }
+        if ($request->has('jabatan')) {
+            $teacher->jabatan = $request->input('jabatan');
+        }
+
+        if ($request->hasFile('foto')) {
+            if ($teacher->foto_path && Storage::disk('public')->exists($teacher->foto_path)) {
+                Storage::disk('public')->delete($teacher->foto_path);
+            }
+            $teacher->foto_path = ImageCompressionService::compressAndStore($request->file('foto'), 'teachers', 800, 85);
+        }
+
+        $teacher->save();
+
+        ActivityLogService::log(
+            aksi: 'update_teacher_cms',
+            modul: 'cms',
+            targetType: Teacher::class,
+            targetId: $teacher->id,
+            dataSebelum: $oldData,
+            dataSesudah: $teacher->fresh()->toArray(),
+            keterangan: "Admin memperbarui profil/foto guru: {$teacher->nama_gelar}."
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data dan foto tenaga pendidik berhasil diperbarui.',
+            'data' => [
+                'id' => $teacher->id,
+                'nama_lengkap' => $teacher->nama_lengkap,
+                'gelar_depan' => $teacher->gelar_depan,
+                'gelar_belakang' => $teacher->gelar_belakang,
+                'nama_gelar' => $teacher->nama_gelar,
+                'jabatan' => $teacher->jabatan ?: ($teacher->jenis_ptk ? ucwords(str_replace('_', ' ', $teacher->jenis_ptk)) : 'Tenaga Pendidik'),
+                'foto_url' => $teacher->foto_url,
+            ],
+        ]);
+    }
+
+    public function deleteTeacherPhoto(int $id): JsonResponse
+    {
+        $teacher = Teacher::findOrFail($id);
+
+        if ($teacher->foto_path && Storage::disk('public')->exists($teacher->foto_path)) {
+            Storage::disk('public')->delete($teacher->foto_path);
+        }
+
+        $teacher->foto_path = null;
+        $teacher->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Foto tenaga pendidik berhasil dihapus.',
         ]);
     }
 }

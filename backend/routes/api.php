@@ -46,6 +46,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/public/achievements', [CmsController::class, 'getPublicAchievements']);
     Route::get('/public/articles', [CmsController::class, 'getPublicArticles']);
     Route::get('/public/articles/{id}', [CmsController::class, 'getPublicArticleDetail']);
+    Route::get('/public/teachers', [CmsController::class, 'getPublicTeachers']);
 
     // Protected routes (Sanctum)
     Route::middleware('auth:sanctum')->group(function () {
@@ -296,6 +297,10 @@ Route::prefix('v1')->group(function () {
                 Route::get('/articles', [CmsController::class, 'indexArticles']);
                 Route::post('/articles', [CmsController::class, 'storeArticle']);
                 Route::delete('/articles/{id}', [CmsController::class, 'destroyArticle']);
+
+                Route::get('/teachers', [CmsController::class, 'indexTeachers']);
+                Route::post('/teachers/{id}', [CmsController::class, 'updateTeacher']);
+                Route::delete('/teachers/{id}/photo', [CmsController::class, 'deleteTeacherPhoto']);
             });
         });
 
