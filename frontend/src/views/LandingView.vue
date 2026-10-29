@@ -7,6 +7,9 @@ import api from '../services/api'
 import LandingNavbar from '../components/landing/LandingNavbar.vue'
 import LandingHero from '../components/landing/LandingHero.vue'
 import LandingFeaturedProgramsSection from '../components/landing/LandingFeaturedProgramsSection.vue'
+import LandingExtracurricularSection from '../components/landing/LandingExtracurricularSection.vue'
+import LandingGallerySection from '../components/landing/LandingGallerySection.vue'
+import LandingInstagramReviewsSection from '../components/landing/LandingInstagramReviewsSection.vue'
 import LandingFooter from '../components/landing/LandingFooter.vue'
 
 import { 
@@ -308,64 +311,11 @@ const handlePortalAccess = () => {
       <!-- 3. PROGRAM UNGGULAN SEKOLAH (8 PROGRAM) -->
       <LandingFeaturedProgramsSection :show-view-all-link="true" section-id="beranda-program-unggulan" />
 
-      <!-- 4. RINGKASAN GALERI KEGIATAN SISWA (Bersih Tanpa Keterangan) -->
-      <section class="py-20 bg-slate-50 border-b border-slate-200/80 overflow-hidden">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          
-          <div 
-            v-reveal="{ type: 'fade-up', delay: 50 }"
-            class="flex flex-col md:flex-row md:items-end justify-between gap-4"
-          >
-            <div>
-              <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-                Dokumentasi Kegiatan
-              </span>
-              <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Galeri Kegiatan Siswa
-              </h2>
-              <p class="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl">
-                Potret keceriaan dan pengalaman belajar nyata siswa di dalam dan luar ruangan.
-              </p>
-            </div>
+      <!-- 3B. EKSTRAKURIKULER SEKOLAH (WAJIB & PILIHAN) -->
+      <LandingExtracurricularSection :show-view-all-link="true" section-id="beranda-ekstrakurikuler" />
 
-            <router-link
-              to="/galeri"
-              v-splash="'emerald'"
-              class="btn-splash inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs sm:text-sm transition-all border border-emerald-200 self-start md:self-auto shrink-0 shadow-xs hover:shadow-md cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
-            >
-              <span>Buka Galeri Lengkap</span>
-              <span>&rarr;</span>
-            </router-link>
-          </div>
-
-          <!-- Grid 3 Cuplikan Galeri (2 Kolom Mobile, 3 Desktop) Bersih Tanpa Deskripsi Panjang -->
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6">
-            <div 
-              v-for="(item, idx) in galleryItems.slice(0, 3)"
-              :key="item.id"
-              v-reveal="{ type: 'fade-up', delay: 100 + idx * 100 }"
-              @click="router.push('/galeri')"
-              class="rounded-2xl sm:rounded-3xl p-4 sm:p-6 bg-gradient-to-tr text-white shadow-md hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between h-44 sm:h-56 relative overflow-hidden group cursor-pointer"
-              :class="[item.color, idx === 2 ? 'col-span-2 md:col-span-1' : '']"
-            >
-              <div class="relative z-10 flex items-center justify-between">
-                <span class="px-2 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase bg-white/20 backdrop-blur-md">
-                  {{ item.categoryLabel }}
-                </span>
-                <span class="text-xl sm:text-2xl transform group-hover:scale-110 transition-transform">{{ item.icon }}</span>
-              </div>
-              <div class="relative z-10 space-y-0.5 sm:space-y-1">
-                <div class="text-[9px] sm:text-[10px] text-emerald-200 font-mono">{{ item.date }}</div>
-                <h3 class="font-bold text-xs sm:text-base text-white leading-snug line-clamp-2">{{ item.title }}</h3>
-                <span class="inline-block text-[11px] sm:text-xs font-bold text-emerald-200 group-hover:text-white pt-1">
-                  Lihat Foto &rarr;
-                </span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
+      <!-- 4. RINGKASAN GALERI KEGIATAN SISWA (Terhubung Dinamis ke CMS & Lightbox) -->
+      <LandingGallerySection :is-home="true" :limit="6" />
 
       <!-- 5. RINGKASAN WARTA & PRESTASI SISWA (Gabungan Terpadu) -->
       <section class="py-20 bg-white border-b border-slate-200/80 overflow-hidden">
@@ -466,6 +416,9 @@ const handlePortalAccess = () => {
 
         </div>
       </section>
+
+      <!-- INSTAGRAM FEED & KOMENTAR GOOGLE MAPS -->
+      <LandingInstagramReviewsSection />
 
       <!-- 6. RINGKASAN INFO SPMB -->
       <section class="py-20 bg-gradient-to-br from-[#022e23] via-[#044737] to-[#02261d] text-white overflow-hidden relative">

@@ -11,6 +11,7 @@ use App\Services\ActivityLogService;
 use App\Services\Export\AttendanceRecapExportService;
 use App\Services\GeofenceService;
 use App\Services\PhotoCompressionService;
+use App\Services\TeacherAttendanceService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -466,10 +467,15 @@ class TeacherAttendanceController extends Controller
         $user = $request->user();
         $isAdmin = $user->isAdmin();
 
+        if ($isAdmin) {
+            $syncDate = $request->query('tanggal', now()->toDateString());
+            TeacherAttendanceService::syncAutoAlpha($syncDate);
+        }
+
         $query = TeacherAttendance::with(['teacher:id,nip,nik,nama_lengkap,jenis_ptk,foto_path', 'staff:id,nik,nama_lengkap,jabatan,foto_path']);
 
-        // Jika bukan admin, hanya bisa melihat absensinya sendiri
-        if (!$isAdmin) {
+        // Jika bukan admin atau meminta riwayat personal, hanya bisa melihat absensinya sendiri
+        if (!$isAdmin || $request->boolean('personal')) {
             $teacher = $user->teacher;
             $staff = $user->staff;
             if ($teacher) {
@@ -818,6 +824,8 @@ class TeacherAttendanceController extends Controller
         // Hitung Hari Efektif Belajar/Kerja (mengabaikan hari Minggu & hari libur kalender akademik)
         $workDays = \App\Models\SchoolCalendar::countEffectiveWorkDays($startDate, $endDate);
         $workDays = max(1, $workDays);
+
+        TeacherAttendanceService::syncAutoAlphaRange($startDate, min($endDate, now()->toDateString()));
 
         $teachersQuery = \App\Models\Teacher::select('id', 'nip', 'nik', 'nama_lengkap', 'jenis_ptk', 'foto_path');
         $staffsQuery = \App\Models\Staff::select('id', 'nik', 'nama_lengkap', 'jabatan', 'foto_path');

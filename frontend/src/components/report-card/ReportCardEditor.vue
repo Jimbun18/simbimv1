@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
 import { showConfirm, showWarning } from '../../services/swal';
@@ -18,6 +18,17 @@ const emit = defineEmits<{
 
 const auth = useAuthStore();
 const activeReportCard = ref<ReportCardDetail>(JSON.parse(JSON.stringify(props.reportCard)));
+
+// Sync activeReportCard when props.reportCard changes
+watch(
+  () => props.reportCard,
+  (newVal) => {
+    if (newVal) {
+      activeReportCard.value = JSON.parse(JSON.stringify(newVal));
+    }
+  },
+  { deep: true }
+);
 
 const activeEditorTab = ref<'grades' | 'koku' | 'ekstra' | 'notes'>('grades');
 const saving = ref(false);
@@ -38,14 +49,41 @@ const isTriwulan1Or3 = computed(() => {
   );
 });
 
-// Fitur Catatan Wali & Pengesahan hanya aktif di luar Triwulan 1 & 3 (misal Kurikulum Merdeka Semester)
+// Fitur Catatan Wali & Pengesahan aktif untuk Rapor Tematik (Triwulan 3) & Kurikulum Merdeka
 const showNotesTab = computed(() => {
-  return !isTriwulan1Or3.value && activeReportCard.value?.jenis_rapor !== 'karakter_lifeskill';
+  return activeReportCard.value?.jenis_rapor !== 'karakter_lifeskill';
 });
 
 // Modal Revisi
 const showRevisionModal = ref(false);
 const revisionNoteInput = ref('');
+
+// Auto setup default extracurriculars & template note for triwulan_tematik
+watch(
+  () => activeReportCard.value,
+  (card) => {
+    if (!card) return;
+    if (card.jenis_rapor === 'triwulan_tematik') {
+      if (!card.extracurriculars || card.extracurriculars.length === 0) {
+        card.extracurriculars = [
+          { kegiatan: 'Pramuka', predikat: '', keterangan: '', urutan: 1 },
+          { kegiatan: 'Renang', predikat: '-', keterangan: '', urutan: 2 },
+          { kegiatan: 'Pencak Silat', predikat: '', keterangan: '', urutan: 3 },
+          { kegiatan: 'Mading', predikat: '', keterangan: '', urutan: 4 },
+          { kegiatan: 'Public Speaking', predikat: '', keterangan: '', urutan: 5 },
+        ];
+      }
+      if (!card.catatan_wali_kelas) {
+        card.catatan_wali_kelas = 'Pertahankan prestasi. Lebih sungguh-sungguh lagi dalam belajar. Baarakallahu fiik.';
+      }
+      if (!card.tempat_tanggal) {
+        card.tempat_tanggal = 'Purwokerto, 4 April 2026';
+      }
+    }
+  },
+  { immediate: true }
+);
+
 
 // Auto predicate calculation from score
 const calculatePredicate = (score?: number | null | string): string => {
@@ -276,9 +314,37 @@ const removeExtracurricularRow = (index: number) => {
               <span class="text-slate-500 font-medium">Kelengkapan Nilai:</span>
               <strong class="text-emerald-700 font-bold">{{ filledGradesCount }} / {{ activeReportCard.grades?.length || 0 }} mapel</strong>
             </div>
-            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-              <span class="text-slate-500 font-medium">Presensi:</span>
-              <span class="font-semibold text-slate-700">S:<strong>{{ activeReportCard.sakit }}</strong> I:<strong>{{ activeReportCard.izin }}</strong> A:<strong>{{ activeReportCard.alpa }}</strong></span>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+              <span class="text-slate-500 font-bold">Presensi:</span>
+              <div class="flex items-center gap-2 font-bold">
+                <label class="flex items-center gap-1 text-amber-800" title="Sakit">
+                  <span class="text-[11px]">S:</span>
+                  <input
+                    v-model.number="activeReportCard.sakit"
+                    type="number"
+                    min="0"
+                    class="w-10 text-center bg-white border border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-lg py-0.5 text-xs text-slate-900 font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </label>
+                <label class="flex items-center gap-1 text-blue-800" title="Izin">
+                  <span class="text-[11px]">I:</span>
+                  <input
+                    v-model.number="activeReportCard.izin"
+                    type="number"
+                    min="0"
+                    class="w-10 text-center bg-white border border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-lg py-0.5 text-xs text-slate-900 font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </label>
+                <label class="flex items-center gap-1 text-rose-800" title="Alpa / Tanpa Keterangan">
+                  <span class="text-[11px]">A:</span>
+                  <input
+                    v-model.number="activeReportCard.alpa"
+                    type="number"
+                    min="0"
+                    class="w-10 text-center bg-white border border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-lg py-0.5 text-xs text-slate-900 font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </label>
+              </div>
             </div>
           </div>
 
@@ -416,166 +482,252 @@ const removeExtracurricularRow = (index: number) => {
 
     <!-- TAB 1: GRADES / PENILAIAN -->
     <div v-show="activeEditorTab === 'grades'" class="space-y-6">
-      <!-- SUB-VIEW A: KURIKULUM MERDEKA -->
+      <!-- SUB-VIEW A: KURIKULUM MERDEKA (FORMAT TABEL STANDAR RAPOR) -->
       <div v-if="activeReportCard.jenis_rapor === 'kurikulum_merdeka'" class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-          <div>
-            <h3 class="font-extrabold text-base text-slate-900">Nilai Capaian Intrakurikuler</h3>
-            <p class="text-xs text-slate-500">Mata pelajaran standar Kurikulum Merdeka Fase {{ activeReportCard.fase }}</p>
+        <!-- SEMESTER DISTINCTION BANNER -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border transition-all"
+          :class="activeReportCard.semester === 'Gasal' ? 'bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-white border-blue-200/70' : 'bg-gradient-to-r from-teal-50/80 via-emerald-50/50 to-white border-teal-200/70'"
+        >
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 shadow-xs"
+              :class="activeReportCard.semester === 'Gasal' ? 'bg-blue-600 text-white' : 'bg-teal-600 text-white'"
+            >
+              {{ activeReportCard.semester === 'Gasal' ? 'SEM 1' : 'SEM 2' }}
+            </div>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-black text-sm sm:text-base text-slate-900 tracking-tight">
+                  {{ activeReportCard.semester === 'Gasal' ? 'Penilaian Rapor: Semester 1 (Gasal)' : 'Penilaian Rapor: Semester 2 (Genap)' }}
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider"
+                  :class="activeReportCard.semester === 'Gasal' ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-teal-100 text-teal-800 border border-teal-200'"
+                >
+                  {{ activeReportCard.periode || (activeReportCard.semester === 'Gasal' ? 'Semester Gasal' : 'Semester Genap') }}
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">
+                Input nilai akhir dan capaian kompetensi per mata pelajaran (Kurikulum Merdeka).
+              </p>
+            </div>
           </div>
+
           <button
             type="button"
             @click="addGradeRow"
-            class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+            class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs self-start sm:self-center"
           >
             <span>+</span>
             <span>Tambah Mapel</span>
           </button>
         </div>
 
-        <div class="space-y-3">
-          <div
-            v-for="(g, idx) in activeReportCard.grades"
-            :key="idx"
-            class="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-3"
-          >
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex items-center gap-2 flex-1">
-                <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-black">
-                  {{ idx + 1 }}
-                </span>
-                <input
-                  v-model="g.nama_mapel"
-                  type="text"
-                  class="font-bold text-xs bg-white border border-slate-200 rounded-xl px-3 py-1.5 flex-1 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                  placeholder="Nama Mata Pelajaran"
-                />
-                <select
-                  v-model="g.kelompok"
-                  class="text-xs bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-slate-700 focus:outline-none"
+        <!-- TABEL PENILAIAN INTRAKURIKULER RAPIH & BERSIH -->
+        <div class="overflow-x-auto border border-slate-200 rounded-2xl shadow-xs">
+          <table class="w-full text-left border-collapse min-w-[760px]">
+            <thead>
+              <tr class="bg-slate-100 border-b border-slate-300 text-xs font-bold text-slate-800">
+                <th class="py-2.5 px-3 text-center w-12 border-r border-slate-200">No</th>
+                <th class="py-2.5 px-3 w-64 border-r border-slate-200">Mata Pelajaran</th>
+                <th class="py-2.5 px-2 text-center w-28 border-r border-slate-200">Nilai Akhir</th>
+                <th class="py-2.5 px-3">Capaian Kompetensi</th>
+                <th class="py-2.5 px-2 text-center w-16">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 text-xs">
+              <template v-for="(g, idx) in activeReportCard.grades" :key="idx">
+                <!-- Subheader Muatan Lokal sebelum Bahasa Jawa -->
+                <tr
+                  v-if="g.kelompok === 'Muatan Lokal' && (idx === 0 || activeReportCard.grades[idx-1]?.kelompok !== 'Muatan Lokal')"
+                  class="bg-slate-50 font-bold border-b border-slate-200"
                 >
-                  <option value="Umum">Umum</option>
-                  <option value="Agama">Agama</option>
-                  <option value="Muatan Lokal">Muatan Lokal</option>
-                </select>
-              </div>
+                  <td colspan="5" class="py-2 px-3 text-slate-900 font-extrabold text-xs">
+                    Muatan Lokal
+                  </td>
+                </tr>
 
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-slate-500">Nilai:</span>
-                <input
-                  v-model.number="g.nilai_akhir"
-                  @input="g.predikat = calculatePredicate(g.nilai_akhir)"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  placeholder="0-100"
-                  class="w-20 text-center font-bold text-xs bg-white border border-slate-200 rounded-xl py-1.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                />
-                <span
-                  v-if="g.predikat || calculatePredicate(g.nilai_akhir) !== '-'"
-                  class="text-[10px] font-black px-2 py-0.5 rounded-md uppercase"
-                  :class="{
-                    'bg-emerald-100 text-emerald-800 border border-emerald-200': (g.predikat || calculatePredicate(g.nilai_akhir)) === 'A',
-                    'bg-blue-100 text-blue-800 border border-blue-200': (g.predikat || calculatePredicate(g.nilai_akhir)) === 'B',
-                    'bg-amber-100 text-amber-800 border border-amber-200': (g.predikat || calculatePredicate(g.nilai_akhir)) === 'C',
-                    'bg-rose-100 text-rose-800 border border-rose-200': (g.predikat || calculatePredicate(g.nilai_akhir)) === 'D',
-                  }"
-                >
-                  {{ g.predikat || calculatePredicate(g.nilai_akhir) }}
-                </span>
-                <button
-                  type="button"
-                  @click="removeGradeRow(idx)"
-                  class="text-slate-400 hover:text-rose-600 p-1 cursor-pointer"
-                  title="Hapus mata pelajaran ini"
-                >
-                  &times;
-                </button>
-              </div>
-            </div>
+                <tr class="hover:bg-emerald-50/20 transition-colors">
+                  <!-- Kolom No -->
+                  <td class="py-3 px-3 text-center align-top font-bold text-slate-700 border-r border-slate-200">
+                    {{ idx + 1 }}
+                  </td>
 
-            <div>
-              <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                Capaian Kompetensi / Narasi
-              </label>
-              <textarea
-                v-model="g.capaian_kompetensi"
-                rows="2"
-                placeholder="Deskripsi pencapaian kompetensi siswa pada mapel ini..."
-                class="w-full text-xs bg-white border border-slate-200 rounded-xl p-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-              ></textarea>
-            </div>
-          </div>
+                  <!-- Kolom Mata Pelajaran -->
+                  <td class="py-3 px-3 align-top border-r border-slate-200">
+                    <div class="flex items-center gap-1.5 mb-1">
+                      <input
+                        v-model="g.nama_mapel"
+                        type="text"
+                        class="font-bold text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1 flex-1 text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        placeholder="Nama Mapel"
+                      />
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <select
+                        v-model="g.kelompok"
+                        class="text-[11px] bg-slate-50 border border-slate-200 rounded-md px-1.5 py-0.5 text-slate-600 focus:outline-none cursor-pointer"
+                      >
+                        <option value="Umum">Umum</option>
+                        <option value="Agama">Agama</option>
+                        <option value="Muatan Lokal">Muatan Lokal</option>
+                      </select>
+                    </div>
+                  </td>
+
+                  <!-- Kolom Nilai Akhir & Predikat Otomatis -->
+                  <td class="py-3 px-2 align-top text-center border-r border-slate-200">
+                    <div class="flex flex-col items-center gap-1.5">
+                      <input
+                        v-model.number="g.nilai_akhir"
+                        @input="g.predikat = calculatePredicate(g.nilai_akhir)"
+                        type="number"
+                        min="0"
+                        max="100"
+                        class="w-16 text-center font-bold text-xs bg-slate-50/70 hover:bg-white focus:bg-white border border-slate-200 focus:border-emerald-500 rounded-lg py-1.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
+                        placeholder="0-100"
+                      />
+                      <span
+                        v-if="g.predikat || calculatePredicate(g.nilai_akhir) !== '-'"
+                        class="text-[10px] font-black px-2 py-0.5 rounded-md uppercase"
+                        :class="{
+                          'bg-emerald-100 text-emerald-800 border border-emerald-200': (g.predikat || calculatePredicate(g.nilai_akhir)) === 'A',
+                          'bg-blue-100 text-blue-800 border border-blue-200': (g.predikat || calculatePredicate(g.nilai_akhir)) === 'B',
+                          'bg-amber-100 text-amber-800 border border-amber-200': (g.predikat || calculatePredicate(g.nilai_akhir)) === 'C',
+                          'bg-rose-100 text-rose-800 border border-rose-200': (g.predikat || calculatePredicate(g.nilai_akhir)) === 'D',
+                        }"
+                      >
+                        {{ g.predikat || calculatePredicate(g.nilai_akhir) }}
+                      </span>
+                    </div>
+                  </td>
+
+                  <!-- Kolom Capaian Kompetensi -->
+                  <td class="py-2.5 px-3 align-top">
+                    <textarea
+                      v-model="g.capaian_kompetensi"
+                      rows="3"
+                      placeholder="Masukkan deskripsi pencapaian kompetensi ananda pada mapel ini..."
+                      class="w-full text-xs bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl p-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all leading-relaxed resize-y"
+                    ></textarea>
+                  </td>
+
+                  <!-- Kolom Aksi -->
+                  <td class="py-3 px-2 text-center align-middle">
+                    <button
+                      type="button"
+                      @click="removeGradeRow(idx)"
+                      class="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                      title="Hapus mata pelajaran ini"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
         </div>
       </div>
 
       <!-- SUB-VIEW B: RAPOR TRIWULAN TEMATIK (5 TEMA BESAR) -->
-      <div v-else-if="activeReportCard.jenis_rapor === 'triwulan_tematik'" class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-          <div>
+      <div v-else-if="activeReportCard.jenis_rapor === 'triwulan_tematik'" class="space-y-6">
+        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+          <div class="border-b border-slate-100 pb-4">
             <h3 class="font-extrabold text-base text-slate-900">5 Klaster Tema Rapor Triwulan Tematik BIM</h3>
             <p class="text-xs text-slate-500">Sesuai format resmi penilaian tematik terpadu SDI Bina Insan Mandiri</p>
           </div>
-        </div>
 
-        <div class="space-y-4">
-          <div
-            v-for="(g, idx) in activeReportCard.grades"
-            :key="idx"
-            class="p-5 rounded-2xl bg-slate-50/80 border border-slate-200/90 space-y-3"
-          >
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/60 pb-3">
-              <div class="space-y-0.5">
-                <div class="text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider">
-                  Tema {{ idx + 1 }}: {{ g.tema || 'Tematik' }}
-                </div>
-                <div class="font-black text-sm text-slate-900">
-                  {{ g.nama_mapel }}
-                </div>
-              </div>
+          <!-- TABEL TEMATIK (DISAMAKAN PERSIS DENGAN FORMAT RESMI RAPOR TRIWULAN 3) -->
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl shadow-xs">
+            <table class="w-full text-left border-collapse min-w-[850px]">
+              <thead>
+                <tr class="bg-slate-100 border-b border-slate-300 text-xs font-bold text-slate-800">
+                  <th class="py-2.5 px-3 text-center w-12 border-r border-slate-200">No</th>
+                  <th class="py-2.5 px-3 w-44 border-r border-slate-200">Tema</th>
+                  <th class="py-2.5 px-3 w-60 border-r border-slate-200">Muatan Pelajaran</th>
+                  <th colspan="2" class="py-2.5 px-2 text-center w-40 border-r border-slate-200">Nilai Akhir</th>
+                  <th class="py-2.5 px-3">Capaian Kompetensi / Tujuan Pembelajaran</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 text-xs">
+                <!-- Subheader Baris Muatan Nasional -->
+                <tr class="bg-slate-50 font-bold border-b border-slate-200">
+                  <td colspan="6" class="py-2 px-3 text-slate-900 font-extrabold text-xs">
+                    Muatan Nasional
+                  </td>
+                </tr>
 
-              <div class="flex items-center gap-3">
-                <div class="flex items-center gap-1.5">
-                  <span class="text-xs font-bold text-slate-600">Nilai Angka:</span>
-                  <input
-                    v-model.number="g.nilai_akhir"
-                    @input="g.predikat = calculatePredicate(g.nilai_akhir)"
-                    type="number"
-                    min="0"
-                    max="100"
-                    class="w-20 text-center font-bold text-xs bg-white border border-slate-200 rounded-xl py-1.5 text-slate-900 focus:outline-none"
-                    placeholder="0-100"
-                  />
-                </div>
+                <tr
+                  v-for="(g, idx) in activeReportCard.grades"
+                  :key="idx"
+                  class="hover:bg-emerald-50/20 transition-colors"
+                >
+                  <!-- Kolom No -->
+                  <td class="py-3 px-3 text-center align-top font-bold text-slate-700 border-r border-slate-200">
+                    {{ idx + 1 }}
+                  </td>
 
-                <div class="flex items-center gap-1.5">
-                  <span class="text-xs font-bold text-slate-600">Predikat:</span>
-                  <select
-                    v-model="g.predikat"
-                    class="font-black text-xs bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-emerald-800 focus:outline-none"
-                  >
-                    <option value="">-</option>
-                    <option value="A">A (Sangat Baik)</option>
-                    <option value="B">B (Baik)</option>
-                    <option value="C">C (Cukup)</option>
-                    <option value="D">D (Kurang)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
+                  <!-- Kolom Tema -->
+                  <td class="py-3 px-3 align-top border-r border-slate-200">
+                    <div class="font-bold text-slate-900 text-xs leading-snug">
+                      {{ g.tema || 'Tema ' + (idx + 1) }}
+                    </div>
+                  </td>
 
-            <div>
-              <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
-                Capaian Kompetensi / Tujuan Pembelajaran
-              </label>
-              <textarea
-                v-model="g.capaian_kompetensi"
-                rows="3"
-                placeholder="Narasi pencapaian ananda dalam klaster tema ini..."
-                class="w-full text-xs bg-white border border-slate-200 rounded-xl p-3 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 leading-relaxed"
-              ></textarea>
-            </div>
+                  <!-- Kolom Muatan Pelajaran -->
+                  <td class="py-3 px-3 align-top border-r border-slate-200">
+                    <div class="text-xs text-slate-700 leading-snug whitespace-pre-line font-medium">
+                      {{ g.nama_mapel }}
+                    </div>
+                  </td>
+
+                  <!-- Kolom Nilai Angka -->
+                  <td class="py-3 px-2 align-top text-center border-r border-slate-200 w-20">
+                    <input
+                      v-model.number="g.nilai_akhir"
+                      @input="g.predikat = calculatePredicate(g.nilai_akhir)"
+                      type="number"
+                      min="0"
+                      max="100"
+                      class="w-16 text-center font-bold text-xs bg-slate-50/70 hover:bg-white focus:bg-white border border-slate-200 focus:border-emerald-500 rounded-lg py-1.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
+                      placeholder="0-100"
+                    />
+                  </td>
+
+                  <!-- Kolom Predikat Huruf -->
+                  <td class="py-3 px-2 align-top text-center border-r border-slate-200 w-16">
+                    <select
+                      v-model="g.predikat"
+                      class="w-14 font-black text-xs border rounded-lg px-1.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer transition-colors text-center"
+                      :class="{
+                        'bg-emerald-50 border-emerald-300 text-emerald-800': g.predikat === 'A',
+                        'bg-blue-50 border-blue-300 text-blue-800': g.predikat === 'B',
+                        'bg-amber-50 border-amber-300 text-amber-800': g.predikat === 'C',
+                        'bg-rose-50 border-rose-300 text-rose-800': g.predikat === 'D',
+                        'bg-white border-slate-200 text-slate-400 font-normal': !g.predikat
+                      }"
+                    >
+                      <option value="">-</option>
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                      <option value="D">D</option>
+                    </select>
+                  </td>
+
+                  <!-- Kolom Capaian Kompetensi / Tujuan Pembelajaran -->
+                  <td class="py-2.5 px-3 align-top">
+                    <textarea
+                      v-model="g.capaian_kompetensi"
+                      rows="3"
+                      placeholder="Masukkan capaian kompetensi / tujuan pembelajaran ananda di sini..."
+                      class="w-full text-xs bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl p-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all leading-relaxed resize-y"
+                    ></textarea>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -598,60 +750,95 @@ const removeExtracurricularRow = (index: number) => {
           </div>
         </div>
 
-        <!-- GROUPED BY ASPEK -->
+        <!-- TABEL PENILAIAN 17 BUTIR BERDASARKAN ASPEK -->
         <div
           v-for="(items, aspekTitle) in groupedCharacterGrades"
-          :key="aspekTitle"
-          class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4"
+          :key="'tbl-' + String(aspekTitle)"
+          class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden space-y-0"
         >
-          <div class="border-b border-slate-100 pb-3">
-            <h3 class="font-black text-sm text-slate-900 uppercase tracking-wider text-emerald-800">
-              {{ aspekTitle }}
-            </h3>
+          <!-- Header Aspek -->
+          <div class="px-6 py-4 bg-slate-50/90 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0"></span>
+              <h3 class="font-black text-sm text-slate-900 uppercase tracking-wider text-emerald-800">
+                {{ aspekTitle }}
+              </h3>
+            </div>
+            <span class="text-[11px] font-bold text-slate-500 bg-white px-2.5 py-1 rounded-full border border-slate-200 self-start sm:self-auto">
+              {{ items.length }} Butir Indikator
+            </span>
           </div>
 
-          <div class="space-y-3">
-            <div
-              v-for="(item, iIdx) in items"
-              :key="iIdx"
-              class="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2.5"
-            >
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div class="font-bold text-xs text-slate-900 flex items-center gap-2">
-                  <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-black shrink-0">
-                    {{ item.urutan || iIdx + 1 }}
-                  </span>
-                  <span>{{ item.sub_aspek || item.nama_mapel }}</span>
-                </div>
+          <!-- Tabel Form Pengisian -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[760px]">
+              <thead>
+                <tr class="bg-slate-100/75 border-b border-slate-200 text-[11px] font-extrabold text-slate-700 uppercase tracking-wider">
+                  <th class="py-3 px-3 text-center w-14">No</th>
+                  <th class="py-3 px-4 w-[34%]">Indikator Karakter & Life Skill</th>
+                  <th class="py-3 px-4">Pelaksanaan Implementasi</th>
+                  <th class="py-3 px-4 text-center w-40">Nilai</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-xs">
+                <tr
+                  v-for="(item, iIdx) in items"
+                  :key="'row-' + iIdx"
+                  class="hover:bg-emerald-50/25 transition-colors"
+                >
+                  <!-- No -->
+                  <td class="py-3.5 px-3 text-center align-top">
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black">
+                      {{ item.urutan || iIdx + 1 }}
+                    </span>
+                  </td>
 
-                <div class="flex items-center gap-3 self-end sm:self-auto">
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-xs font-bold text-slate-500">Nilai:</span>
+                  <!-- Indikator Karakter -->
+                  <td class="py-3.5 px-4 align-top">
+                    <div class="font-bold text-slate-900 leading-snug text-xs">
+                      {{ item.sub_aspek || item.nama_mapel }}
+                    </div>
+                    <div
+                      v-if="item.tema && item.tema !== aspekTitle"
+                      class="text-[10px] text-emerald-700 font-semibold mt-1"
+                    >
+                      {{ item.tema }}
+                    </div>
+                  </td>
+
+                  <!-- Pelaksanaan Implementasi -->
+                  <td class="py-2.5 px-4 align-top">
+                    <textarea
+                      v-model="item.capaian_kompetensi"
+                      rows="2"
+                      placeholder="Belum diisi. Masukkan bukti pelaksanaan implementasi ananda di sini..."
+                      class="w-full text-xs bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all leading-relaxed shadow-2xs resize-y"
+                    ></textarea>
+                  </td>
+
+                  <!-- Nilai / Predikat -->
+                  <td class="py-2.5 px-4 text-center align-top">
                     <select
                       v-model="item.predikat"
-                      class="font-black text-xs bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-emerald-800 focus:outline-none"
+                      class="font-black text-xs border rounded-xl px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer transition-colors shadow-2xs w-full max-w-[130px] text-center"
+                      :class="{
+                        'bg-emerald-50 border-emerald-300 text-emerald-800': item.predikat === 'A',
+                        'bg-blue-50 border-blue-300 text-blue-800': item.predikat === 'B',
+                        'bg-amber-50 border-amber-300 text-amber-800': item.predikat === 'C',
+                        'bg-rose-50 border-rose-300 text-rose-800': item.predikat === 'D',
+                        'bg-white border-slate-200 text-slate-400 font-normal': !item.predikat
+                      }"
                     >
+                      <option value="">- Kosong -</option>
                       <option value="A">A (Sangat Baik)</option>
                       <option value="B">B (Baik)</option>
                       <option value="C">C (Cukup)</option>
                       <option value="D">D (Kurang)</option>
                     </select>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                  Pelaksanaan Implementasi
-                </label>
-                <textarea
-                  v-model="item.capaian_kompetensi"
-                  rows="2"
-                  placeholder="Deskripsi bukti perilaku dan implementasi yang ditunjukkan siswa..."
-                  class="w-full text-xs bg-white border border-slate-200 rounded-xl p-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                ></textarea>
-              </div>
-            </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -976,4 +1163,6 @@ const removeExtracurricularRow = (index: number) => {
       </div>
     </div>
   </div>
+
+    
 </template>

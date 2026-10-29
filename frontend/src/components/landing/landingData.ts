@@ -5,6 +5,10 @@ import akhlakIslamiImg from '../../assets/ahlakislami.png'
 import leadershipImg from '../../assets/leadership.jpeg'
 import entrepreneurshipImg from '../../assets/enterprener.png'
 import lifeSkillImg from '../../assets/lifeskill.png'
+import cookingDayImg from '../../assets/cokingday.png'
+import pencakSilatImg from '../../assets/pencaksilat.jpeg'
+import renangImg from '../../assets/berenang.png'
+import pramukaImg from '../../assets/pramuka.png'
 
 export interface TeacherProfile {
   id: number
@@ -375,10 +379,235 @@ export const featuredPrograms: FeaturedProgram[] = [
     subtitle: 'Edukasi Makanan Halal-Thayyib & Kerjasama Siswa/Siswi',
     desc: 'Kegiatan edukatif memasak bersama yang melatih kerjasama tim siswa/siswi, mengenal gizi seimbang makanan halal dan thayyib, adab dapur, serta menghargai jerih payah orang tua.',
     icon: '🍳',
+    image: cookingDayImg,
     gradient: 'from-rose-700 via-orange-800 to-amber-950',
     badgeColor: 'bg-rose-100 text-rose-800 border-rose-200',
     category: 'Eksplorasi Praktis'
   },
+]
+
+// 4B. DATA EKSTRAKURIKULER (WAJIB & PILIHAN)
+export interface ExtracurricularItem {
+  id: number
+  name: string
+  type: 'wajib' | 'pilihan'
+  typeLabel: string
+  subtitle: string
+  desc: string
+  schedule?: string
+  targetLevel?: string
+  icon: string
+  gradient: string
+  badgeColor: string
+  image?: string // Foto menyusul
+  benefits: string[]
+}
+
+export const extracurricularActivities: ExtracurricularItem[] = [
+  // --- EKSTRAKURIKULER WAJIB (4) ---
+  {
+    id: 1,
+    name: 'Pencak Silat',
+    type: 'wajib',
+    typeLabel: 'Ekstrakurikuler Wajib',
+    subtitle: 'Kecakapan Bela Diri Islami & Ketahanan Mental',
+    desc: 'Membentuk fisik yang tangkas, kedisiplinan diri, ketahanan mental, serta menanamkan adab ksatria muslim yang senantiasa menjaga kebenaran dan melindungi sesama.',
+    schedule: 'Setiap Pekan',
+    targetLevel: 'Kelas 1 - 6',
+    icon: '🥋',
+    image: pencakSilatImg,
+    gradient: 'from-emerald-700 via-teal-850 to-slate-900',
+    badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    benefits: [
+      'Ketangkasan & Kebugaran Motorik',
+      'Adab Santun & Perlindungan Diri',
+      'Disiplin Mental Ksatria Muslim'
+    ]
+  },
+  {
+    id: 2,
+    name: 'Renang',
+    type: 'wajib',
+    typeLabel: 'Ekstrakurikuler Wajib',
+    subtitle: 'Olahraga Sunnah, Kekuatan Paru & Ketahanan Fisik',
+    desc: 'Mengamalkan sunnah Rasulullah SAW, melatih kekuatan pernapasan, kebugaran otot jantung, postur tubuh tegap, serta keterampilan bertahan hidup di air.',
+    schedule: 'Berkala per Jenjang',
+    targetLevel: 'Kelas 1 - 6',
+    icon: '🏊',
+    image: renangImg,
+    gradient: 'from-cyan-700 via-blue-850 to-slate-900',
+    badgeColor: 'bg-cyan-100 text-cyan-800 border-cyan-200',
+    benefits: [
+      'Mengamalkan Olahraga Sunnah',
+      'Ketahanan Pernapasan & Jantung',
+      'Kecakapan Bertahan di Air'
+    ]
+  },
+  {
+    id: 3,
+    name: 'BIM Voice',
+    type: 'wajib',
+    typeLabel: 'Ekstrakurikuler Wajib',
+    subtitle: 'Harmoni Vokal, Nasyid Islami & Artikulasi Nada',
+    desc: 'Wadah kreasi olah vokal, harmoni paduan suara nasyid islami, pelafalan artikulasi indah, dan pembiasaan syiar syair kebaikan yang mengasah musikalitas ruhani.',
+    schedule: 'Setiap Pekan',
+    targetLevel: 'Kelas 1 - 6',
+    icon: '🎙️',
+    gradient: 'from-amber-600 via-orange-800 to-slate-900',
+    badgeColor: 'bg-amber-100 text-amber-900 border-amber-200',
+    benefits: [
+      'Olah Vokal & Harmoni Nada',
+      'Syiar Syair Kebaikan Islami',
+      'Percaya Diri Tampil di Panggung'
+    ]
+  },
+  {
+    id: 4,
+    name: 'Pramuka (SIT)',
+    type: 'wajib',
+    typeLabel: 'Ekstrakurikuler Wajib',
+    subtitle: 'Kepanduan Berkarakter, Cinta Alam & Kemandirian',
+    desc: 'Pramuka Sekolah Islam Terpadu yang menumbuhkan jiwa kepemimpinan, kepedulian sosial, kemandirian hidup di alam terbuka, serta kekompakan ukhuwah regu.',
+    schedule: 'Setiap Hari Jumat / Sabtu',
+    targetLevel: 'Kelas 1 - 6',
+    icon: '⛺',
+    image: pramukaImg,
+    gradient: 'from-emerald-800 via-teal-900 to-slate-955',
+    badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    benefits: [
+      'Kemandirian & Survival Alam',
+      'Kepemimpinan & Tanggung Jawab',
+      'Kekompakan Ukhuwah Regu'
+    ]
+  },
+
+  // --- EKSTRAKURIKULER PILIHAN (7) ---
+  {
+    id: 5,
+    name: 'Bulu Tangkis (Badminton)',
+    type: 'pilihan',
+    typeLabel: 'Ekstrakurikuler Pilihan',
+    subtitle: 'Kelincahan Gerak, Kecepatan Refleks & Sportivitas',
+    desc: 'Melatih koordinasi mata dan tangan, kelincahan gerak kaki, kecepatan reaksi, serta sportivitas tinggi dalam permainan bulu tangkis yang kompetitif dan menyenangkan.',
+    schedule: 'Sesi Sore / Akhir Pekan',
+    targetLevel: 'Peminatan Siswa',
+    icon: '🏸',
+    gradient: 'from-blue-600 via-indigo-850 to-slate-900',
+    badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
+    benefits: [
+      'Kelincahan Gerak & Refleks Cepat',
+      'Stamina Fisik & Postur Seimbang',
+      'Jiwa Sportif & Mental Juara'
+    ]
+  },
+  {
+    id: 6,
+    name: 'Catur',
+    type: 'pilihan',
+    typeLabel: 'Ekstrakurikuler Pilihan',
+    subtitle: 'Asah Nalar Logika, Strategi Taktis & Konsentrasi',
+    desc: 'Mengasah kemampuan daya nalar logika, konsentrasi berpikir mendalam (deep thinking), perencanaan strategi jangka panjang, dan ketenangan mengambil keputusan terbaik.',
+    schedule: 'Sesi Sore / Akhir Pekan',
+    targetLevel: 'Peminatan Siswa',
+    icon: '♟️',
+    gradient: 'from-slate-700 via-slate-850 to-slate-950',
+    badgeColor: 'bg-slate-200 text-slate-800 border-slate-300',
+    benefits: [
+      'Daya Nalar Kritis & Logika Taktis',
+      'Konsentrasi & Fokus Mendalam',
+      'Ketenangan Problem Solving'
+    ]
+  },
+  {
+    id: 7,
+    name: 'Kaligrafi (Khat Islami)',
+    type: 'pilihan',
+    typeLabel: 'Ekstrakurikuler Pilihan',
+    subtitle: 'Seni Khat Al-Qur\'an, Ketelitian & Kesabaran Jiwa',
+    desc: 'Mempelajari keindahan kaidah khat Naskhi dan Tsuluts dalam menulis ayat-ayat suci Al-Qur\'an, melatih ketelitian jemari, kesabaran, dan cita rasa seni islami bernilai tinggi.',
+    schedule: 'Sesi Sore / Akhir Pekan',
+    targetLevel: 'Peminatan Siswa',
+    icon: '✒️',
+    gradient: 'from-teal-700 via-emerald-850 to-slate-900',
+    badgeColor: 'bg-teal-100 text-teal-800 border-teal-200',
+    benefits: [
+      'Kaidah Penulisan Khat Indah',
+      'Ketelitian & Kesabaran Jiwa',
+      'Apresiasi Estetika Qur\'ani'
+    ]
+  },
+  {
+    id: 8,
+    name: 'Public Speaking (Muhadharah)',
+    type: 'pilihan',
+    typeLabel: 'Ekstrakurikuler Pilihan',
+    subtitle: 'Retorika Berbicara, Percaya Diri & Dakwah Cilik',
+    desc: 'Membina keberanian berbicara di depan khalayak umum, teknik intonasi suara, artikulasi dakwah cilik, bahasa tubuh percaya diri, serta menyusun gagasan ceramah secara terstruktur.',
+    schedule: 'Sesi Sore / Akhir Pekan',
+    targetLevel: 'Peminatan Siswa',
+    icon: '🗣️',
+    gradient: 'from-violet-700 via-purple-850 to-slate-900',
+    badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
+    benefits: [
+      'Keberanian Tampil di Publik',
+      'Retorika Ceramah & Dakwah',
+      'Komunikasi Percaya Diri'
+    ]
+  },
+  {
+    id: 9,
+    name: 'Penulis Cilik',
+    type: 'pilihan',
+    typeLabel: 'Ekstrakurikuler Pilihan',
+    subtitle: 'Kreativitas Menulis, Cerita Islami & Literasi Sekolah',
+    desc: 'Menghidupkan imajinasi kreatif siswa melalui penulisan cerita pendek, puisi islami, reportase kegiatan sekolah, dan pembiasaan gemar membaca buku bermutu sejak dini.',
+    schedule: 'Sesi Sore / Akhir Pekan',
+    targetLevel: 'Peminatan Siswa',
+    icon: '📝',
+    gradient: 'from-amber-700 via-yellow-850 to-slate-900',
+    badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
+    benefits: [
+      'Imajinasi Kreatif & Tata Bahasa',
+      'Menulis Cerita & Puisi Bermakna',
+      'Penerbitan Mading Sekolah'
+    ]
+  },
+  {
+    id: 10,
+    name: 'Seni Tari',
+    type: 'pilihan',
+    typeLabel: 'Ekstrakurikuler Pilihan',
+    subtitle: 'Seni Gerak Santun Tradisional & Nuansa Islami',
+    desc: 'Mengekspresikan kelenturan gerak tubuh dalam tarian tradisional dan kreasi bernuansa islami yang santun, harmonis, serta memupuk kecintaan pada kekayaan budaya Nusantara.',
+    schedule: 'Sesi Sore / Akhir Pekan',
+    targetLevel: 'Peminatan Siswa',
+    icon: '💃',
+    gradient: 'from-rose-600 via-pink-800 to-slate-900',
+    badgeColor: 'bg-rose-100 text-rose-800 border-rose-200',
+    benefits: [
+      'Kelenturan Gerak & Postur',
+      'Gerak Santun Beradab Islami',
+      'Cinta Warisan Budaya Nusantara'
+    ]
+  },
+  {
+    id: 11,
+    name: 'Seni Musik',
+    type: 'pilihan',
+    typeLabel: 'Ekstrakurikuler Pilihan',
+    subtitle: 'Ketukan Ritmis Rebana Hadroh & Harmoni Musik',
+    desc: 'Mengenal ketukan ritmis alat musik rebana hadroh dan ensambel musik sekolah, melatih sinkronisasi ketukan tim, kepekaan telinga musikal, dan mengiringi shalawat nabi.',
+    schedule: 'Sesi Sore / Akhir Pekan',
+    targetLevel: 'Peminatan Siswa',
+    icon: '🥁',
+    gradient: 'from-orange-600 via-red-800 to-slate-900',
+    badgeColor: 'bg-orange-100 text-orange-800 border-orange-200',
+    benefits: [
+      'Ketukan Ritmis Hadroh & Rebana',
+      'Sinkronisasi Nada & Irama Tim',
+      'Syiar Shalawat Nabi SAW'
+    ]
+  }
 ]
 
 // 5. DATA ARTIKEL & WARTA SEKOLAH

@@ -80,11 +80,37 @@ class Student extends Model
         'updated_by',
     ];
 
-    protected $appends = ['foto_url'];
+    protected $appends = ['foto_url', 'alamat'];
 
     public function getFotoUrlAttribute(): ?string
     {
         return $this->foto_path ? asset('storage/' . $this->foto_path) : null;
+    }
+
+    public function getAlamatAttribute(): string
+    {
+        $parts = [];
+        if (!empty($this->alamat_jalan)) {
+            $parts[] = trim($this->alamat_jalan);
+        }
+        if (!empty($this->rt) || !empty($this->rw)) {
+            $rtRw = [];
+            if (!empty($this->rt)) $rtRw[] = "RT {$this->rt}";
+            if (!empty($this->rw)) $rtRw[] = "RW {$this->rw}";
+            $parts[] = implode(' ', $rtRw);
+        }
+        if (!empty($this->dusun)) {
+            $parts[] = trim($this->dusun);
+        } elseif (!empty($this->desa_kelurahan)) {
+            $parts[] = trim($this->desa_kelurahan);
+        }
+        if (!empty($this->kecamatan)) {
+            $parts[] = trim($this->kecamatan);
+        }
+        if (!empty($this->kab_kota)) {
+            $parts[] = trim($this->kab_kota);
+        }
+        return !empty($parts) ? implode(', ', $parts) : ($this->alamat_jalan ?? '');
     }
 
     protected function casts(): array

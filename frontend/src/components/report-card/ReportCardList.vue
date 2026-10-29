@@ -43,6 +43,114 @@ const revisionTargetCardId = ref<number | null>(null);
 
 const fileInput = ref<HTMLInputElement | null>(null);
 
+// Rekapitulasi Presensi Triwulan
+const attendanceStartDate = ref('2026-07-15');
+const attendanceEndDate = ref('2026-09-30');
+
+watch(
+  () => [props.currentSubMenu, props.selectedSemester],
+  ([menu, sem]) => {
+    if (menu === 'semester_1') {
+      attendanceStartDate.value = '2026-07-15';
+      attendanceEndDate.value = '2026-12-20';
+    } else if (menu === 'semester_2') {
+      attendanceStartDate.value = '2027-01-05';
+      attendanceEndDate.value = '2027-06-20';
+    } else if (menu === 'triwulan_3' || sem === 'Genap') {
+      attendanceStartDate.value = '2027-01-05';
+      attendanceEndDate.value = '2027-03-31';
+    } else {
+      attendanceStartDate.value = '2026-07-15';
+      attendanceEndDate.value = '2026-09-30';
+    }
+  },
+  { immediate: true }
+);
+const syncingAttendance = ref(false);
+const lastSyncResult = ref<any | null>(null);
+
+// Modal Edit Presensi Cepat
+const showQuickAttModal = ref(false);
+const quickAttStudent = ref<any | null>(null);
+const quickAttSakit = ref(0);
+const quickAttIzin = ref(0);
+const quickAttAlpa = ref(0);
+const savingQuickAtt = ref(false);
+
+const formatDateDisplay = (dateStr?: string) => {
+  if (!dateStr) return '-';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return dateStr;
+};
+
+const handleSyncClassAttendance = async () => {
+  if (!props.selectedClassId) {
+    emit('notify', 'Silakan pilih kelas terlebih dahulu.', 'warning');
+    return;
+  }
+  if (!attendanceStartDate.value || !attendanceEndDate.value) {
+    emit('notify', 'Tentukan tanggal mulai dan selesai absensi.', 'warning');
+    return;
+  }
+  syncingAttendance.value = true;
+  try {
+    const res = await api.post('/report-cards/sync-class-attendance', {
+      class_id: props.selectedClassId,
+      academic_year_id: props.selectedAcademicYearId || undefined,
+      semester: props.selectedSemester,
+      periode: props.selectedPeriode,
+      jenis_rapor: props.jenisRapor,
+      tgl_mulai: attendanceStartDate.value,
+      tgl_selesai: attendanceEndDate.value,
+    });
+    if (res.data.success) {
+      emit('notify', res.data.message, 'success');
+      lastSyncResult.value = res.data.data;
+      await loadClassReports();
+    }
+  } catch (err: any) {
+    emit('notify', 'Gagal menyinkronkan presensi: ' + (err.response?.data?.message || err.message), 'error');
+  } finally {
+    syncingAttendance.value = false;
+  }
+};
+
+
+
+const openQuickAttendanceEdit = (st: any) => {
+  if (!st.report_card_id) {
+    emit('notify', 'Draf rapor siswa ini belum dibuat. Klik Siapkan Draf Kelas terlebih dahulu.', 'warning');
+    return;
+  }
+  quickAttStudent.value = st;
+  quickAttSakit.value = st.kehadiran?.sakit ?? 0;
+  quickAttIzin.value = st.kehadiran?.izin ?? 0;
+  quickAttAlpa.value = st.kehadiran?.alpa ?? 0;
+  showQuickAttModal.value = true;
+};
+
+const saveQuickAttendance = async () => {
+  if (!quickAttStudent.value?.report_card_id) return;
+  savingQuickAtt.value = true;
+  try {
+    const res = await api.put(`/report-cards/${quickAttStudent.value.report_card_id}`, {
+      sakit: Number(quickAttSakit.value) || 0,
+      izin: Number(quickAttIzin.value) || 0,
+      alpa: Number(quickAttAlpa.value) || 0,
+    });
+    if (res.data.success) {
+      emit('notify', `Presensi ${quickAttStudent.value.nama_lengkap} berhasil diperbarui.`, 'success');
+      showQuickAttModal.value = false;
+      await loadClassReports();
+    }
+  } catch (err: any) {
+    emit('notify', 'Gagal memperbarui presensi: ' + (err.response?.data?.message || err.message), 'error');
+  } finally {
+    savingQuickAtt.value = false;
+  }
+};
+
 // Unified Periode & Semester options based on selected jenis rapor
 const unifiedPeriodOptions = computed(() => {
   if (props.jenisRapor === 'kurikulum_merdeka') {
@@ -493,6 +601,36 @@ defineExpose({
           </div>
         </div>
 
+        <div v-else-if="currentSubMenu === 'semester_1'">
+          <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+            Periode Penilaian
+          </label>
+          <div class="h-[38px] flex items-center gap-2 bg-blue-50 border border-blue-200/80 rounded-xl px-3 text-xs font-bold text-blue-900 shadow-xs">
+            <span class="w-2 h-2 rounded-full bg-blue-600 shrink-0"></span>
+            <span class="truncate">Semester 1 (Akhir Semester Gasal)</span>
+          </div>
+        </div>
+
+        <div v-else-if="currentSubMenu === 'triwulan_3'">
+          <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+            Periode Penilaian
+          </label>
+          <div class="h-[38px] flex items-center gap-2 bg-purple-50 border border-purple-200/80 rounded-xl px-3 text-xs font-bold text-purple-900 shadow-xs">
+            <span class="w-2 h-2 rounded-full bg-purple-600 shrink-0"></span>
+            <span class="truncate">Triwulan 3 (Tengah Semester Genap)</span>
+          </div>
+        </div>
+
+        <div v-else-if="currentSubMenu === 'semester_2'">
+          <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+            Periode Penilaian
+          </label>
+          <div class="h-[38px] flex items-center gap-2 bg-teal-50 border border-teal-200/80 rounded-xl px-3 text-xs font-bold text-teal-900 shadow-xs">
+            <span class="w-2 h-2 rounded-full bg-teal-600 shrink-0"></span>
+            <span class="truncate">Semester 2 (Akhir Semester Genap)</span>
+          </div>
+        </div>
+
         <div v-else>
           <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
             Periode Penilaian
@@ -595,6 +733,89 @@ defineExpose({
             </svg>
             <span>{{ importingExcel ? 'Mengimpor...' : 'Import Excel' }}</span>
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REKAP PRESENSI DENGAN RENTANG TANGGAL KUSTOM -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-3.5">
+      <!-- Header: Judul & Deskripsi Lengkap -->
+      <div class="flex items-start sm:items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-700 flex items-center justify-center text-xl shrink-0">
+          📅
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <h3 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
+              Rekapitulasi Kehadiran Siswa (Presensi)
+            </h3>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100/80 text-amber-800 border border-amber-200">
+              Terhubung ke Rapor {{ selectedPeriode || (currentSubMenu === 'semester_2' ? 'Semester Genap' : currentSubMenu === 'semester_1' ? 'Semester Gasal' : currentSubMenu === 'triwulan_3' ? 'Triwulan 3' : 'Triwulan 1') }}
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Tentukan rentang tanggal absensi untuk menghitung otomatis jumlah Sakit, Izin, dan Alpa ke dalam rapor siswa kelas ini.
+          </p>
+        </div>
+      </div>
+
+      <!-- Form Toolbar: Input Tanggal & Tombol Sinkronisasi -->
+      <div class="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex items-center gap-3 flex-wrap">
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-bold text-slate-600 whitespace-nowrap">Tanggal Mulai:</label>
+            <input
+              v-model="attendanceStartDate"
+              type="date"
+              class="text-xs font-semibold bg-white border border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl px-3 py-1.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-2xs"
+            />
+          </div>
+
+          <span class="text-xs font-bold text-slate-400">s/d</span>
+
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-bold text-slate-600 whitespace-nowrap">Tanggal Selesai:</label>
+            <input
+              v-model="attendanceEndDate"
+              type="date"
+              class="text-xs font-semibold bg-white border border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl px-3 py-1.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-2xs"
+            />
+          </div>
+        </div>
+
+        <button
+          type="button"
+          @click="handleSyncClassAttendance"
+          :disabled="syncingAttendance || !props.selectedClassId"
+          class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 whitespace-nowrap self-start md:self-auto"
+          title="Tarik dan perbarui rekap presensi seluruh siswa di kelas ini sesuai rentang tanggal"
+        >
+          <svg v-if="syncingAttendance" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>{{ syncingAttendance ? 'Menyinkronkan Presensi...' : 'Tarik & Sinkronkan Presensi Kelas' }}</span>
+        </button>
+      </div>
+
+      <!-- Hasil Singkat Sinkronisasi -->
+      <div v-if="lastSyncResult" class="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl text-xs text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div class="flex items-center gap-2">
+          <span class="text-base">✅</span>
+          <span>
+            <strong>Presensi Berhasil Ditarik:</strong>
+            {{ lastSyncResult.updated_students }} rapor siswa disinkronkan untuk periode
+            <strong>{{ formatDateDisplay(lastSyncResult.range?.tgl_mulai) }} s/d {{ formatDateDisplay(lastSyncResult.range?.tgl_selesai) }}</strong>.
+          </span>
+        </div>
+        <div class="flex items-center gap-2 font-bold text-[11px] self-start sm:self-auto flex-wrap">
+          <span class="text-emerald-800 bg-white border border-emerald-200 px-2.5 py-1 rounded-lg">Hadir: {{ lastSyncResult.summary?.total_hadir || 0 }}</span>
+          <span class="text-amber-800 bg-white border border-amber-200 px-2.5 py-1 rounded-lg">Sakit: {{ lastSyncResult.summary?.total_sakit || 0 }}</span>
+          <span class="text-blue-800 bg-white border border-blue-200 px-2.5 py-1 rounded-lg">Izin: {{ lastSyncResult.summary?.total_izin || 0 }}</span>
+          <span class="text-rose-800 bg-white border border-rose-200 px-2.5 py-1 rounded-lg">Alpa: {{ lastSyncResult.summary?.total_alpa || 0 }}</span>
         </div>
       </div>
     </div>
@@ -978,4 +1199,6 @@ defineExpose({
       </div>
     </div>
   </div>
+
+    
 </template>

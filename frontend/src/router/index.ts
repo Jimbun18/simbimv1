@@ -21,6 +21,10 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'landing' },
   },
   {
+    path: '/ekstrakurikuler',
+    redirect: '/pendidikan#ekstrakurikuler',
+  },
+  {
     path: '/artikel',
     name: 'landing-articles',
     component: () => import('../views/landing/LandingArticlesView.vue'),
@@ -132,6 +136,12 @@ const routes: RouteRecordRaw[] = [
     path: '/progress-activities',
     name: 'progress-activities',
     component: () => import('../views/ProgressAndActivitiesView.vue'),
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru'] },
+  },
+  {
+    path: '/buku-nilai',
+    name: 'buku-nilai',
+    component: () => import('../views/GradeBookView.vue'),
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru'] },
   },
   {

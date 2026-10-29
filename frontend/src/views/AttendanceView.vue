@@ -2,7 +2,8 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../services/api'
-import { showError } from '../services/swal'
+import { showSuccess, showError } from '../services/swal'
+import Swal from 'sweetalert2'
 import type { TeacherAttendance, SchoolConfig } from '../components/attendance/types'
 import { calculateDistance } from '../components/attendance/types'
 import GeofenceValidationCard from '../components/attendance/GeofenceValidationCard.vue'
@@ -153,21 +154,63 @@ const validateBeforeAttendance = (_type: 'masuk' | 'pulang'): boolean => {
   return true
 }
 
-// Trigger tombol absen masuk -> buka kamera
+// Trigger tombol absen masuk -> buka kamera swafoto
 const handleTriggerCheckIn = () => {
   if (!validateBeforeAttendance('masuk')) return
   cameraActionType.value = 'masuk'
   isCameraModalOpen.value = true
 }
 
-// Trigger tombol absen pulang -> buka kamera
-const handleTriggerCheckOut = () => {
+// Trigger tombol absen pulang -> langsung konfirmasi tanpa kamera swafoto
+const handleTriggerCheckOut = async () => {
   if (!validateBeforeAttendance('pulang')) return
-  cameraActionType.value = 'pulang'
-  isCameraModalOpen.value = true
+  if (currentLat.value === null || currentLng.value === null) {
+    showError('GPS Tidak Terdeteksi', 'Lokasi GPS terputus. Pastikan GPS tetap aktif sebelum mengirim presensi.')
+    return
+  }
+
+  const result = await Swal.fire({
+    title: 'Konfirmasi Absen Pulang',
+    text: 'Catat jam kepulangan Anda sekarang? (Absen pulang tidak memerlukan foto swafoto)',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#059669',
+    cancelButtonColor: '#94a3b8',
+    confirmButtonText: 'Ya, Absen Pulang',
+    cancelButtonText: 'Batal',
+  })
+
+  if (!result.isConfirmed) return
+
+  submitting.value = true
+  message.value = ''
+
+  try {
+    const formData = new FormData()
+    formData.append('lat', String(currentLat.value))
+    formData.append('lng', String(currentLng.value))
+    // Absen pulang tanpa melampirkan foto
+
+    const res = await api.post('/attendance/teachers/check-out', formData)
+    if (res.data.success) {
+      isSuccess.value = true
+      const successMsg = res.data.message || 'Presensi pulang berhasil dicatat!'
+      message.value = successMsg
+      showSuccess('Presensi Pulang Berhasil', successMsg)
+      await fetchToday()
+      fetchHistory()
+    }
+  } catch (err: any) {
+    isSuccess.value = false
+    const errMsg = err.response?.data?.message || 'Gagal melakukan presensi pulang.'
+    message.value = errMsg
+    showError('Presensi Gagal', errMsg)
+  } finally {
+    submitting.value = false
+  }
 }
 
-// Konfirmasi foto & submit presensi
+// Konfirmasi foto & submit presensi masuk
 const handleConfirmPhoto = async (photoFile: File) => {
   if (currentLat.value === null || currentLng.value === null) {
     showError('GPS Tidak Terdeteksi', 'Lokasi GPS terputus. Pastikan GPS tetap aktif sebelum mengirim presensi.')
@@ -183,22 +226,19 @@ const handleConfirmPhoto = async (photoFile: File) => {
     formData.append('lng', String(currentLng.value))
     formData.append('foto', photoFile)
 
-    const endpoint = cameraActionType.value === 'masuk'
-      ? '/attendance/teachers/check-in'
-      : '/attendance/teachers/check-out'
-
-    const res = await api.post(endpoint, formData)
+    const res = await api.post('/attendance/teachers/check-in', formData)
     if (res.data.success) {
       isSuccess.value = true
-      const successMsg = res.data.message || `Presensi ${cameraActionType.value} berhasil dicatat!`
+      const successMsg = res.data.message || 'Presensi masuk berhasil dicatat!'
       message.value = successMsg
       isCameraModalOpen.value = false
+      showSuccess('Presensi Masuk Berhasil', successMsg)
       await fetchToday()
       fetchHistory()
     }
   } catch (err: any) {
     isSuccess.value = false
-    const errMsg = err.response?.data?.message || `Gagal melakukan presensi ${cameraActionType.value}.`
+    const errMsg = err.response?.data?.message || 'Gagal melakukan presensi masuk.'
     message.value = errMsg
     showError('Presensi Gagal', errMsg)
   } finally {
@@ -244,7 +284,7 @@ const fetchToday = async () => {
 const fetchHistory = async () => {
   historyLoading.value = true
   try {
-    const res = await api.get('/attendance/teachers', { params: { limit: 7 } })
+    const res = await api.get('/attendance/teachers', { params: { limit: 10, personal: true } })
     if (res.data.success) {
       historyList.value = res.data.data?.data || res.data.data || []
     }

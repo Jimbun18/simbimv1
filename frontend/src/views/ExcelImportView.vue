@@ -77,7 +77,7 @@
     </div>
 
     <!-- Preview & Commit Card -->
-    <div v-if="validationResult" class="bg-white p-5 sm:p-6 rounded-2xl border border-emerald-100 shadow-md space-y-4">
+    <div v-if="validationResult" class="bg-white p-5 sm:p-6 rounded-2xl border border-emerald-100 shadow-md space-y-5">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
         <div>
           <h2 class="text-sm font-bold text-gray-900">Hasil Validasi File: {{ validationResult.file_name }}</h2>
@@ -87,9 +87,9 @@
           <button
             v-if="validationResult.total_error > 0"
             @click="exportErrors(validationResult.batch_id)"
-            class="px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl text-xs font-bold border border-rose-200 transition"
+            class="px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl text-xs font-bold border border-rose-200 transition flex items-center gap-1.5"
           >
-            Unduh Laporan Error ({{ validationResult.total_error }})
+            <span>Unduh Laporan Error ({{ validationResult.total_error }})</span>
           </button>
           <button
             @click="commitBatch(validationResult.batch_id)"
@@ -105,7 +105,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
         <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
           <div class="text-lg font-bold text-gray-900">{{ validationResult.total_rows }}</div>
-          <div class="text-[11px] text-gray-500 font-semibold uppercase">Total Baris File</div>
+          <div class="text-[11px] text-gray-500 font-semibold uppercase">Total Baris Terisi</div>
         </div>
         <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
           <div class="text-lg font-bold text-emerald-800">{{ validationResult.total_valid }}</div>
@@ -114,6 +114,60 @@
         <div class="p-3 bg-rose-50 rounded-xl border border-rose-100">
           <div class="text-lg font-bold text-rose-800">{{ validationResult.total_error }}</div>
           <div class="text-[11px] text-rose-700 font-semibold uppercase">Baris Error / Tidak Cocok</div>
+        </div>
+      </div>
+
+      <!-- Detail Baris Error (Jika Ada) -->
+      <div v-if="validationResult.errors_preview && validationResult.errors_preview.length > 0" class="p-4 bg-rose-50/70 border border-rose-200 rounded-xl space-y-2">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold text-rose-800 flex items-center gap-1.5">
+            Detail Baris Bermasalah ({{ validationResult.total_error }} baris tidak memenuhi syarat)
+          </h3>
+          <span class="text-[11px] text-rose-600 font-medium">Baris ini akan dilewati dan tidak diimpor</span>
+        </div>
+        <div class="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+          <div
+            v-for="(err, idx) in validationResult.errors_preview"
+            :key="idx"
+            class="text-xs bg-white/90 p-2.5 rounded-lg border border-rose-100 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-rose-900"
+          >
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 bg-rose-100 text-rose-800 font-bold rounded text-[10px]">Baris {{ err.nomor_baris }}</span>
+              <span class="font-semibold text-gray-700">Kolom: <span class="font-mono text-rose-700">{{ err.kolom || '-' }}</span></span>
+            </div>
+            <span class="text-xs text-rose-700 font-medium">{{ err.pesan }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pratinjau Data Valid (Preview Samples) -->
+      <div v-if="validationResult.preview_samples && validationResult.preview_samples.length > 0" class="space-y-2 pt-2">
+        <h3 class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+          Pratinjau Data Valid yang Siap Diimpor ({{ validationResult.preview_samples.length }} baris)
+        </h3>
+        <div class="overflow-x-auto border border-gray-100 rounded-xl">
+          <table class="w-full text-left text-xs text-gray-600">
+            <thead class="bg-gray-50 text-[10px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+              <tr>
+                <th class="py-2.5 px-3">No. Baris Excel</th>
+                <th class="py-2.5 px-3">Nama Lengkap</th>
+                <th class="py-2.5 px-3">NIK / Identitas</th>
+                <th class="py-2.5 px-3">Jenis Kelamin</th>
+                <th class="py-2.5 px-3">Jabatan / Kelas</th>
+                <th class="py-2.5 px-3">Kontak / HP</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr v-for="(sample, sIdx) in validationResult.preview_samples" :key="sIdx" class="hover:bg-emerald-50/30 transition">
+                <td class="py-2.5 px-3 font-mono font-bold text-emerald-700">Baris {{ sample.row }}</td>
+                <td class="py-2.5 px-3 font-semibold text-gray-900">{{ sample.data.nama_lengkap || '-' }}</td>
+                <td class="py-2.5 px-3 font-mono text-gray-600">{{ sample.data.nik || sample.data.nis || '-' }}</td>
+                <td class="py-2.5 px-3">{{ sample.data.jenis_kelamin || '-' }}</td>
+                <td class="py-2.5 px-3 text-gray-600">{{ sample.data.jabatan || sample.data.kode_kelas || '-' }}</td>
+                <td class="py-2.5 px-3 font-mono text-gray-500">{{ sample.data.no_hp || sample.data.no_hp_wali || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -144,24 +198,24 @@
               <td class="py-3 px-4 text-gray-500">{{ b.created_at }}</td>
               <td class="py-3 px-4 font-bold text-gray-900 uppercase">{{ b.jenis_data }}</td>
               <td class="py-3 px-4 font-mono">{{ b.nama_file }}</td>
-              <td class="py-3 px-4 font-bold">{{ b.total_baris }}</td>
-              <td class="py-3 px-4 text-emerald-700 font-bold">{{ b.baris_berhasil }}</td>
-              <td class="py-3 px-4 text-rose-700 font-bold">{{ b.baris_gagal }}</td>
+              <td class="py-3 px-4 font-bold">{{ b.total ?? b.total_baris ?? 0 }}</td>
+              <td class="py-3 px-4 text-emerald-700 font-bold">{{ b.berhasil ?? b.baris_berhasil ?? 0 }}</td>
+              <td class="py-3 px-4 text-rose-700 font-bold">{{ b.gagal ?? b.baris_gagal ?? 0 }}</td>
               <td class="py-3 px-4">
-                <span :class="b.status === 'selesai' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : b.status === 'dirollback' ? 'bg-gray-100 text-gray-600 border-gray-200' : 'bg-amber-50 text-amber-700 border-amber-200'" class="px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase">
-                  {{ b.status }}
+                <span :class="b.status === 'committed' || b.status === 'selesai' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : b.status === 'rolled_back' || b.status === 'dirollback' ? 'bg-gray-100 text-gray-600 border-gray-200' : 'bg-amber-50 text-amber-700 border-amber-200'" class="px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase">
+                  {{ b.status === 'committed' ? 'SELESAI' : b.status === 'rolled_back' ? 'DIROLLBACK' : b.status }}
                 </span>
               </td>
               <td class="py-3 px-4 text-right">
                 <button
-                  v-if="b.status === 'selesai'"
+                  v-if="b.status === 'committed' || b.status === 'selesai'"
                   @click="rollbackBatch(b.id)"
                   class="px-2.5 py-1 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-lg text-[11px] font-semibold border border-rose-200 transition"
                   title="Batalkan seluruh data yang diimpor pada batch ini"
                 >
                   Rollback 1-Klik
                 </button>
-                <span v-else class="text-gray-400 text-[10px]">Telah Dirollback</span>
+                <span v-else class="text-gray-400 text-[10px]">{{ b.status === 'rolled_back' ? 'Telah Dirollback' : '-' }}</span>
               </td>
             </tr>
             <tr v-if="batches.length === 0">
@@ -230,7 +284,17 @@ const uploadAndValidate = async () => {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     if (res.data.success) {
-      validationResult.value = res.data.data;
+      const d = res.data.data;
+      validationResult.value = {
+        batch_id: d.batch_id,
+        file_name: d.file_name || selectedFile.value?.name,
+        total_rows: d.total_rows ?? 0,
+        total_valid: d.total_valid ?? d.valid_count ?? 0,
+        total_error: d.total_error ?? d.error_count ?? 0,
+        duplicate_count: d.duplicate_count ?? 0,
+        preview_samples: d.preview_samples ?? [],
+        errors_preview: d.errors_preview ?? [],
+      };
     }
   } catch (err: any) {
     showError('Validasi Gagal!', err.response?.data?.message || 'Gagal memvalidasi file.');
@@ -242,7 +306,9 @@ const uploadAndValidate = async () => {
 const commitBatch = async (batchId: number) => {
   committing.value = true;
   try {
-    const res = await api.post(`/imports/${batchId}/commit`);
+    const res = await api.post(`/imports/${batchId}/commit`, {
+      duplicate_strategy: duplicateAction.value,
+    });
     if (res.data.success) {
       showSuccess('Berhasil!', res.data.message);
       validationResult.value = null;

@@ -72,7 +72,7 @@ watch(
     } else if (newSubMenu === 'triwulan_3') {
       selectedSemester.value = 'Genap'
       selectedPeriode.value = 'Triwulan III'
-      selectedJenisRapor.value = 'karakter_lifeskill'
+      selectedJenisRapor.value = 'triwulan_tematik'
     } else if (newSubMenu === 'semester_2') {
       selectedSemester.value = 'Genap'
       selectedPeriode.value = 'Semester Genap'
@@ -177,14 +177,22 @@ const handleOpenEditor = async (studentId: number, reportCardId?: number | null)
 const handleOpenPrint = async (studentId: number, reportCardId: number | null) => {
   await handleOpenEditor(studentId, reportCardId)
   if (activeReportCard.value) {
-    printMode.value = selectedJenisRapor.value === 'karakter_lifeskill' ? 'print_karakter' : 'print_raport'
+    printMode.value = (activeReportCard.value?.jenis_rapor === 'triwulan_tematik' || selectedJenisRapor.value === 'triwulan_tematik')
+      ? 'print_tematik'
+      : (activeReportCard.value?.jenis_rapor === 'karakter_lifeskill' || selectedJenisRapor.value === 'karakter_lifeskill')
+        ? 'print_karakter'
+        : 'print_raport'
     currentView.value = 'print'
   }
 }
 
 // Print trigger from inside Editor
 const handleEditorPrint = () => {
-  printMode.value = selectedJenisRapor.value === 'karakter_lifeskill' ? 'print_karakter' : 'print_raport'
+  printMode.value = (activeReportCard.value?.jenis_rapor === 'triwulan_tematik' || selectedJenisRapor.value === 'triwulan_tematik')
+      ? 'print_tematik'
+      : (activeReportCard.value?.jenis_rapor === 'karakter_lifeskill' || selectedJenisRapor.value === 'karakter_lifeskill')
+        ? 'print_karakter'
+        : 'print_raport'
   currentView.value = 'print'
 }
 
@@ -237,23 +245,35 @@ onMounted(() => {
       </div>
     </transition>
 
-    <!-- KONDISI 1: JIKA SUB-MENU = TRIWULAN 1 (SEDANG FOKUS DIKERJAKAN) -->
-    <template v-if="activeSubMenu === 'triwulan_1'">
-      <!-- HEADER TRIWULAN 1 WITH 2 FORMAT SWITCHER PILLS -->
+    <!-- KONDISI 1: JIKA SUB-MENU = TRIWULAN 1, TRIWULAN 3, ATAU SEMESTER 1 (DIBUKA UNTUK PENILAIAN & CETAK RESMI) -->
+    <template v-if="activeSubMenu === 'triwulan_1' || activeSubMenu === 'triwulan_3' || activeSubMenu === 'semester_1' || activeSubMenu === 'semester_2'">
+      <!-- HEADER RAPOR -->
       <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4 no-print print:hidden">
         <div class="flex items-center gap-3">
-          <div class="w-11 h-11 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-2xl shrink-0">
-            📗
+          <div
+            class="w-11 h-11 rounded-2xl flex items-center justify-center text-2xl shrink-0"
+            :class="activeSubMenu === 'semester_1' ? 'bg-blue-500/10 text-blue-600' : activeSubMenu === 'semester_2' ? 'bg-teal-500/10 text-teal-600' : activeSubMenu === 'triwulan_3' ? 'bg-purple-500/10 text-purple-600' : 'bg-emerald-500/10 text-emerald-600'"
+          >
+            {{ activeSubMenu === 'semester_1' ? '📘' : activeSubMenu === 'semester_2' ? '📗' : activeSubMenu === 'triwulan_3' ? '🎒' : '📙' }}
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h1 class="text-lg font-black text-slate-900 tracking-tight">Rapor Triwulan 1</h1>
-              <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full uppercase tracking-wider">
-                Pertengahan Semester 1 (Gasal)
+              <h1 class="text-lg font-black text-slate-900 tracking-tight">
+                {{ activeSubMenu === 'semester_1' ? 'Rapor Semester 1' : activeSubMenu === 'semester_2' ? 'Rapor Semester 2' : activeSubMenu === 'triwulan_3' ? 'Rapor Triwulan 3' : 'Rapor Triwulan 1' }}
+              </h1>
+              <span
+                class="px-2.5 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider"
+                :class="activeSubMenu === 'semester_1' ? 'bg-blue-100 text-blue-800' : activeSubMenu === 'semester_2' ? 'bg-teal-100 text-teal-800' : activeSubMenu === 'triwulan_3' ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800'"
+              >
+                {{ activeSubMenu === 'semester_1' ? 'Akhir Semester 1 (Gasal)' : activeSubMenu === 'semester_2' ? 'Akhir Semester 2 (Genap)' : activeSubMenu === 'triwulan_3' ? 'Pertengahan Semester 2 (Genap)' : 'Pertengahan Semester 1 (Gasal)' }}
               </span>
             </div>
             <p class="text-xs text-slate-500 line-clamp-1">
-              Laporan Perkembangan Penguatan Karakter & Life Skill (17 Butir Penilaian) pertengahan semester.
+              {{ (activeSubMenu === 'semester_1' || activeSubMenu === 'semester_2')
+                ? 'Laporan Hasil Belajar Kurikulum Merdeka Resmi (18 Mata Pelajaran, Kokurikuler P5, Ekstrakurikuler, dan Presensi).'
+                : activeSubMenu === 'triwulan_3' 
+                  ? 'Laporan Hasil Belajar Triwulan Tematik Terpadu BIM (5 Klaster Tema Penilaian & Ekstrakurikuler).' 
+                  : 'Laporan Perkembangan Penguatan Karakter & Life Skill (17 Butir Penilaian) pertengahan semester.' }}
             </p>
           </div>
         </div>
@@ -273,9 +293,18 @@ onMounted(() => {
 
         <!-- FORMAT BADGE INFO -->
         <div v-else class="flex items-center gap-2 shrink-0">
-          <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200/80 rounded-xl text-xs font-bold shadow-xs">
-            <span>📙</span>
-            <span>Penguatan Karakter & Life Skill (17 Butir)</span>
+          <div
+            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xs border"
+            :class="activeSubMenu === 'semester_1'
+              ? 'bg-blue-50 text-blue-800 border-blue-200/80'
+              : activeSubMenu === 'semester_2'
+                ? 'bg-teal-50 text-teal-800 border-teal-200/80'
+                : activeSubMenu === 'triwulan_3' 
+                  ? 'bg-purple-50 text-purple-800 border-purple-200/80' 
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-200/80'"
+          >
+            <span>{{ activeSubMenu === 'semester_1' ? '📘' : activeSubMenu === 'semester_2' ? '📗' : activeSubMenu === 'triwulan_3' ? '🎒' : '📙' }}</span>
+            <span>{{ (activeSubMenu === 'semester_1' || activeSubMenu === 'semester_2') ? 'Kurikulum Merdeka (18 Mapel)' : activeSubMenu === 'triwulan_3' ? 'Tematik Terpadu BIM (5 Klaster Tema)' : 'Penguatan Karakter & Life Skill (17 Butir)' }}</span>
           </div>
         </div>
       </div>
@@ -287,16 +316,18 @@ onMounted(() => {
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
           </svg>
-          <span class="text-xs font-bold text-slate-700">Memuat data rapor Triwulan 1...</span>
+          <span class="text-xs font-bold text-slate-700">
+            Memuat data rapor {{ activeSubMenu === 'semester_1' ? 'Semester 1' : activeSubMenu === 'semester_2' ? 'Semester 2' : activeSubMenu === 'triwulan_3' ? 'Triwulan 3' : 'Triwulan 1' }}...
+          </span>
         </div>
       </div>
 
-      <!-- MAIN BODY TRIWULAN 1 -->
+      <!-- MAIN BODY -->
       <main>
         <!-- VIEW 1: STUDENT LIST & CLASS OVERVIEW -->
         <ReportCardList
           v-if="currentView === 'list'"
-          current-sub-menu="triwulan_1"
+          :current-sub-menu="activeSubMenu"
           :jenis-rapor="selectedJenisRapor"
           :classes="classes"
           :academic-years="academicYears"

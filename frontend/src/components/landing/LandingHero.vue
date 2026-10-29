@@ -42,11 +42,11 @@ const emit = defineEmits<{
           v-reveal="{ type: 'fade-up', delay: 200 }"
           class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight sm:leading-tight drop-shadow-lg mx-auto"
         >
-          Mewujudkan Generasi <br class="hidden sm:inline" />
+          Menyiapkan Generasi Rabbani <br class="hidden sm:inline" />
           <span class="bg-gradient-to-r from-emerald-300 via-teal-200 to-amber-200 bg-clip-text text-transparent">
-            Qur'ani & Unggul
+            yang Cerdas, Santun,
           </span>
-          Berbasis Deep Learning
+          dan Berwawasan Lingkungan
         </h1>
 
         <!-- Hero Subtitle Description -->

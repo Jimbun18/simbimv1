@@ -11,6 +11,8 @@ export interface UserProfile {
   status: string;
   must_change_password: boolean;
   foto_path: string | null;
+  teacher?: any;
+  staff?: any;
   profile_detail?: any;
 }
 

@@ -3,6 +3,21 @@ import { ref, computed, onMounted } from 'vue'
 import { galleryItems as defaultGalleryItems } from './landingData'
 import api from '../../services/api'
 
+import galeriImg from '../../assets/galeri.jpeg'
+import leadershipImg from '../../assets/leadership.jpeg'
+import pendidikanImg from '../../assets/pendidikan.jpeg'
+import tahfidImg from '../../assets/tahfid.png'
+import artikelImg from '../../assets/artikel.jpeg'
+import enterprenerImg from '../../assets/enterprener.png'
+
+const props = withDefaults(defineProps<{
+  isHome?: boolean
+  limit?: number
+}>(), {
+  isHome: false,
+  limit: 6
+})
+
 interface DynamicGalleryItem {
   id: number
   title: string
@@ -15,15 +30,30 @@ interface DynamicGalleryItem {
   image?: string
 }
 
+const fallbackPhotos = [
+  pendidikanImg,
+  tahfidImg,
+  enterprenerImg,
+  galeriImg,
+  artikelImg,
+  leadershipImg,
+]
+
+// Default items dengan foto sekolah riil
+const initialItems: DynamicGalleryItem[] = defaultGalleryItems.map((item, index) => ({
+  ...item,
+  image: fallbackPhotos[index % fallbackPhotos.length]
+}))
+
 const selectedCategory = ref<string>('all')
 const activeModalItem = ref<DynamicGalleryItem | null>(null)
-const items = ref<DynamicGalleryItem[]>([...defaultGalleryItems])
+const items = ref<DynamicGalleryItem[]>([...initialItems])
 
 const fetchCmsGalleries = async () => {
   try {
     const res = await api.get('/public/galleries')
     if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-      const cmsList: DynamicGalleryItem[] = res.data.data.map((item: any) => {
+      const cmsList: DynamicGalleryItem[] = res.data.data.map((item: any, idx: number) => {
         const d = new Date(item.created_at)
         const dateFormatted = new Intl.DateTimeFormat('id-ID', {
           day: 'numeric',
@@ -40,7 +70,7 @@ const fetchCmsGalleries = async () => {
           desc: 'Dokumentasi kegiatan siswa SDI Bina Insan Mandiri Purwokerto.',
           color: 'from-emerald-800 to-teal-950',
           icon: '📸',
-          image: item.image_url,
+          image: item.image_url || fallbackPhotos[idx % fallbackPhotos.length],
         }
       })
       items.value = cmsList
@@ -59,6 +89,13 @@ const filteredItems = computed(() => {
   return items.value.filter(item => item.category === selectedCategory.value)
 })
 
+const displayItems = computed(() => {
+  if (props.isHome && props.limit) {
+    return filteredItems.value.slice(0, props.limit)
+  }
+  return filteredItems.value
+})
+
 const openLightbox = (item: DynamicGalleryItem) => {
   activeModalItem.value = item
 }
@@ -72,8 +109,41 @@ const closeLightbox = () => {
   <section id="galeri" class="py-20 bg-slate-50 border-b border-slate-200/80">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
       
-      <!-- Section Title Header -->
+      <!-- ============================================== -->
+      <!-- HEADER JIKA DI TAMPILKAN DI BERANDA (isHome)   -->
+      <!-- ============================================== -->
       <div 
+        v-if="isHome"
+        v-reveal="{ type: 'fade-up', delay: 50 }"
+        class="flex flex-col md:flex-row md:items-end justify-between gap-4"
+      >
+        <div>
+          <span class="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
+            Dokumentasi Kegiatan
+          </span>
+          <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Galeri Kegiatan Siswa
+          </h2>
+          <p class="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl">
+            Potret keceriaan, semangat belajar fitrah, dan ragam aktivitas bermakna siswa SDI Bina Insan Mandiri Purwokerto.
+          </p>
+        </div>
+
+        <router-link
+          to="/galeri"
+          v-splash="'emerald'"
+          class="btn-splash inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs sm:text-sm transition-all border border-emerald-200 self-start md:self-auto shrink-0 shadow-xs hover:shadow-md cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
+        >
+          <span>Buka Galeri Lengkap</span>
+          <span>&rarr;</span>
+        </router-link>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- HEADER JIKA DI HALAMAN PENUH /galeri           -->
+      <!-- ============================================== -->
+      <div 
+        v-else
         v-reveal="{ type: 'fade-up', delay: 50 }"
         class="text-center max-w-3xl mx-auto space-y-3"
       >
@@ -133,16 +203,16 @@ const closeLightbox = () => {
       </div>
 
       <!-- Gallery Grid with Staggered Scroll Reveal (2 Kolom Mobile, 3 Kolom Desktop) -->
-      <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+      <div class="grid grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-6">
         <div 
-          v-for="(item, idx) in filteredItems" 
+          v-for="(item, idx) in displayItems" 
           :key="item.id"
           v-reveal="{ type: 'fade-up', delay: 60 + (idx % 3) * 90 }"
           @click="openLightbox(item)"
           class="btn-splash group relative rounded-2xl sm:rounded-3xl overflow-hidden bg-gradient-to-tr text-white p-3.5 sm:p-7 h-48 sm:h-72 flex flex-col justify-between shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1.5"
-          :class="item.color"
+          :class="item.color || 'from-emerald-800 to-teal-950'"
         >
-          <!-- Background Real Photo (from CMS) or Abstract Pattern -->
+          <!-- Background Real Photo (from CMS or Assets) -->
           <img 
             v-if="item.image" 
             :src="item.image" 
@@ -157,7 +227,7 @@ const closeLightbox = () => {
             <span class="px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[8px] sm:text-[10px] font-bold uppercase tracking-wider bg-white/20 backdrop-blur-md border border-white/20 text-white truncate max-w-[90px] sm:max-w-none">
               {{ item.categoryLabel }}
             </span>
-            <span class="text-xl sm:text-3xl filter drop-shadow">{{ item.icon }}</span>
+            <span class="text-xl sm:text-3xl filter drop-shadow">{{ item.icon || '📸' }}</span>
           </div>
 
           <!-- Bottom Content (Bersih: Hanya Tanggal & Jenis Kegiatan) -->
@@ -238,3 +308,19 @@ const closeLightbox = () => {
     </div>
   </section>
 </template>
+
+<style scoped>
+@keyframes scaleUp {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.animate-scaleUp {
+  animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+</style>

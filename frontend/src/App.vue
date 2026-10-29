@@ -701,6 +701,23 @@ const handleLogout = async () => {
                 </div>
               </div>
 
+              <!-- Buku Nilai (Di atas Rapor Siswa) -->
+              <router-link
+                v-if="auth.isAdmin || auth.isWaliKelas"
+                to="/buku-nilai"
+                class="flex items-center gap-3 rounded-xl font-medium transition-all group mb-0.5"
+                :class="[
+                  isSidebarOpen ? 'px-3 py-2' : 'justify-center py-2 px-0 w-11 h-10 mx-auto',
+                  route.path === '/buku-nilai' ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-emerald-50/70 hover:text-emerald-800'
+                ]"
+                title="Buku Nilai"
+              >
+                <svg class="w-5 h-5 shrink-0 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <span v-show="isSidebarOpen" class="truncate">Buku Nilai</span>
+              </router-link>
+
               <!-- Rapor Siswa (Dengan Sub-menu) -->
               <div v-if="auth.isAdmin || auth.isWaliKelas" class="space-y-0.5">
                 <div class="flex items-center">
@@ -1605,6 +1622,20 @@ const handleLogout = async () => {
                       </div>
                     </div>
 
+                    <!-- Buku Nilai (Mobile) -->
+                    <router-link
+                      v-if="auth.isAdmin || auth.isWaliKelas"
+                      to="/buku-nilai"
+                      class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-all mb-0.5"
+                      :class="route.path === '/buku-nilai' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-700 hover:bg-slate-100'"
+                      @click="isMobileDrawerOpen = false"
+                    >
+                      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                      <span>Buku Nilai</span>
+                    </router-link>
+
                     <!-- Rapor Siswa (Mobile Sub-menu) -->
                     <div v-if="auth.isAdmin || auth.isWaliKelas" class="space-y-0.5">
                       <div class="flex items-center justify-between px-3 py-2 rounded-xl font-medium transition-all"
@@ -1906,70 +1937,94 @@ const handleLogout = async () => {
 
         <!-- 5. MOBILE BOTTOM NAVIGATION (Visible on Mobile & iPad Portrait < 1024px) -->
         <nav 
-          class="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-lg px-2 py-1.5 flex justify-around items-center text-[10px] font-semibold text-slate-500 pb-[max(0.375rem,env(safe-area-inset-bottom))] no-print print:hidden"
+          class="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-lg px-2 py-1 flex justify-around items-center text-[10px] font-semibold text-slate-500 pb-[max(0.375rem,env(safe-area-inset-bottom))] no-print print:hidden"
         >
           <!-- Dashboard button -->
           <router-link
             v-if="auth.isAdmin"
             to="/dashboard"
-            class="flex flex-col items-center py-2 px-2.5 rounded-xl transition min-w-[56px]"
-            :class="route.path === '/dashboard' ? 'text-emerald-700 font-bold' : 'text-slate-500 hover:text-slate-800'"
+            class="flex flex-col items-center py-1.5 px-2 rounded-xl transition min-w-[52px]"
+            :class="route.path === '/dashboard' ? 'text-emerald-700 font-bold' : 'text-slate-500 hover:text-slate-800 font-medium'"
           >
-            <span>Dashboard</span>
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10-5a1 1 0 011-1h4a1 1 0 011 1v9a1 1 0 01-1 1h-4a1 1 0 01-1-1v-9z" />
+            </svg>
+            <span class="text-[10px] leading-tight">Dashboard</span>
           </router-link>
 
           <!-- Presensi button -->
           <router-link
             to="/presensi"
-            class="flex flex-col items-center py-2 px-2.5 rounded-xl transition min-w-[56px]"
-            :class="route.path === '/presensi' ? 'text-emerald-700 font-bold' : 'text-slate-500 hover:text-slate-800'"
+            class="flex flex-col items-center py-1.5 px-2 rounded-xl transition min-w-[52px]"
+            :class="route.path === '/presensi' ? 'text-emerald-700 font-bold' : 'text-slate-500 hover:text-slate-800 font-medium'"
           >
-            <span>Presensi</span>
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            <span class="text-[10px] leading-tight">Presensi</span>
           </router-link>
 
           <!-- Siswa / Portal button -->
           <router-link
             :to="auth.isWali ? '/portal-wali' : '/students'"
-            class="flex flex-col items-center py-2 px-2.5 rounded-xl transition min-w-[56px]"
-            :class="(route.path === '/students' || route.path === '/portal-wali') ? 'text-emerald-700 font-bold' : 'text-slate-500 hover:text-slate-800'"
+            class="flex flex-col items-center py-1.5 px-2 rounded-xl transition min-w-[52px]"
+            :class="(route.path === '/students' || route.path === '/portal-wali') ? 'text-emerald-700 font-bold' : 'text-slate-500 hover:text-slate-800 font-medium'"
           >
-            <span>{{ auth.isWali ? 'Anak Saya' : 'Siswa' }}</span>
+            <svg v-if="auth.isWali" class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <svg v-else class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
+            </svg>
+            <span class="text-[10px] leading-tight">{{ auth.isWali ? 'Anak Saya' : 'Siswa' }}</span>
           </router-link>
 
           <!-- Keuangan button (for admin) or KBM -->
           <router-link
             v-if="auth.isAdmin"
             to="/finance"
-            class="flex flex-col items-center py-2 px-2.5 rounded-xl transition min-w-[56px]"
-            :class="route.path === '/finance' ? 'text-emerald-700 font-bold' : 'text-slate-500 hover:text-slate-800'"
+            class="flex flex-col items-center py-1.5 px-2 rounded-xl transition min-w-[52px]"
+            :class="route.path === '/finance' ? 'text-emerald-700 font-bold' : 'text-slate-500 hover:text-slate-800 font-medium'"
           >
-            <span>SPP/Kas</span>
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <span class="text-[10px] leading-tight">SPP/Kas</span>
           </router-link>
           <router-link
             v-else-if="auth.isGuru"
             to="/my-attendance-history"
-            class="flex flex-col items-center py-2 px-2.5 rounded-xl transition min-w-[56px]"
-            :class="route.path === '/my-attendance-history' ? 'text-emerald-700 font-bold' : 'text-slate-500 hover:text-slate-800'"
+            class="flex flex-col items-center py-1.5 px-2 rounded-xl transition min-w-[52px]"
+            :class="route.path === '/my-attendance-history' ? 'text-emerald-700 font-bold' : 'text-slate-500 hover:text-slate-800 font-medium'"
           >
-            <span>Riwayat</span>
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="text-[10px] leading-tight">Riwayat</span>
           </router-link>
 
           <!-- Profil button -->
           <router-link
             to="/profile"
-            class="flex flex-col items-center py-2 px-2.5 rounded-xl transition min-w-[56px]"
-            :class="route.path === '/profile' ? 'text-emerald-700 font-bold' : 'text-slate-500 hover:text-slate-800'"
+            class="flex flex-col items-center py-1.5 px-2 rounded-xl transition min-w-[52px]"
+            :class="route.path === '/profile' ? 'text-emerald-700 font-bold' : 'text-slate-500 hover:text-slate-800 font-medium'"
           >
-            <span>Profil</span>
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span class="text-[10px] leading-tight">Profil</span>
           </router-link>
 
           <!-- Menu Drawer Toggle -->
           <button
             @click="isMobileDrawerOpen = true"
-            class="flex flex-col items-center py-2 px-2.5 rounded-xl transition min-w-[56px] text-slate-500 hover:text-slate-900"
+            type="button"
+            class="flex flex-col items-center py-1.5 px-2 rounded-xl transition min-w-[52px] text-slate-500 hover:text-slate-900 font-medium"
           >
-            <span class="text-base leading-tight font-bold">☰</span>
-            <span class="text-[9px]">Menu</span>
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span class="text-[10px] leading-tight">Menu</span>
           </button>
         </nav>
       </div>

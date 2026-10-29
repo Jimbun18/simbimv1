@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { deepLearningPillars, civilizationPoints } from './landingData'
 import LandingFeaturedProgramsSection from './LandingFeaturedProgramsSection.vue'
+import LandingExtracurricularSection from './LandingExtracurricularSection.vue'
 import pendidikanBawahBg from '../../assets/pendidikan bawah.jpeg'
 </script>
 
@@ -77,7 +78,12 @@ import pendidikanBawahBg from '../../assets/pendidikan bawah.jpeg'
         <LandingFeaturedProgramsSection section-id="pendidikan-program-unggulan" />
       </div>
 
-      <!-- SUB-SECTION 3: TUJUAN PENDIDIKAN ADALAH MEMBANGUN SEBUAH PERADABAN -->
+      <!-- SUB-SECTION 3: EKSTRAKURIKULER SEKOLAH (WAJIB & PILIHAN) -->
+      <div id="ekstrakurikuler" class="pt-4">
+        <LandingExtracurricularSection section-id="pendidikan-ekstrakurikuler" />
+      </div>
+
+      <!-- SUB-SECTION 4: TUJUAN PENDIDIKAN ADALAH MEMBANGUN SEBUAH PERADABAN -->
       <div id="membangun-peradaban" class="pt-8">
         <div class="rounded-3xl p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden">
           

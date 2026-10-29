@@ -37,7 +37,7 @@ class ExcelImportService
         $jenis = ExcelTemplateGenerator::normalizeJenis($jenis);
         $spreadsheet = IOFactory::load($file->getRealPath());
         $worksheet = $spreadsheet->getActiveSheet();
-        $rows = $worksheet->toArray(null, true, true, false);
+        $rows = $worksheet->toArray(null, true, false, false);
 
         if (count($rows) < 2) {
             throw new \InvalidArgumentException('File Excel tidak memiliki baris data.');
@@ -146,7 +146,7 @@ class ExcelImportService
             $rowData = [];
             foreach ($mappedIndices as $field => $colIdx) {
                 $val = $rawRow[$colIdx] ?? null;
-                $rowData[$field] = is_string($val) ? trim($val) : $val;
+                $rowData[$field] = $this->cleanCellValue($field, $val);
             }
 
             // Skip completely empty rows
@@ -194,7 +194,10 @@ class ExcelImportService
             }
         }
 
+        $totalNonEmpty = count($validRows) + count($duplicates) + $errorsCount;
+
         $batch->update([
+            'total' => $totalNonEmpty,
             'berhasil' => count($validRows) + count($duplicates),
             'gagal' => $errorsCount,
             'status' => 'preview',
@@ -202,11 +205,19 @@ class ExcelImportService
 
         return [
             'batch_id' => $batch->id,
-            'total_rows' => $batch->total,
+            'file_name' => $batch->nama_file,
+            'total_rows' => $totalNonEmpty,
+            'total_valid' => count($validRows) + count($duplicates),
+            'total_error' => $errorsCount,
             'valid_count' => count($validRows),
             'duplicate_count' => count($duplicates),
             'error_count' => $errorsCount,
             'preview_samples' => array_slice(array_merge($validRows, $duplicates), 0, 50),
+            'errors_preview' => $batch->errors()->take(50)->get()->map(fn ($e) => [
+                'nomor_baris' => $e->nomor_baris,
+                'kolom' => $e->kolom,
+                'pesan' => $e->pesan,
+            ]),
         ];
     }
 
@@ -229,7 +240,7 @@ class ExcelImportService
         $fullPath = Storage::path($filePath);
         $spreadsheet = IOFactory::load($fullPath);
         $worksheet = $spreadsheet->getActiveSheet();
-        $rows = $worksheet->toArray(null, true, true, false);
+        $rows = $worksheet->toArray(null, true, false, false);
 
         $mappedIndices = $mapping['mapped_indices'];
         $errorRowNumbers = $batch->errors()->pluck('nomor_baris')->toArray();
@@ -274,7 +285,7 @@ class ExcelImportService
                 $data = [];
                 foreach ($mappedIndices as $field => $colIdx) {
                     $val = $rawRow[$colIdx] ?? null;
-                    $data[$field] = is_string($val) ? trim($val) : $val;
+                    $data[$field] = $this->cleanCellValue($field, $val);
                 }
 
                 if (empty(array_filter($data, fn ($v) => $v !== null && $v !== ''))) {
@@ -670,39 +681,51 @@ class ExcelImportService
                     if ($strategy === 'skip') {
                         return ['action' => 'skipped', 'id' => $existing->id];
                     }
-                    $existing->update(['nama_lengkap' => $data['nama_lengkap']]);
+                    $existing->update([
+                        'nama_lengkap' => $data['nama_lengkap'] ?? $existing->nama_lengkap,
+                        'nip' => !empty($data['nip']) && $data['nip'] !== '-' ? $data['nip'] : $existing->nip,
+                        'nuptk' => !empty($data['nuptk']) && $data['nuptk'] !== '-' ? $data['nuptk'] : $existing->nuptk,
+                        'email' => !empty($data['email']) ? $data['email'] : $existing->email,
+                        'no_hp' => !empty($data['no_hp']) ? substr($data['no_hp'], 0, 16) : $existing->no_hp,
+                    ]);
                     return ['action' => 'updated', 'id' => $existing->id];
                 }
 
                 $agamaId = $religions[strtolower($data['agama'] ?? '')] ?? 1;
                 $pendidikanId = $educations[strtolower($data['pendidikan_terakhir'] ?? '')] ?? null;
 
+                $jkRaw = strtoupper(trim((string)($data['jenis_kelamin'] ?? 'L')));
+                $jk = str_starts_with($jkRaw, 'P') ? 'P' : 'L';
+
+                $jenisPtk = !empty($data['jenis_ptk']) && $data['jenis_ptk'] !== '-' ? strtolower($data['jenis_ptk']) : 'guru_kelas';
+                $statusKepegawaian = !empty($data['status_kepegawaian']) && $data['status_kepegawaian'] !== '-' ? strtolower($data['status_kepegawaian']) : 'gty';
+
                 $teacher = Teacher::create([
-                    'nip' => $data['nip'] ?? null,
-                    'nuptk' => $data['nuptk'] ?? null,
+                    'nip' => !empty($data['nip']) && $data['nip'] !== '-' ? $data['nip'] : null,
+                    'nuptk' => !empty($data['nuptk']) && $data['nuptk'] !== '-' ? $data['nuptk'] : null,
                     'nik' => $data['nik'],
                     'nama_lengkap' => $data['nama_lengkap'],
-                    'gelar_depan' => $data['gelar_depan'] ?? null,
-                    'gelar_belakang' => $data['gelar_belakang'] ?? null,
-                    'jenis_kelamin' => strtoupper($data['jenis_kelamin'] ?? 'L'),
-                    'tempat_lahir' => $data['tempat_lahir'] ?? 'Banyumas',
-                    'tgl_lahir' => $this->parseDate($data['tgl_lahir'] ?? '1990-01-01'),
+                    'gelar_depan' => !empty($data['gelar_depan']) && $data['gelar_depan'] !== '-' ? $data['gelar_depan'] : null,
+                    'gelar_belakang' => !empty($data['gelar_belakang']) && $data['gelar_belakang'] !== '-' ? $data['gelar_belakang'] : null,
+                    'jenis_kelamin' => $jk,
+                    'tempat_lahir' => !empty($data['tempat_lahir']) ? $data['tempat_lahir'] : 'Banyumas',
+                    'tgl_lahir' => $this->parseDate($data['tgl_lahir'] ?? '1990-01-01') ?? '1990-01-01',
                     'agama' => $agamaId,
-                    'alamat_jalan' => $data['alamat_jalan'] ?? '-',
-                    'kab_kota' => $data['kab_kota'] ?? 'Banyumas',
-                    'provinsi' => $data['provinsi'] ?? 'Jawa Tengah',
-                    'no_hp' => $data['no_hp'] ?? '+6281200000000',
-                    'email' => $data['email'] ?? null,
-                    'jenis_ptk' => strtolower($data['jenis_ptk'] ?? 'guru_kelas'),
-                    'status_kepegawaian' => strtolower($data['status_kepegawaian'] ?? 'gty'),
-                    'tgl_mulai_tugas' => $this->parseDate($data['tgl_mulai_tugas'] ?? '2020-01-01'),
-                    'jabatan' => $data['jabatan'] ?? null,
-                    'tugas_tambahan' => $data['tugas_tambahan'] ?? null,
+                    'alamat_jalan' => !empty($data['alamat_jalan']) ? $data['alamat_jalan'] : '-',
+                    'kab_kota' => !empty($data['kab_kota']) ? $data['kab_kota'] : 'Banyumas',
+                    'provinsi' => !empty($data['provinsi']) ? $data['provinsi'] : 'Jawa Tengah',
+                    'no_hp' => !empty($data['no_hp']) ? substr($data['no_hp'], 0, 16) : '+6281200000000',
+                    'email' => !empty($data['email']) ? $data['email'] : null,
+                    'jenis_ptk' => $jenisPtk,
+                    'status_kepegawaian' => $statusKepegawaian,
+                    'tgl_mulai_tugas' => $this->parseDate($data['tgl_mulai_tugas'] ?? '2020-01-01') ?? '2020-01-01',
+                    'jabatan' => !empty($data['jabatan']) && $data['jabatan'] !== '-' ? $data['jabatan'] : null,
+                    'tugas_tambahan' => !empty($data['tugas_tambahan']) && $data['tugas_tambahan'] !== '-' ? $data['tugas_tambahan'] : null,
                     'pendidikan_terakhir' => $pendidikanId,
-                    'jurusan_prodi' => $data['jurusan_prodi'] ?? null,
-                    'institusi' => $data['institusi'] ?? null,
-                    'tahun_lulus' => $data['tahun_lulus'] ?? null,
-                    'status_sertifikasi' => $data['status_sertifikasi'] ?? 'belum',
+                    'jurusan_prodi' => !empty($data['jurusan_prodi']) ? $data['jurusan_prodi'] : null,
+                    'institusi' => !empty($data['institusi']) ? $data['institusi'] : null,
+                    'tahun_lulus' => !empty($data['tahun_lulus']) && is_numeric($data['tahun_lulus']) ? (int)$data['tahun_lulus'] : null,
+                    'status_sertifikasi' => !empty($data['status_sertifikasi']) ? strtolower($data['status_sertifikasi']) : 'belum',
                     'status' => 'aktif',
                     'created_by' => auth()->id(),
                 ]);
@@ -787,5 +810,52 @@ class ExcelImportService
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    private function cleanCellValue(string $field, mixed $val): mixed
+    {
+        if ($val === null) {
+            return null;
+        }
+
+        if (is_string($val)) {
+            $val = trim($val);
+            if ($val === '' || $val === '-') {
+                return null;
+            }
+        }
+
+        // Convert any scientific notation or large float numbers (e.g. 5.4277467523032E+14 or 542774675230323.0)
+        if (is_numeric($val) || (is_string($val) && preg_match('/^[+-]?\d+(\.\d+)?[eE][+-]?\d+$/', trim($val)))) {
+            if (in_array($field, ['nuptk', 'nik', 'nip', 'nis', 'nisn', 'no_kk', 'nik_ayah', 'nik_ibu', 'no_hp', 'no_hp_wali', 'no_whatsapp_wali', 'kode_pos', 'tahun_lulus', 'rt', 'rw', 'anak_ke', 'jumlah_saudara'])) {
+                $val = number_format((float) $val, 0, '', '');
+            }
+        }
+
+        // Length sanitization according to database schema
+        if (is_string($val)) {
+            if ($field === 'nuptk') {
+                $val = substr(preg_replace('/[^0-9]/', '', $val), 0, 16);
+                return $val !== '' ? $val : null;
+            }
+            if (in_array($field, ['nik', 'no_kk', 'nik_ayah', 'nik_ibu'])) {
+                $val = substr(preg_replace('/[^0-9]/', '', $val), 0, 16);
+                return $val !== '' ? $val : null;
+            }
+            if ($field === 'nisn') {
+                $val = substr(preg_replace('/[^0-9]/', '', $val), 0, 10);
+                return $val !== '' ? $val : null;
+            }
+            if ($field === 'nip') {
+                $val = substr(preg_replace('/[^0-9]/', '', $val), 0, 18);
+                return $val !== '' ? $val : null;
+            }
+            if (in_array($field, ['no_hp', 'no_hp_wali', 'no_whatsapp_wali'])) {
+                $val = substr($val, 0, 16);
+                return $val !== '' ? $val : null;
+            }
+        }
+
+        return $val;
     }
 }

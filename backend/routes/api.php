@@ -306,10 +306,13 @@ Route::prefix('v1')->group(function () {
             Route::get('/default-templates', [ReportCardController::class, 'defaultTemplates']);
             Route::post('/initialize-class', [ReportCardController::class, 'initializeClass']);
             Route::post('/student', [ReportCardController::class, 'getOrCreateForStudent']);
+            Route::get('/class-grade-book', [ReportCardController::class, 'getClassGradeBook']);
+            Route::post('/class-grade-book', [ReportCardController::class, 'saveClassGradeBook']);
             Route::get('/export-excel', [ReportCardController::class, 'exportExcel']);
             Route::post('/import-excel', [ReportCardController::class, 'importExcel']);
             Route::post('/submit-class', [ReportCardController::class, 'submitClassForValidation']);
             Route::post('/validate-class', [ReportCardController::class, 'validateClass']);
+            Route::post('/sync-class-attendance', [ReportCardController::class, 'syncClassAttendance']);
             Route::get('/{id}', [ReportCardController::class, 'show']);
             Route::put('/{id}', [ReportCardController::class, 'update']);
             Route::post('/{id}/sync-attendance', [ReportCardController::class, 'syncAttendance']);
