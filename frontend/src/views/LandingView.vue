@@ -6,6 +6,7 @@ import api from '../services/api'
 
 import LandingNavbar from '../components/landing/LandingNavbar.vue'
 import LandingHero from '../components/landing/LandingHero.vue'
+import LandingTeachersMarqueeSection from '../components/landing/LandingTeachersMarqueeSection.vue'
 import LandingFeaturedProgramsSection from '../components/landing/LandingFeaturedProgramsSection.vue'
 import LandingExtracurricularSection from '../components/landing/LandingExtracurricularSection.vue'
 import LandingGallerySection from '../components/landing/LandingGallerySection.vue'
@@ -231,6 +232,9 @@ const handlePortalAccess = () => {
 
         </div>
       </section>
+
+      <!-- 1.5 TENAGA PENDIDIK (AUTO SCROLL KESAMPING) -->
+      <LandingTeachersMarqueeSection />
 
       <!-- 2. RINGKASAN PENDIDIKAN (FITRAH & PERADABAN) -->
       <section class="py-20 bg-slate-50 border-b border-slate-200/80 overflow-hidden">
