@@ -31,8 +31,10 @@ const loadingCaseDetail = ref(false)
 const students = ref<any[]>([])
 const classes = ref<any[]>([])
 
-// Modal Tambah Kasus Baru
-const isCaseModalOpen = ref(false)
+// Subview navigation state: 'main' | 'form-case' | 'form-log'
+const currentSubView = ref<'main' | 'form-case' | 'form-log'>('main')
+
+// State Tambah Kasus Baru
 const submittingCase = ref(false)
 const caseForm = ref({
   student_id: '',
@@ -44,8 +46,7 @@ const caseForm = ref({
   catatan_umum: '',
 })
 
-// Modal Tambah Log / Sesi BK
-const isLogModalOpen = ref(false)
+// State Tambah Log / Sesi BK
 const isEditingLog = ref(false)
 const editingLogId = ref<number | null>(null)
 const submittingLog = ref(false)
@@ -174,8 +175,8 @@ const reloadCaseDetail = async () => {
   }
 }
 
-// Open Modals
-const openNewCaseModal = () => {
+// Open Forms
+const openNewCaseForm = () => {
   caseForm.value = {
     student_id: '',
     tanggal_masuk: new Date().toISOString().split('T')[0],
@@ -185,7 +186,8 @@ const openNewCaseModal = () => {
     review_berikutnya: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split('T')[0],
     catatan_umum: '',
   }
-  isCaseModalOpen.value = true
+  currentSubView.value = 'form-case'
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const submitNewCase = async () => {
@@ -199,7 +201,7 @@ const submitNewCase = async () => {
     const res = await api.post('/bk/cases', caseForm.value)
     if (res.data.success) {
       showSuccess('Berhasil!', 'Siswa berhasil dimasukkan ke daftar pemantauan BK.')
-      isCaseModalOpen.value = false
+      currentSubView.value = 'main'
       fetchCases(1)
       fetchDashboard()
       selectCaseForDetail(res.data.data)
@@ -211,7 +213,7 @@ const submitNewCase = async () => {
   }
 }
 
-const openNewLogModal = () => {
+const openNewLogForm = () => {
   isEditingLog.value = false
   editingLogId.value = null
   logForm.value = {
@@ -227,10 +229,11 @@ const openNewLogModal = () => {
     status: selectedCase.value?.status_saat_ini || 'Dalam Pemantauan',
     catatan_konteks: '',
   }
-  isLogModalOpen.value = true
+  currentSubView.value = 'form-log'
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-const openEditLogModal = (log: any) => {
+const openEditLogForm = (log: any) => {
   isEditingLog.value = true
   editingLogId.value = log.id
   logForm.value = {
@@ -246,7 +249,8 @@ const openEditLogModal = (log: any) => {
     status: log.status || 'Dalam Pemantauan',
     catatan_konteks: log.catatan_konteks || '',
   }
-  isLogModalOpen.value = true
+  currentSubView.value = 'form-log'
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const submitLog = async () => {
@@ -261,7 +265,7 @@ const submitLog = async () => {
       const res = await api.put(`/bk/logs/${editingLogId.value}`, logForm.value)
       if (res.data.success) {
         showSuccess('Berhasil!', 'Log pemantauan berhasil diperbarui.')
-        isLogModalOpen.value = false
+        currentSubView.value = 'main'
         reloadCaseDetail()
         fetchDashboard()
       }
@@ -269,7 +273,7 @@ const submitLog = async () => {
       const res = await api.post(`/bk/cases/${selectedCase.value.id}/logs`, logForm.value)
       if (res.data.success) {
         showSuccess('Berhasil!', 'Log intervensi BK berhasil dicatat.')
-        isLogModalOpen.value = false
+        currentSubView.value = 'main'
         reloadCaseDetail()
         fetchDashboard()
       }
@@ -279,6 +283,11 @@ const submitLog = async () => {
   } finally {
     submittingLog.value = false
   }
+}
+
+const backToMain = () => {
+  currentSubView.value = 'main'
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const deleteLog = async (logId: number) => {
@@ -408,8 +417,10 @@ onMounted(async () => {
 
     <!-- MAIN VIEW GURU BK -->
     <template v-else>
-      <!-- Top Banner Header -->
-      <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <!-- SUBVIEW 1: TAMPILAN UTAMA (DASHBOARD, DAFTAR SISWA, DETAIL SISWA, PANDUAN) -->
+      <template v-if="currentSubView === 'main'">
+        <!-- Top Banner Header -->
+        <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white shadow-md shadow-emerald-600/20 shrink-0">
             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -445,7 +456,7 @@ onMounted(async () => {
             <span>Ekspor Excel</span>
           </button>
           <button
-            @click="openNewCaseModal"
+            @click="openNewCaseForm"
             type="button"
             class="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition active:scale-95 cursor-pointer"
           >
@@ -892,7 +903,7 @@ onMounted(async () => {
               <!-- Quick Status Update Bar -->
               <div class="flex flex-wrap items-center gap-2 self-start md:self-auto">
                 <button
-                  @click="openNewLogModal"
+                  @click="openNewLogForm"
                   type="button"
                   class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition active:scale-95 cursor-pointer"
                 >
@@ -970,7 +981,7 @@ onMounted(async () => {
                       {{ log.status }}
                     </span>
                     <button
-                      @click="openEditLogModal(log)"
+                      @click="openEditLogForm(log)"
                       class="p-1 text-slate-400 hover:text-indigo-600 cursor-pointer"
                       title="Edit"
                     >
@@ -1116,258 +1127,459 @@ onMounted(async () => {
           </div>
         </div>
       </div>
+      </template>
 
-      <!-- MODAL TAMBAH SISWA KE BK -->
-      <div
-        v-if="isCaseModalOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
-      >
-        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
-          <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-            <div>
-              <h3 class="text-base font-black text-gray-900">Tambah Siswa ke Pemantauan BK</h3>
-              <p class="text-xs text-gray-500">Membuat lembar kasus pemantauan baru untuk siswa.</p>
+      <!-- ======================================================== -->
+      <!-- SUBVIEW 2: FORM TAMBAH SISWA KE BK (FULL PAGE VIEW)       -->
+      <!-- ======================================================== -->
+      <template v-else-if="currentSubView === 'form-case'">
+        <div class="space-y-6 animate-in fade-in duration-200">
+          <!-- Top Bar -->
+          <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <button
+                @click="backToMain"
+                type="button"
+                class="w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition cursor-pointer shrink-0"
+                title="Kembali ke Analisis & Monitoring BK"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </button>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Bimbingan Konseling
+                  </span>
+                  <span class="text-xs text-gray-400">/ Penerimaan Kasus Baru</span>
+                </div>
+                <h1 class="text-xl sm:text-2xl font-black text-gray-900 leading-tight mt-1">
+                  Tambah Siswa ke Pemantauan BK
+                </h1>
+                <p class="text-xs text-gray-500 mt-0.5">
+                  Membuat lembar kasus pemantauan baru untuk siswa (berdasarkan rujukan observasi kelas, wali kelas, atau inisiatif BK).
+                </p>
+              </div>
             </div>
-            <button @click="isCaseModalOpen = false" class="text-gray-400 hover:text-gray-600 cursor-pointer p-1">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+
+            <div class="flex items-center gap-2.5 self-start md:self-auto">
+              <button
+                @click="backToMain"
+                type="button"
+                class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                Batal & Kembali
+              </button>
+              <button
+                @click="submitNewCase"
+                :disabled="submittingCase"
+                type="button"
+                class="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition disabled:opacity-50 cursor-pointer"
+              >
+                <svg v-if="submittingCase" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>{{ submittingCase ? 'Menyimpan...' : 'Simpan Kasus BK' }}</span>
+              </button>
+            </div>
           </div>
 
-          <form @submit.prevent="submitNewCase" class="space-y-3.5 text-xs">
-            <div>
-              <label class="block font-bold text-gray-700 mb-1">Pilih Siswa *</label>
-              <select
-                v-model="caseForm.student_id"
-                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:outline-none"
-                required
-              >
-                <option value="" disabled>-- Pilih Siswa --</option>
-                <option v-for="s in students" :key="s.id" :value="s.id">
-                  {{ s.nama_lengkap }} (NIS: {{ s.nis }})
-                </option>
-              </select>
-            </div>
+          <!-- Form Content -->
+          <form @submit.prevent="submitNewCase" class="space-y-6">
+            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-5">
+              <div class="flex items-center gap-2.5 pb-3 border-b border-gray-100">
+                <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                  1
+                </span>
+                <div>
+                  <h3 class="text-sm font-bold text-gray-900">Identitas Siswa & Sumber Masukan Awal</h3>
+                  <p class="text-[11px] text-gray-400">Pilih peserta didik yang akan didampingi serta asal sumber informasi.</p>
+                </div>
+              </div>
 
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block font-bold text-gray-700 mb-1">Tanggal Masuk *</label>
-                <input
-                  v-model="caseForm.tanggal_masuk"
-                  type="date"
-                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:outline-none"
-                  required
-                />
-              </div>
-              <div>
-                <label class="block font-bold text-gray-700 mb-1">Sumber Awal *</label>
-                <select
-                  v-model="caseForm.sumber_awal"
-                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:outline-none"
-                >
-                  <option value="Wali Kelas">Wali Kelas</option>
-                  <option value="Guru Tema">Guru Tema</option>
-                  <option value="Guru BK">Guru BK</option>
-                  <option value="Orang Tua">Orang Tua</option>
-                  <option value="Siswa">Siswa</option>
-                </select>
-              </div>
-            </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Pilih Siswa *</label>
+                  <select
+                    v-model="caseForm.student_id"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    required
+                  >
+                    <option value="" disabled>-- Pilih Siswa --</option>
+                    <option v-for="s in students" :key="s.id" :value="s.id">
+                      {{ s.nama_lengkap }} (NIS: {{ s.nis }}) - {{ s.kelas?.nama || 'Tanpa Rombel' }}
+                    </option>
+                  </select>
+                </div>
 
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block font-bold text-gray-700 mb-1">Fokus Pemantauan *</label>
-                <select
-                  v-model="caseForm.fokus_pemantauan"
-                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:outline-none"
-                >
-                  <option v-for="f in focusList" :key="f" :value="f">{{ f }}</option>
-                </select>
-              </div>
-              <div>
-                <label class="block font-bold text-gray-700 mb-1">Status Awal *</label>
-                <select
-                  v-model="caseForm.status_saat_ini"
-                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:outline-none"
-                >
-                  <option v-for="st in statusList" :key="st" :value="st">{{ st }}</option>
-                </select>
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Tanggal Masuk Pemantauan *</label>
+                  <input
+                    v-model="caseForm.tanggal_masuk"
+                    type="date"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    required
+                  />
+                </div>
+
+                <div class="md:col-span-3">
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Sumber Awal Rujukan *</label>
+                  <select
+                    v-model="caseForm.sumber_awal"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  >
+                    <option value="Wali Kelas">Wali Kelas</option>
+                    <option value="Guru Tema">Guru Tema</option>
+                    <option value="Guru BK">Guru BK</option>
+                    <option value="Orang Tua">Orang Tua</option>
+                    <option value="Siswa">Siswa</option>
+                  </select>
+                </div>
               </div>
             </div>
 
-            <div>
-              <label class="block font-bold text-gray-700 mb-1">Agenda Review Berikutnya</label>
-              <input
-                v-model="caseForm.review_berikutnya"
-                type="date"
-                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:outline-none"
-              />
+            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-5">
+              <div class="flex items-center gap-2.5 pb-3 border-b border-gray-100">
+                <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                  2
+                </span>
+                <div>
+                  <h3 class="text-sm font-bold text-gray-900">Fokus Pemantauan & Status Awal</h3>
+                  <p class="text-[11px] text-gray-400">Tentukan ranah bimbingan konseling dan jadwal evaluasi berikutnya.</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Fokus Pemantauan BK *</label>
+                  <select
+                    v-model="caseForm.fokus_pemantauan"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  >
+                    <option v-for="f in focusList" :key="f" :value="f">{{ f }}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Status Awal Pemantauan *</label>
+                  <select
+                    v-model="caseForm.status_saat_ini"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  >
+                    <option v-for="st in statusList" :key="st" :value="st">{{ st }}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Agenda Review / Evaluasi Berikutnya</label>
+                  <input
+                    v-model="caseForm.review_berikutnya"
+                    type="date"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  />
+                </div>
+
+                <div class="md:col-span-3">
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Catatan Awal / Gambaran Kasus Siswa</label>
+                  <textarea
+                    v-model="caseForm.catatan_umum"
+                    rows="3"
+                    placeholder="Tuliskan latar belakang atau ringkasan permasalahan yang disampaikan..."
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  ></textarea>
+                </div>
+              </div>
             </div>
 
-            <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
+            <!-- Bottom Actions -->
+            <div class="flex items-center justify-end gap-3 pt-2">
               <button
-                @click="isCaseModalOpen = false"
+                @click="backToMain"
                 type="button"
-                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer"
+                class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
               >
                 Batal
               </button>
               <button
                 :disabled="submittingCase"
                 type="submit"
-                class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md cursor-pointer disabled:opacity-50"
+                class="inline-flex items-center gap-2 px-7 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition disabled:opacity-50 cursor-pointer"
               >
-                {{ submittingCase ? 'Menyimpan...' : 'Simpan Kasus BK' }}
+                <svg v-if="submittingCase" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>{{ submittingCase ? 'Menyimpan Data...' : 'Simpan Kasus BK' }}</span>
               </button>
             </div>
           </form>
         </div>
-      </div>
+      </template>
 
-      <!-- MODAL CATAT LOG / SESI INTERVENSI BK -->
-      <div
-        v-if="isLogModalOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto"
-      >
-        <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 my-8">
-          <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-            <div>
-              <h3 class="text-base font-black text-gray-900">
-                {{ isEditingLog ? 'Edit Sesi Pemantauan BK' : 'Catat Sesi / Intervensi BK Baru' }}
-              </h3>
-              <p class="text-xs text-gray-500">Untuk siswa: {{ selectedCase?.student?.nama_lengkap }}</p>
+      <!-- ======================================================== -->
+      <!-- SUBVIEW 3: FORM CATAT / EDIT LOG BK (FULL PAGE VIEW)     -->
+      <!-- ======================================================== -->
+      <template v-else-if="currentSubView === 'form-log'">
+        <div class="space-y-6 animate-in fade-in duration-200">
+          <!-- Top Bar -->
+          <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <button
+                @click="backToMain"
+                type="button"
+                class="w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition cursor-pointer shrink-0"
+                title="Kembali ke Detail Pemantauan Siswa"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </button>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {{ isEditingLog ? 'Edit Sesi Pemantauan' : 'Pencatatan Sesi Baru' }}
+                  </span>
+                  <span class="text-xs text-gray-400">/ 9 Tahap Alur Resmi BK</span>
+                </div>
+                <h1 class="text-xl sm:text-2xl font-black text-gray-900 leading-tight mt-1">
+                  {{ isEditingLog ? 'Edit Sesi / Intervensi BK' : 'Catat Sesi / Intervensi BK Baru' }}
+                </h1>
+                <p class="text-xs text-gray-500 mt-0.5">
+                  Peserta Didik: <strong class="text-gray-900 font-bold">{{ selectedCase?.student?.nama_lengkap }}</strong>
+                  ({{ selectedCase?.student?.kelas?.nama || 'Kelas' }}) — Fokus: <span class="text-emerald-700 font-semibold">{{ selectedCase?.fokus_pemantauan }}</span>
+                </p>
+              </div>
             </div>
-            <button @click="isLogModalOpen = false" class="text-gray-400 hover:text-gray-600 cursor-pointer p-1">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+
+            <div class="flex items-center gap-2.5 self-start md:self-auto">
+              <button
+                @click="backToMain"
+                type="button"
+                class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                Batal & Kembali
+              </button>
+              <button
+                @click="submitLog"
+                :disabled="submittingLog"
+                type="button"
+                class="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition disabled:opacity-50 cursor-pointer"
+              >
+                <svg v-if="submittingLog" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>{{ submittingLog ? 'Menyimpan...' : (isEditingLog ? 'Simpan Perubahan Sesi' : 'Simpan Log BK') }}</span>
+              </button>
+            </div>
           </div>
 
-          <form @submit.prevent="submitLog" class="space-y-3.5 text-xs">
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label class="block font-bold text-gray-700 mb-1">Tanggal *</label>
-                <input
-                  v-model="logForm.tanggal"
-                  type="date"
-                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:outline-none"
-                  required
-                />
+          <!-- Form Content -->
+          <form @submit.prevent="submitLog" class="space-y-6">
+            <!-- Section 1: Tanggal, Tahapan, Sumber Data -->
+            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-5">
+              <div class="flex items-center gap-2.5 pb-3 border-b border-gray-100">
+                <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                  1
+                </span>
+                <div>
+                  <h3 class="text-sm font-bold text-gray-900">Waktu & Tahapan Alur Layanan BK</h3>
+                  <p class="text-[11px] text-gray-400">Tentukan tanggal kegiatan serta posisi tahap dalam alur bimbingan.</p>
+                </div>
               </div>
-              <div>
-                <label class="block font-bold text-gray-700 mb-1">Tahap Alur BK *</label>
-                <select
-                  v-model="logForm.tahap"
-                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:outline-none"
-                >
-                  <option v-for="t in tahapList" :key="t" :value="t">{{ t }}</option>
-                </select>
-              </div>
-              <div>
-                <label class="block font-bold text-gray-700 mb-1">Sumber Data</label>
-                <input
-                  v-model="logForm.sumber_data"
-                  type="text"
-                  placeholder="Mis: Guru BK, Wali kelas"
-                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:outline-none"
-                />
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Tanggal Sesi / Kejadian *</label>
+                  <input
+                    v-model="logForm.tanggal"
+                    type="date"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Tahapan Alur BK *</label>
+                  <select
+                    v-model="logForm.tahap"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  >
+                    <option v-for="t in tahapList" :key="t" :value="t">{{ t }}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Sumber Data / Pelaksana</label>
+                  <input
+                    v-model="logForm.sumber_data"
+                    type="text"
+                    placeholder="Mis: Guru BK, Wali Kelas, Guru Tema"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  />
+                </div>
               </div>
             </div>
 
-            <div>
-              <label class="block font-bold text-gray-700 mb-1">Observasi / Temuan Fakta *</label>
-              <textarea
-                v-model="logForm.observasi_temuan"
-                rows="2"
-                placeholder="Catat fakta kejadian yang terlihat/terdengar secara objektif..."
-                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:outline-none"
-                required
-              ></textarea>
-            </div>
-
-            <div>
-              <label class="block font-bold text-gray-700 mb-1">Telaah Profesional BK (Asesmen Psikologis)</label>
-              <textarea
-                v-model="logForm.telaah_bk"
-                rows="2"
-                placeholder="Analisis profesional BK terhadap data dan pola perilaku siswa..."
-                class="w-full px-3 py-2 bg-rose-50/30 border border-rose-200 rounded-xl text-gray-800 focus:outline-none"
-              ></textarea>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label class="block font-bold text-gray-700 mb-1">Kebutuhan / Tujuan</label>
-                <input
-                  v-model="logForm.kebutuhan_tujuan"
-                  type="text"
-                  placeholder="Target perkembangan anak..."
-                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:outline-none"
-                />
+            <!-- Section 2: Observasi Temuan & Telaah Profesional BK -->
+            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-5">
+              <div class="flex items-center gap-2.5 pb-3 border-b border-gray-100">
+                <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                  2
+                </span>
+                <div>
+                  <h3 class="text-sm font-bold text-gray-900">Observasi Temuan & Telaah Profesional BK</h3>
+                  <p class="text-[11px] text-gray-400">Deskripsikan pengamatan objektif serta asesmen psikologis guru BK.</p>
+                </div>
               </div>
-              <div>
-                <label class="block font-bold text-gray-700 mb-1">Tindak Lanjut / Coaching</label>
-                <input
-                  v-model="logForm.tindak_lanjut"
-                  type="text"
-                  placeholder="Intervensi yang dilakukan..."
-                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:outline-none"
-                />
-              </div>
-            </div>
 
-            <div>
-              <label class="block font-bold text-gray-700 mb-1">Hasil & Evaluasi</label>
-              <input
-                v-model="logForm.hasil_evaluasi"
-                type="text"
-                placeholder="Perubahan perilaku setelah intervensi..."
-                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:outline-none"
-              />
-            </div>
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                    Observasi / Temuan Fakta *
+                  </label>
+                  <p class="text-[11px] text-gray-400 mb-1.5">Deskripsikan kejadian faktual yang tampak/terdengar secara spesifik.</p>
+                  <textarea
+                    v-model="logForm.observasi_temuan"
+                    rows="3"
+                    placeholder="Contoh: Saat istirahat siswa terlihat menyendiri di sudut tangga sambil memeluk buku gambarnya..."
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    required
+                  ></textarea>
+                </div>
 
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block font-bold text-gray-700 mb-1">Perubahan Pola *</label>
-                <select
-                  v-model="logForm.perubahan_pola"
-                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:outline-none"
-                >
-                  <option v-for="p in polaList" :key="p" :value="p">{{ p }}</option>
-                </select>
-              </div>
-              <div>
-                <label class="block font-bold text-gray-700 mb-1">Status Pemantauan *</label>
-                <select
-                  v-model="logForm.status"
-                  class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:outline-none"
-                >
-                  <option v-for="st in statusList" :key="st" :value="st">{{ st }}</option>
-                </select>
+                <div>
+                  <label class="block text-xs font-bold text-rose-900 mb-1.5">
+                    Telaah Profesional BK (Asesmen Psikologis & Dinamika Emosi)
+                  </label>
+                  <p class="text-[11px] text-gray-400 mb-1.5">Analisis psikologis Guru BK terhadap dinamika perilaku, motif, dan kebutuhan anak.</p>
+                  <textarea
+                    v-model="logForm.telaah_bk"
+                    rows="3"
+                    placeholder="Contoh: Menunjukkan gejala sensory overload setelah jam pembelajaran berisik, butuh ruang deeskalasi sebelum berinteraksi..."
+                    class="w-full px-3.5 py-2.5 bg-rose-50/20 border border-rose-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                  ></textarea>
+                </div>
               </div>
             </div>
 
-            <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
+            <!-- Section 3: Kebutuhan, Tindak Lanjut & Evaluasi -->
+            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-5">
+              <div class="flex items-center gap-2.5 pb-3 border-b border-gray-100">
+                <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                  3
+                </span>
+                <div>
+                  <h3 class="text-sm font-bold text-gray-900">Tujuan, Tindak Lanjut Coaching & Hasil Evaluasi</h3>
+                  <p class="text-[11px] text-gray-400">Rencana intervensi yang dijalankan beserta respon perkembangan peserta didik.</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Kebutuhan / Target Perkembangan</label>
+                  <input
+                    v-model="logForm.kebutuhan_tujuan"
+                    type="text"
+                    placeholder="Mis: Penguatan regulasi diri saat frustrasi, latihan komunikasi verbal"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Tindak Lanjut / Coaching / Konseling</label>
+                  <input
+                    v-model="logForm.tindak_lanjut"
+                    type="text"
+                    placeholder="Mis: Sesi konseling 1-on-1, koordinasi dengan guru kelas untuk memberi waktu transisi"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  />
+                </div>
+
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Hasil & Evaluasi Respon Siswa</label>
+                  <input
+                    v-model="logForm.hasil_evaluasi"
+                    type="text"
+                    placeholder="Mis: Siswa mulai bisa mengekspresikan perasaannya tanpa melempar barang"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 4: Perubahan Pola & Status Terkini -->
+            <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-5">
+              <div class="flex items-center gap-2.5 pb-3 border-b border-gray-100">
+                <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                  4
+                </span>
+                <div>
+                  <h3 class="text-sm font-bold text-gray-900">Indikator Perubahan Pola & Status Kasus</h3>
+                  <p class="text-[11px] text-gray-400">Pembaruan metrik keberhasilan pendampingan bimbingan konseling.</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Perubahan Pola Perilaku *</label>
+                  <select
+                    v-model="logForm.perubahan_pola"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  >
+                    <option v-for="p in polaList" :key="p" :value="p">{{ p }}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Status Pemantauan Terkini *</label>
+                  <select
+                    v-model="logForm.status"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  >
+                    <option v-for="st in statusList" :key="st" :value="st">{{ st }}</option>
+                  </select>
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-bold text-gray-700 mb-1.5">Catatan Konteks / Catatan Tambahan (Opsional)</label>
+                  <textarea
+                    v-model="logForm.catatan_konteks"
+                    rows="2"
+                    placeholder="Keterangan situasional atau informasi penting pendukung..."
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Actions -->
+            <div class="flex items-center justify-end gap-3 pt-2">
               <button
-                @click="isLogModalOpen = false"
+                @click="backToMain"
                 type="button"
-                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer"
+                class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
               >
                 Batal
               </button>
               <button
                 :disabled="submittingLog"
                 type="submit"
-                class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md cursor-pointer disabled:opacity-50"
+                class="inline-flex items-center gap-2 px-7 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition disabled:opacity-50 cursor-pointer"
               >
-                {{ submittingLog ? 'Menyimpan...' : (isEditingLog ? 'Simpan Perubahan' : 'Simpan Log BK') }}
+                <svg v-if="submittingLog" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>{{ submittingLog ? 'Menyimpan...' : (isEditingLog ? 'Simpan Perubahan Sesi' : 'Simpan Log BK') }}</span>
               </button>
             </div>
           </form>
         </div>
-      </div>
+      </template>
     </template>
   </div>
 </template>
+

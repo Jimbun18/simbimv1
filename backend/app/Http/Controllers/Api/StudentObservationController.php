@@ -301,3 +301,4 @@ class StudentObservationController extends Controller
         ]);
     }
 }
+
