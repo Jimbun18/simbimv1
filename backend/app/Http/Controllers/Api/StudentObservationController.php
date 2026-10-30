@@ -29,6 +29,7 @@ class StudentObservationController extends Controller
 
         $query = StudentObservation::with([
             'student:id,nis,nama_lengkap,jenis_kelamin,foto_path,class_id',
+            'student.schoolClass:id,nama,tingkat,kode',
             'schoolClass:id,nama,tingkat,kode',
             'observer:id,nama_lengkap,jabatan',
             'bkTeacher:id,nama_lengkap,jabatan',
@@ -46,7 +47,13 @@ class StudentObservationController extends Controller
         }
 
         if ($request->filled('class_id')) {
-            $query->where('class_id', $request->query('class_id'));
+            $classId = $request->query('class_id');
+            $query->where(function ($q) use ($classId) {
+                $q->where('class_id', $classId)
+                  ->orWhereHas('student', function ($sq) use ($classId) {
+                      $sq->where('class_id', $classId);
+                  });
+            });
         }
 
         if ($request->filled('student_id')) {

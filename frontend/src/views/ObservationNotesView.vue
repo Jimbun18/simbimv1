@@ -275,6 +275,19 @@ const getInitials = (name?: string) => {
   return name.substring(0, 2).toUpperCase()
 }
 
+const getClassName = (item: any) => {
+  if (!item) return '-'
+  return item.school_class?.nama ||
+         item.schoolClass?.nama ||
+         item.student?.school_class?.nama ||
+         item.student?.current_class?.nama ||
+         item.student?.kelas?.nama ||
+         item.student?.class_name ||
+         item.class_name ||
+         item.kelas?.nama ||
+         '-'
+}
+
 onMounted(() => {
   fetchClasses()
   fetchStudents()
@@ -488,7 +501,7 @@ onMounted(() => {
                       </div>
                       <div class="flex items-center gap-1.5 text-[10px] text-gray-400 mt-0.5">
                         <span class="px-1.5 py-0.5 rounded bg-slate-100 font-bold text-slate-700">
-                          {{ obs.schoolClass?.nama || 'Kelas' }}
+                          {{ getClassName(obs) }}
                         </span>
                         <span>NIS: {{ obs.student?.nis || '-' }}</span>
                       </div>
@@ -666,7 +679,7 @@ onMounted(() => {
               {{ selectedObs.student?.nama_lengkap || 'Siswa' }}
             </h1>
             <p class="text-xs text-gray-500 mt-0.5">
-              Rombel: <strong class="text-gray-800">{{ selectedObs.schoolClass?.nama || 'Kelas' }}</strong> |
+              Rombel: <strong class="text-gray-800">{{ getClassName(selectedObs) }}</strong> |
               NIS: {{ selectedObs.student?.nis }} |
               Pelapor: <strong>{{ selectedObs.observer?.nama_lengkap || 'Guru' }}</strong> ({{ selectedObs.observer?.jabatan || 'Wali Kelas' }})
             </p>
@@ -919,7 +932,7 @@ onMounted(() => {
               >
                 <option value="" disabled>-- Pilih Siswa --</option>
                 <option v-for="s in students" :key="s.id" :value="s.id">
-                  {{ s.nama_lengkap }} (NIS: {{ s.nis }}) - {{ s.kelas?.nama || 'Tanpa Kelas' }}
+                  {{ s.nama_lengkap }} (NIS: {{ s.nis }}) - {{ getClassName(s) }}
                 </option>
               </select>
             </div>

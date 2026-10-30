@@ -384,6 +384,19 @@ const getInitials = (name?: string) => {
   return name.substring(0, 2).toUpperCase()
 }
 
+const getClassName = (item: any) => {
+  if (!item) return '-'
+  return item.school_class?.nama ||
+         item.schoolClass?.nama ||
+         item.student?.school_class?.nama ||
+         item.student?.current_class?.nama ||
+         item.student?.kelas?.nama ||
+         item.student?.class_name ||
+         item.class_name ||
+         item.kelas?.nama ||
+         '-'
+}
+
 onMounted(async () => {
   if (!auth.isGuruBk) return
 
@@ -623,7 +636,7 @@ onMounted(async () => {
                       {{ item.student?.nama_lengkap }}
                     </td>
                     <td class="py-2.5 text-gray-600">
-                      {{ item.school_class?.nama || 'Kelas' }}
+                      {{ getClassName(item) }}
                     </td>
                     <td class="py-2.5 text-gray-600">
                       {{ item.fokus_pemantauan }}
@@ -813,7 +826,7 @@ onMounted(async () => {
                     </div>
                   </td>
                   <td class="py-3.5 px-4 font-bold text-gray-700">
-                    {{ c.school_class?.nama || 'Kelas' }}
+                    {{ getClassName(c) }}
                   </td>
                   <td class="py-3.5 px-4 text-gray-600">
                     {{ formatDateIndo(c.tanggal_masuk) }}
@@ -893,7 +906,7 @@ onMounted(async () => {
                     </span>
                   </div>
                   <div class="text-xs text-gray-500 mt-1 flex flex-wrap gap-x-4 gap-y-1">
-                    <span>Kelas: <strong>{{ selectedCase.school_class?.nama || 'Kelas' }}</strong></span>
+                    <span>Kelas: <strong>{{ getClassName(selectedCase) }}</strong></span>
                     <span>Wali Kelas: <strong>{{ selectedCase.homeroom_teacher?.nama_lengkap || 'Rasiti, S.Pd.' }}</strong></span>
                     <span>Guru BK: <strong>{{ selectedCase.bk_teacher?.nama_lengkap || 'Nur Kafi Ramadhani, S.Psi.' }}</strong></span>
                   </div>
@@ -1209,7 +1222,7 @@ onMounted(async () => {
                   >
                     <option value="" disabled>-- Pilih Siswa --</option>
                     <option v-for="s in students" :key="s.id" :value="s.id">
-                      {{ s.nama_lengkap }} (NIS: {{ s.nis }}) - {{ s.kelas?.nama || 'Tanpa Rombel' }}
+                      {{ s.nama_lengkap }} (NIS: {{ s.nis }}) - {{ getClassName(s) }}
                     </option>
                   </select>
                 </div>
@@ -1348,7 +1361,7 @@ onMounted(async () => {
                 </h1>
                 <p class="text-xs text-gray-500 mt-0.5">
                   Peserta Didik: <strong class="text-gray-900 font-bold">{{ selectedCase?.student?.nama_lengkap }}</strong>
-                  ({{ selectedCase?.student?.kelas?.nama || 'Kelas' }}) — Fokus: <span class="text-emerald-700 font-semibold">{{ selectedCase?.fokus_pemantauan }}</span>
+                  ({{ getClassName(selectedCase) }}) — Fokus: <span class="text-emerald-700 font-semibold">{{ selectedCase?.fokus_pemantauan }}</span>
                 </p>
               </div>
             </div>

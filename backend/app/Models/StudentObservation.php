@@ -38,12 +38,24 @@ class StudentObservation extends Model
         'is_escalated_to_bk' => 'boolean',
     ];
 
+    protected $appends = ['class_name'];
+
+    public function getClassNameAttribute(): ?string
+    {
+        return $this->schoolClass?->nama ?? $this->student?->schoolClass?->nama ?? null;
+    }
+
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
     }
 
     public function schoolClass(): BelongsTo
+    {
+        return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
+    public function kelas(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
     }

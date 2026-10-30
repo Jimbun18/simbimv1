@@ -80,7 +80,12 @@ class Student extends Model
         'updated_by',
     ];
 
-    protected $appends = ['foto_url', 'alamat'];
+    protected $appends = ['foto_url', 'alamat', 'class_name'];
+
+    public function getClassNameAttribute(): ?string
+    {
+        return $this->schoolClass?->nama ?? $this->currentClass?->nama ?? null;
+    }
 
     public function getFotoUrlAttribute(): ?string
     {
@@ -133,6 +138,11 @@ class Student extends Model
     }
 
     public function schoolClass(): BelongsTo
+    {
+        return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
+    public function kelas(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
     }
