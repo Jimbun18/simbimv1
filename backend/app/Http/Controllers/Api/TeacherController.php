@@ -303,16 +303,28 @@ class TeacherController extends Controller
             'foto' => 'File Pas Foto',
         ]);
 
-        if ($request->hasFile('foto')) {
+        if ($request->boolean('hapus_foto') || $request->boolean('remove_photo')) {
             if ($teacher->foto_path && Storage::disk('public')->exists($teacher->foto_path)) {
                 Storage::disk('public')->delete($teacher->foto_path);
             }
-            $validated['foto_path'] = app(PhotoCompressionService::class)->compressAndStore(
+            $validated['foto_path'] = null;
+            if ($teacher->user) {
+                $teacher->user->update(['foto_path' => null]);
+            }
+        } elseif ($request->hasFile('foto')) {
+            if ($teacher->foto_path && Storage::disk('public')->exists($teacher->foto_path)) {
+                Storage::disk('public')->delete($teacher->foto_path);
+            }
+            $fotoPath = app(PhotoCompressionService::class)->compressAndStore(
                 $request->file('foto'),
                 'teachers'
             );
+            $validated['foto_path'] = $fotoPath;
+            if ($teacher->user) {
+                $teacher->user->update(['foto_path' => $fotoPath]);
+            }
         }
-        unset($validated['foto']);
+        unset($validated['foto'], $validated['hapus_foto'], $validated['remove_photo']);
 
         $oldData = $teacher->toArray();
         $validated['updated_by'] = auth()->id();
@@ -331,6 +343,36 @@ class TeacherController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data guru berhasil diperbarui.',
+            'data' => $teacher->fresh()->load(['religion', 'education', 'user']),
+        ]);
+    }
+
+    public function deletePhoto(Teacher $teacher): JsonResponse
+    {
+        $oldPhoto = $teacher->foto_path;
+        if ($oldPhoto && Storage::disk('public')->exists($oldPhoto)) {
+            Storage::disk('public')->delete($oldPhoto);
+        }
+
+        $teacher->update(['foto_path' => null]);
+
+        if ($teacher->user) {
+            $teacher->user->update(['foto_path' => null]);
+        }
+
+        ActivityLogService::log(
+            aksi: 'update',
+            modul: 'teachers',
+            targetType: Teacher::class,
+            targetId: $teacher->id,
+            dataSebelum: ['foto_path' => $oldPhoto],
+            dataSesudah: ['foto_path' => null],
+            keterangan: "Menghapus foto guru: {$teacher->nama_lengkap}."
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Foto guru berhasil dihapus.',
             'data' => $teacher->fresh()->load(['religion', 'education', 'user']),
         ]);
     }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import api from '../../services/api';
-import { showSuccess, showError } from '../../services/swal';
+import { showSuccess, showError, confirmAction } from '../../services/swal';
 import { toInputDate } from '../../utils/date';
 
 const props = defineProps<{
@@ -29,6 +29,8 @@ const occupationList = ref<any[]>([]);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const photoFile = ref<File | null>(null);
 const photoPreview = ref<string>('');
+const isPhotoRemoved = ref(false);
+const deletingPhoto = ref(false);
 
 const getPhotoUrl = (url?: string, path?: string) => {
   if (url) return url;
@@ -58,12 +60,41 @@ const handlePhotoChange = (event: Event) => {
     }
     photoFile.value = file;
     photoPreview.value = URL.createObjectURL(file);
+    isPhotoRemoved.value = false;
   }
 };
 
-const clearPhoto = () => {
+const clearPhoto = async () => {
+  if (isEditing.value && editingId.value && !photoFile.value && photoPreview.value) {
+    const confirmed = await confirmAction(
+      'Hapus Pas Foto Siswa?',
+      'Foto siswa yang tersimpan di server akan dihapus secara permanen.',
+      'Ya, Hapus Foto',
+      'warning'
+    );
+    if (!confirmed) return;
+
+    deletingPhoto.value = true;
+    try {
+      const res = await api.delete('/students/' + editingId.value + '/photo');
+      if (res.data.success) {
+        showSuccess('Berhasil Dihapus!', 'Foto siswa berhasil dihapus.');
+        photoFile.value = null;
+        photoPreview.value = '';
+        isPhotoRemoved.value = true;
+        if (fileInputRef.value) fileInputRef.value.value = '';
+      }
+    } catch (err: any) {
+      showError('Gagal Menghapus Foto', err, 'Terjadi kesalahan saat menghapus foto siswa.');
+    } finally {
+      deletingPhoto.value = false;
+    }
+    return;
+  }
+
   photoFile.value = null;
   photoPreview.value = '';
+  isPhotoRemoved.value = true;
   if (fileInputRef.value) fileInputRef.value.value = '';
 };
 
@@ -219,6 +250,7 @@ const initForm = async () => {
     editingId.value = null;
     photoFile.value = null;
     photoPreview.value = '';
+    isPhotoRemoved.value = false;
     if (fileInputRef.value) fileInputRef.value.value = '';
     return;
   }
@@ -242,6 +274,7 @@ const initForm = async () => {
 
   photoFile.value = null;
   photoPreview.value = getPhotoUrl(s.foto_url, s.foto_path);
+  isPhotoRemoved.value = false;
   if (fileInputRef.value) fileInputRef.value.value = '';
 
   form.value = {
@@ -368,6 +401,9 @@ const submitForm = async () => {
 
     if (photoFile.value) {
       formData.append('foto', photoFile.value);
+    } else if (isPhotoRemoved.value) {
+      formData.append('hapus_foto', '1');
+      formData.append('remove_photo', '1');
     }
 
     if (isEditing.value && editingId.value) {
@@ -510,10 +546,15 @@ onMounted(async () => {
               <button
                 v-if="photoPreview || photoFile"
                 type="button"
+                :disabled="deletingPhoto"
                 @click="clearPhoto"
-                class="px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl transition cursor-pointer"
+                class="px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
               >
-                Hapus
+                <svg v-if="deletingPhoto" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>{{ deletingPhoto ? 'Menghapus...' : 'Hapus' }}</span>
               </button>
             </div>
             <p class="text-[10px] text-gray-400 text-center mt-2">JPG, PNG, atau WebP. Maks 5 MB.</p>

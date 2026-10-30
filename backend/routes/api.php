@@ -194,6 +194,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/teachers', [TeacherController::class, 'store']);
             Route::match(['put', 'post'], '/teachers/{teacher}', [TeacherController::class, 'update']);
             Route::delete('/teachers/{teacher}', [TeacherController::class, 'destroy']);
+            Route::delete('/teachers/{teacher}/photo', [TeacherController::class, 'deletePhoto']);
             Route::post('/teachers/{teacher}/documents', [TeacherController::class, 'uploadDocument']);
             Route::delete('/teachers/{teacher}/documents/{document}', [TeacherController::class, 'deleteDocument']);
             Route::apiResource('staff', StaffController::class);
@@ -211,6 +212,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/students', [StudentController::class, 'store']);
             Route::match(['put', 'post'], '/students/{student}', [StudentController::class, 'update']);
             Route::delete('/students/{student}', [StudentController::class, 'destroy']);
+            Route::delete('/students/{student}/photo', [StudentController::class, 'deletePhoto']);
             Route::post('/students/{student}/guardians', [StudentController::class, 'syncGuardians']);
             Route::post('/students/{student}/status', [StudentController::class, 'updateStatus']);
 

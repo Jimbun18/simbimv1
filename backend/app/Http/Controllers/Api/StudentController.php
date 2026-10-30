@@ -401,7 +401,12 @@ class StudentController extends Controller
             'foto' => 'File Pas Foto',
         ]);
 
-        if ($request->hasFile('foto')) {
+        if ($request->boolean('hapus_foto') || $request->boolean('remove_photo')) {
+            if ($student->foto_path && Storage::disk('public')->exists($student->foto_path)) {
+                Storage::disk('public')->delete($student->foto_path);
+            }
+            $validated['foto_path'] = null;
+        } elseif ($request->hasFile('foto')) {
             if ($student->foto_path && Storage::disk('public')->exists($student->foto_path)) {
                 Storage::disk('public')->delete($student->foto_path);
             }
@@ -410,7 +415,7 @@ class StudentController extends Controller
                 'students'
             );
         }
-        unset($validated['foto']);
+        unset($validated['foto'], $validated['hapus_foto'], $validated['remove_photo']);
 
         if (array_key_exists('current_class_id', $validated)) {
             $validated['class_id'] = $validated['current_class_id'];
@@ -440,6 +445,32 @@ class StudentController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data siswa berhasil diperbarui.',
+            'data' => $student->fresh()->load(['currentClass', 'schoolClass', 'religion', 'transport']),
+        ]);
+    }
+
+    public function deletePhoto(Student $student): JsonResponse
+    {
+        $oldPhoto = $student->foto_path;
+        if ($oldPhoto && Storage::disk('public')->exists($oldPhoto)) {
+            Storage::disk('public')->delete($oldPhoto);
+        }
+
+        $student->update(['foto_path' => null]);
+
+        ActivityLogService::log(
+            aksi: 'update',
+            modul: 'students',
+            targetType: Student::class,
+            targetId: $student->id,
+            dataSebelum: ['foto_path' => $oldPhoto],
+            dataSesudah: ['foto_path' => null],
+            keterangan: "Menghapus foto siswa: {$student->nama_lengkap} (NIS: {$student->nis})."
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Foto siswa berhasil dihapus.',
             'data' => $student->fresh()->load(['currentClass', 'schoolClass', 'religion', 'transport']),
         ]);
     }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { showError } from '../../services/swal'
+import api from '../../services/api'
+import { showSuccess, showError, confirmAction } from '../../services/swal'
 import type { Teacher, TeacherFormData } from './types'
 import { getPhotoUrl, getInitials, toInputDate } from './types'
 
@@ -18,6 +19,8 @@ const emit = defineEmits<{
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const photoFile = ref<File | null>(null)
 const photoPreview = ref<string>('')
+const isPhotoRemoved = ref(false)
+const deletingPhoto = ref(false)
 
 const form = ref<TeacherFormData>({
   nik: '',
@@ -45,6 +48,7 @@ watch(
   (t) => {
     if (t) {
       photoPreview.value = getPhotoUrl(t.foto_url, t.foto_path)
+      isPhotoRemoved.value = false
       form.value = {
         nik: t.nik || '',
         nip: t.nip || '',
@@ -67,6 +71,7 @@ watch(
       }
     } else {
       photoPreview.value = ''
+      isPhotoRemoved.value = false
       form.value = {
         nik: '',
         nip: '',
@@ -103,12 +108,41 @@ const handlePhotoChange = (event: Event) => {
     }
     photoFile.value = file
     photoPreview.value = URL.createObjectURL(file)
+    isPhotoRemoved.value = false
   }
 }
 
-const clearPhoto = () => {
+const clearPhoto = async () => {
+  if (props.isEditing && props.initialData?.id && !photoFile.value && photoPreview.value) {
+    const confirmed = await confirmAction(
+      'Hapus Pas Foto Guru?',
+      'Foto guru yang tersimpan di server akan dihapus secara permanen.',
+      'Ya, Hapus Foto',
+      'warning'
+    )
+    if (!confirmed) return
+
+    deletingPhoto.value = true
+    try {
+      const res = await api.delete('/teachers/' + props.initialData.id + '/photo')
+      if (res.data.success) {
+        showSuccess('Berhasil Dihapus!', 'Foto guru berhasil dihapus.')
+        photoFile.value = null
+        photoPreview.value = ''
+        isPhotoRemoved.value = true
+        if (fileInputRef.value) fileInputRef.value.value = ''
+      }
+    } catch (err: any) {
+      showError('Gagal Menghapus Foto', err, 'Terjadi kesalahan saat menghapus foto guru.')
+    } finally {
+      deletingPhoto.value = false
+    }
+    return
+  }
+
   photoFile.value = null
   photoPreview.value = ''
+  isPhotoRemoved.value = true
   if (fileInputRef.value) fileInputRef.value.value = ''
 }
 
@@ -130,6 +164,9 @@ const handleSubmit = () => {
 
   if (photoFile.value) {
     formData.append('foto', photoFile.value)
+  } else if (isPhotoRemoved.value) {
+    formData.append('hapus_foto', '1')
+    formData.append('remove_photo', '1')
   }
 
   emit('submit', {
@@ -242,10 +279,15 @@ const handleSubmit = () => {
               <button
                 v-if="photoPreview || photoFile"
                 type="button"
+                :disabled="deletingPhoto"
                 @click="clearPhoto"
-                class="px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl transition cursor-pointer"
+                class="px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
               >
-                Hapus
+                <svg v-if="deletingPhoto" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>{{ deletingPhoto ? 'Menghapus...' : 'Hapus' }}</span>
               </button>
             </div>
             <p class="text-[10px] text-gray-400 text-center mt-2">JPG, PNG, atau WebP. Maks 5 MB.</p>

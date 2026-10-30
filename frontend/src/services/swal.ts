@@ -291,6 +291,7 @@ export const showError = (title: string, errorOrText?: any, fallbackText?: strin
   });
 };
 
+export const confirmAction = async (...args: any[]) => (showConfirm as any)(...args);
 export const showConfirm = async (
   title: string,
   text?: string,
