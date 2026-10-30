@@ -132,6 +132,30 @@ const handleQuickRegister = () => {
         </div>
       </div>
 
+      <!-- Tombol Utama Formulir PPDB Online Terpadu (KB, TK, SD) -->
+      <div class="bg-gradient-to-r from-emerald-800 via-teal-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-emerald-500/30">
+        <div class="space-y-1.5 text-center md:text-left">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-amber-950 text-xs font-black uppercase tracking-wider">
+            <span>✍️</span> Pendaftaran Online Dibuka
+          </span>
+          <h3 class="text-xl sm:text-2xl font-black text-white">
+            Formulir Pendaftaran PPDB Online (KB, TK, & SD)
+          </h3>
+          <p class="text-xs sm:text-sm text-emerald-100/90 max-w-2xl leading-relaxed">
+            Daftarkan ananda secara mandiri tanpa perlu login. Formulir resmi ini menggabungkan pendaftaran untuk jenjang Kelompok Bermain (KB), TK A, TK B, dan SD Islam Terpadu Bina Insan Mandiri Purwokerto.
+          </p>
+        </div>
+
+        <router-link
+          to="/ppdb"
+          v-splash="'amber'"
+          class="btn-splash btn-sheen w-full md:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-sm sm:text-base shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 hover:-translate-y-0.5"
+        >
+          <span>Buka Formulir PPDB Online</span>
+          <span>&rarr;</span>
+        </router-link>
+      </div>
+
       <!-- Syarat Berkas & Formulir WhatsApp Langsung -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         

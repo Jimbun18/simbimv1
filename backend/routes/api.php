@@ -37,6 +37,7 @@ use App\Http\Controllers\Api\TeachingEvidenceController;
 use App\Http\Controllers\Api\TimeSlotController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CmsController;
+use App\Http\Controllers\Api\PpdbController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -47,6 +48,8 @@ Route::prefix('v1')->group(function () {
     Route::get('/public/articles', [CmsController::class, 'getPublicArticles']);
     Route::get('/public/articles/{id}', [CmsController::class, 'getPublicArticleDetail']);
     Route::get('/public/teachers', [CmsController::class, 'getPublicTeachers']);
+    Route::post('/public/ppdb/register', [PpdbController::class, 'submit']);
+    Route::get('/public/ppdb/status/{nomor}', [PpdbController::class, 'checkStatus']);
 
     // Protected routes (Sanctum)
     Route::middleware('auth:sanctum')->group(function () {
@@ -301,6 +304,15 @@ Route::prefix('v1')->group(function () {
                 Route::get('/teachers', [CmsController::class, 'indexTeachers']);
                 Route::post('/teachers/{id}', [CmsController::class, 'updateTeacher']);
                 Route::delete('/teachers/{id}/photo', [CmsController::class, 'deleteTeacherPhoto']);
+            });
+
+            // PPDB Online (Penerimaan Peserta Didik Baru Terpadu KB, TK, SD)
+            Route::prefix('ppdb')->group(function () {
+                Route::get('/', [PpdbController::class, 'index']);
+                Route::get('/export', [PpdbController::class, 'exportExcel']);
+                Route::get('/{id}', [PpdbController::class, 'show']);
+                Route::put('/{id}/status', [PpdbController::class, 'updateStatus']);
+                Route::delete('/{id}', [PpdbController::class, 'destroy']);
             });
         });
 

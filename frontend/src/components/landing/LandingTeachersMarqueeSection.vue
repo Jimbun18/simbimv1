@@ -188,3 +188,4 @@ onMounted(() => {
   animation-play-state: paused;
 }
 </style>
+

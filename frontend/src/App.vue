@@ -353,6 +353,26 @@ const handleLogout = async () => {
                 <span v-show="isSidebarOpen" class="truncate">Wali Murid</span>
               </router-link>
 
+              <!-- PPDB Online (Penerimaan Siswa Baru) -->
+              <router-link
+                v-if="auth.isAdmin"
+                to="/ppdb-management"
+                class="flex items-center rounded-xl font-medium transition-all group"
+                :class="[
+                  isSidebarOpen ? 'gap-3 px-3 py-2' : 'justify-center py-2 px-0 w-11 h-10 mx-auto',
+                  route.path === '/ppdb-management' ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-emerald-50/70 hover:text-emerald-800'
+                ]"
+                title="PPDB Online (Penerimaan Murid Baru)"
+              >
+                <svg class="w-5 h-5 shrink-0 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span v-show="isSidebarOpen" class="truncate flex items-center justify-between flex-1">
+                  <span>PPDB Online</span>
+                  <span class="px-1.5 py-0.2 rounded-md bg-amber-400 text-amber-950 text-[9px] font-black uppercase">Baru</span>
+                </span>
+              </router-link>
+
               <!-- Kelas & Jadwal KBM (Dengan Sub-menu) -->
               <div v-if="auth.isAdmin" class="space-y-0.5">
                 <div class="flex items-center">
@@ -1305,6 +1325,23 @@ const handleLogout = async () => {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                       </svg>
                       <span>Wali Murid</span>
+                    </router-link>
+
+                    <!-- PPDB Online (Mobile) -->
+                    <router-link 
+                      v-if="auth.isAdmin"
+                      to="/ppdb-management" 
+                      class="flex items-center justify-between px-3 py-2 rounded-xl font-medium transition-all"
+                      :class="route.path === '/ppdb-management' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-700 hover:bg-slate-100'"
+                      @click="isMobileDrawerOpen = false"
+                    >
+                      <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>PPDB Online</span>
+                      </div>
+                      <span class="px-1.5 py-0.2 rounded-md bg-amber-400 text-amber-950 text-[9px] font-black uppercase">Baru</span>
                     </router-link>
 
                     <!-- Kelas & Jadwal KBM (Mobile Sub-menu) -->

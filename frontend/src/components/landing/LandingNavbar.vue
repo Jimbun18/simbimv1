@@ -126,7 +126,16 @@ const handlePortalClick = () => {
       </nav>
 
       <!-- CTA Masuk Sistem SIM-BIM -->
-      <div class="hidden sm:flex items-center gap-3">
+      <div class="hidden sm:flex items-center gap-2.5">
+        <router-link
+          to="/ppdb"
+          v-splash="'amber'"
+          class="btn-splash btn-sheen inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 text-xs sm:text-sm font-black shadow-xs transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+        >
+          <span>✍️</span>
+          <span>Daftar PPDB</span>
+        </router-link>
+
         <button 
           @click="handlePortalClick"
           v-splash="'emerald'"
@@ -182,6 +191,10 @@ const handlePortalClick = () => {
       <button @click="navigateTo('/spmb')" class="block w-full text-left py-2 font-bold text-emerald-800 hover:text-emerald-950 flex items-center justify-between">
         <span>Info SPMB 2026/2027</span>
         <span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-amber-950 font-bold">Dibuka</span>
+      </button>
+      <button @click="navigateTo('/ppdb')" class="block w-full text-left py-2.5 px-3 rounded-xl bg-amber-50 border border-amber-300 font-black text-amber-950 flex items-center justify-between">
+        <span>✍️ Formulir PPDB Online (KB, TK, SD)</span>
+        <span class="text-xs">&rarr;</span>
       </button>
 
       <div class="pt-3">

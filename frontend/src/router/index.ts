@@ -57,6 +57,30 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'landing' },
   },
   {
+    path: '/ppdb',
+    name: 'landing-ppdb',
+    component: () => import('../views/landing/PpdbOnlineView.vue'),
+    meta: { layout: 'landing' },
+  },
+  {
+    path: '/ppdb-online',
+    redirect: '/ppdb',
+  },
+  {
+    path: '/spmb/daftar',
+    redirect: '/ppdb',
+  },
+  {
+    path: '/ppdb-management',
+    name: 'ppdb-management',
+    component: () => import('../views/PpdbManagementView.vue'),
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
+  },
+  {
+    path: '/ppdb-admin',
+    redirect: '/ppdb-management',
+  },
+  {
     path: '/home',
     redirect: '/',
   },
