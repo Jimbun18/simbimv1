@@ -102,6 +102,24 @@ class User extends Authenticatable
         return $this->hasRole(Role::GURU);
     }
 
+    public function isGuruBk(): bool
+    {
+        if (!$this->isTeacher()) {
+            return false;
+        }
+        $teacher = $this->teacher;
+        if (!$teacher) {
+            return false;
+        }
+        $jabatan = strtolower($teacher->jabatan ?? '');
+        $tugas = strtolower($teacher->tugas_tambahan ?? '');
+
+        return str_contains($jabatan, 'bk') ||
+               str_contains($jabatan, 'bimbingan') ||
+               str_contains($tugas, 'bk') ||
+               str_contains($tugas, 'bimbingan');
+    }
+
     public function isGuardian(): bool
     {
         return $this->hasRole(Role::WALI);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AcademicYear;
+use App\Models\BkCaseLog;
 use App\Models\BkCounselingCase;
 use App\Models\Student;
 use App\Models\StudentObservation;
@@ -17,16 +18,32 @@ use Illuminate\Support\Facades\DB;
 class StudentObservationController extends Controller
 {
     /**
-     * Daftar Catatan Observasi Perilaku Siswa (Bisa diakses Semua Guru).
+     * Daftar Catatan Observasi Perilaku Siswa.
+     * Guru kelas/mata pelajaran hanya melihat catatannya sendiri (pelaporan ke BK).
+     * Guru BK dapat melihat semua laporan dari seluruh guru.
      */
     public function index(Request $request): JsonResponse
     {
+        $user = $request->user();
+        $isGuruBk = $user?->isGuruBk() ?? false;
+
         $query = StudentObservation::with([
             'student:id,nis,nama_lengkap,jenis_kelamin,foto_path,class_id',
             'schoolClass:id,nama,tingkat,kode',
             'observer:id,nama_lengkap,jabatan',
             'bkTeacher:id,nama_lengkap,jabatan',
         ]);
+
+        // Jika BUKAN Guru BK:
+        // Guru hanya melihat catatan observasi yang dicatat oleh dirinya sendiri
+        if (!$isGuruBk) {
+            $teacher = $user?->teacher;
+            if ($teacher) {
+                $query->where('teacher_id', $teacher->id);
+            } else {
+                $query->where('created_by', $user?->id);
+            }
+        }
 
         if ($request->filled('class_id')) {
             $query->where('class_id', $request->query('class_id'));
@@ -188,6 +205,7 @@ class StudentObservationController extends Controller
 
     /**
      * Berikan Feedback / Rekomendasi dari Guru BK.
+     * Termasuk keputusan apakah kasus ini dimasukkan ke Analisis & Monitoring BK atau tidak.
      */
     public function addFeedbackBk(Request $request, StudentObservation $observation): JsonResponse
     {
@@ -197,18 +215,100 @@ class StudentObservationController extends Controller
         $validated = $request->validate([
             'rekomendasi_bk' => ['required', 'string'],
             'saran_untuk_guru' => ['nullable', 'string'],
+            'masuk_pemantauan_bk' => ['required', 'boolean'],
+            'fokus_pemantauan' => ['nullable', 'string', 'max:100'],
             'status_pemantauan' => ['nullable', 'string', 'max:50'],
         ]);
 
-        $validated['rekomendasi_bk_by'] = $teacher ? $teacher->id : 12;
-        $validated['rekomendasi_bk_at'] = Carbon::now();
-        $validated['updated_by'] = $user->id;
+        $masukBk = (bool) $validated['masuk_pemantauan_bk'];
+        $fokus = $validated['fokus_pemantauan'] ?? 'Perilaku';
 
-        if (empty($validated['status_pemantauan'])) {
-            $validated['status_pemantauan'] = 'Dalam Pemantauan';
+        $updateData = [
+            'rekomendasi_bk' => $validated['rekomendasi_bk'],
+            'saran_untuk_guru' => $validated['saran_untuk_guru'] ?? null,
+            'rekomendasi_bk_by' => $teacher ? $teacher->id : 12,
+            'rekomendasi_bk_at' => Carbon::now(),
+            'updated_by' => $user->id,
+            'is_escalated_to_bk' => $masukBk,
+        ];
+
+        if (!empty($validated['status_pemantauan'])) {
+            $updateData['status_pemantauan'] = $validated['status_pemantauan'];
+        } else {
+            $updateData['status_pemantauan'] = $masukBk ? 'Dalam Pemantauan' : 'Selesai / Cukup di Kelas';
         }
 
-        $observation->update($validated);
+        $observation->update($updateData);
+
+        $activeYear = AcademicYear::getActive() ?? AcademicYear::first();
+
+        if ($masukBk) {
+            // Masukkan data ke Analisis & Monitoring BK
+            $guruBk = $teacher ?: Teacher::where('jabatan', 'like', '%BK%')->first();
+
+            $counselingCase = BkCounselingCase::firstOrCreate(
+                [
+                    'student_id' => $observation->student_id,
+                    'academic_year_id' => $activeYear?->id,
+                ],
+                [
+                    'class_id' => $observation->class_id,
+                    'wali_kelas_id' => $observation->class_id ? DB::table('classes')->where('id', $observation->class_id)->value('wali_kelas_id') : null,
+                    'guru_bk_id' => $guruBk?->id,
+                    'tanggal_masuk' => $observation->tanggal,
+                    'sumber_awal' => $observation->observer?->nama_lengkap ?? 'Guru Pelapor',
+                    'fokus_pemantauan' => $fokus,
+                    'status_saat_ini' => 'Dalam Pemantauan',
+                    'review_berikutnya' => Carbon::now()->addDays(7)->format('Y-m-d'),
+                    'catatan_umum' => "Rujukan dari Observasi Perilaku Siswa tanggal {$observation->tanggal->format('d/m/Y')}. Pelapor: " . ($observation->observer?->nama_lengkap ?? 'Guru Pelapor') . ".",
+                    'created_by' => $user->id,
+                ]
+            );
+
+            // Update fokus jika kasus sudah ada
+            if (!$counselingCase->wasRecentlyCreated && $fokus) {
+                $counselingCase->update(['fokus_pemantauan' => $fokus]);
+            }
+
+            // Catat log alur BK
+            BkCaseLog::firstOrCreate(
+                [
+                    'counseling_case_id' => $counselingCase->id,
+                    'tanggal' => $observation->tanggal,
+                    'tahap' => 'Informasi Masuk',
+                ],
+                [
+                    'sumber_data' => $observation->observer?->nama_lengkap ?? 'Guru Pelapor',
+                    'observasi_temuan' => $observation->perilaku_diamati . ($observation->situasi_sebelum ? " (Situasi Sebelum: {$observation->situasi_sebelum})" : ""),
+                    'telaah_bk' => $validated['rekomendasi_bk'],
+                    'kebutuhan_tujuan' => $validated['saran_untuk_guru'] ?? 'Pendampingan perilaku sesuai rekomendasi BK.',
+                    'tindak_lanjut' => 'Diterima oleh Guru BK dan dimasukkan ke daftar pemantauan.',
+                    'hasil_evaluasi' => 'Menunggu tindak lanjut observasi berkala.',
+                    'perubahan_pola' => 'Belum Cukup Data',
+                    'status' => 'Dalam Pemantauan',
+                    'catatan_konteks' => 'Berdasarkan laporan catatan observasi kelas.',
+                    'created_by' => $user->id,
+                ]
+            );
+        } else {
+            // Jika TIDAK masuk pemantauan BK: pastikan data tidak disimpan di Analisis & Monitoring
+            $existingCase = BkCounselingCase::where('student_id', $observation->student_id)
+                ->where('academic_year_id', $activeYear?->id)
+                ->first();
+
+            if ($existingCase) {
+                // Hapus log awal yang berasal dari observasi ini jika ada
+                BkCaseLog::where('counseling_case_id', $existingCase->id)
+                    ->where('tahap', 'Informasi Masuk')
+                    ->where('tanggal', $observation->tanggal)
+                    ->delete();
+
+                // Jika kasus ini tidak memiliki log sesi lain sama sekali, hapus lembar kasusnya
+                if ($existingCase->logs()->count() === 0) {
+                    $existingCase->delete();
+                }
+            }
+        }
 
         ActivityLogService::log(
             aksi: 'update',
@@ -216,12 +316,14 @@ class StudentObservationController extends Controller
             targetType: StudentObservation::class,
             targetId: $observation->id,
             dataSesudah: $observation->fresh()->toArray(),
-            keterangan: "Memberikan rekomendasi BK untuk observasi siswa ID {$observation->student_id}."
+            keterangan: "Guru BK memberikan tanggapan dan menentukan status pemantauan untuk observasi siswa ID {$observation->student_id}."
         );
 
         return response()->json([
             'success' => true,
-            'message' => 'Rekomendasi Guru BK berhasil disimpan.',
+            'message' => $masukBk 
+                ? 'Tanggapan BK berhasil disimpan dan siswa dimasukkan ke Analisis & Monitoring BK.'
+                : 'Tanggapan BK berhasil disimpan. Masalah diselesaikan di kelas dan tidak masuk ke Analisis & Monitoring BK.',
             'data' => $observation->fresh()->load(['student', 'schoolClass', 'observer', 'bkTeacher']),
         ]);
     }
