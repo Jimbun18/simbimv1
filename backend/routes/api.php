@@ -45,13 +45,13 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
     // Public routes
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
-    Route::get('/public/galleries', [CmsController::class, 'getPublicGalleries']);
-    Route::get('/public/achievements', [CmsController::class, 'getPublicAchievements']);
-    Route::get('/public/articles', [CmsController::class, 'getPublicArticles']);
-    Route::get('/public/articles/{id}', [CmsController::class, 'getPublicArticleDetail']);
-    Route::get('/public/teachers', [CmsController::class, 'getPublicTeachers']);
-    Route::post('/public/ppdb/register', [PpdbController::class, 'submit']);
-    Route::get('/public/ppdb/status/{nomor}', [PpdbController::class, 'checkStatus']);
+    Route::get('/public/galleries', [CmsController::class, 'getPublicGalleries'])->middleware('throttle:60,1');
+    Route::get('/public/achievements', [CmsController::class, 'getPublicAchievements'])->middleware('throttle:60,1');
+    Route::get('/public/articles', [CmsController::class, 'getPublicArticles'])->middleware('throttle:60,1');
+    Route::get('/public/articles/{id}', [CmsController::class, 'getPublicArticleDetail'])->middleware('throttle:60,1');
+    Route::get('/public/teachers', [CmsController::class, 'getPublicTeachers'])->middleware('throttle:60,1');
+    Route::post('/public/ppdb/register', [PpdbController::class, 'submit'])->middleware('throttle:10,1');
+    Route::get('/public/ppdb/status/{nomor}', [PpdbController::class, 'checkStatus'])->middleware('throttle:30,1');
 
     // Protected routes (Sanctum)
     Route::middleware('auth:sanctum')->group(function () {

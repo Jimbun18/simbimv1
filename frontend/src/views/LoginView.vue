@@ -156,12 +156,29 @@
             <div class="relative">
               <input
                 v-model="password"
-                type="password"
+                :type="showPassword ? 'text' : 'password'"
                 required
                 autocomplete="current-password"
                 placeholder="••••••••"
-                class="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-gray-900 text-sm transition"
+                class="w-full pl-4 pr-11 py-3 rounded-2xl border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-gray-900 text-sm transition"
               />
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
+                tabindex="-1"
+                class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-emerald-700 focus:outline-none cursor-pointer transition-colors"
+                :title="showPassword ? 'Sembunyikan Kata Sandi' : 'Tampilkan Kata Sandi'"
+              >
+                <!-- Eye Open (saat password tampil) -->
+                <svg v-if="showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                <!-- Eye Slash (saat password tersembunyi) -->
+                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/>
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -177,45 +194,6 @@
             <span>{{ auth.loading ? 'Memverifikasi...' : 'Masuk ke Aplikasi' }}</span>
           </button>
         </form>
-
-        <!-- Quick Demo Switcher (Responsif 2 col on mobile, 4 col on tablet/desktop) -->
-        <div class="mt-6 pt-5 border-t border-gray-100 text-center">
-          <p class="text-xs text-gray-500 font-semibold mb-2.5">Login Cepat Akun Demo (Uji Coba):</p>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-            <button
-              type="button"
-              @click="quickFill('guru', 'Password123!')"
-              class="py-2.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-xl border border-emerald-200 transition text-[11px] flex flex-col items-center justify-center gap-0.5 cursor-pointer"
-            >
-              <span>Guru</span>
-              <span class="text-[9px] text-emerald-600 font-normal">Presensi & KBM</span>
-            </button>
-            <button
-              type="button"
-              @click="quickFill('admin', 'Password123!')"
-              class="py-2.5 px-2 bg-gray-50 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 text-gray-700 font-semibold rounded-xl border border-gray-200 transition text-[11px] flex flex-col items-center justify-center gap-0.5 cursor-pointer"
-            >
-              <span>Staf Admin</span>
-              <span class="text-[9px] text-gray-400 font-normal">Kelola Data</span>
-            </button>
-            <button
-              type="button"
-              @click="quickFill('kepsek', 'Password123!')"
-              class="py-2.5 px-2 bg-gray-50 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 text-gray-700 font-semibold rounded-xl border border-gray-200 transition text-[11px] flex flex-col items-center justify-center gap-0.5 cursor-pointer"
-            >
-              <span>Kepsek</span>
-              <span class="text-[9px] text-gray-400 font-normal">Monitoring</span>
-            </button>
-            <button
-              type="button"
-              @click="quickFill('wali', 'Password123!')"
-              class="py-2.5 px-2 bg-gray-50 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 text-gray-700 font-semibold rounded-xl border border-gray-200 transition text-[11px] flex flex-col items-center justify-center gap-0.5 cursor-pointer"
-            >
-              <span>Wali Murid</span>
-              <span class="text-[9px] text-gray-400 font-normal">Portal Anak</span>
-            </button>
-          </div>
-        </div>
       </div>
 
     </div>
@@ -233,6 +211,7 @@ const auth = useAuthStore();
 
 const identifier = ref('');
 const password = ref('');
+const showPassword = ref(false);
 
 const handleLogin = async () => {
   const success = await auth.login(identifier.value, password.value);
@@ -242,10 +221,5 @@ const handleLogin = async () => {
     else if (auth.isWali) router.push('/portal-wali');
     else router.push('/dashboard');
   }
-};
-
-const quickFill = (user: string, pass: string) => {
-  identifier.value = user;
-  password.value = pass;
 };
 </script>
