@@ -280,7 +280,7 @@ class StudentObservationController extends Controller
             // Catat log alur BK
             BkCaseLog::firstOrCreate(
                 [
-                    'counseling_case_id' => $counselingCase->id,
+                    'bk_counseling_case_id' => $counselingCase->id,
                     'tanggal' => $observation->tanggal,
                     'tahap' => 'Informasi Masuk',
                 ],
@@ -305,7 +305,7 @@ class StudentObservationController extends Controller
 
             if ($existingCase) {
                 // Hapus log awal yang berasal dari observasi ini jika ada
-                BkCaseLog::where('counseling_case_id', $existingCase->id)
+                BkCaseLog::where('bk_counseling_case_id', $existingCase->id)
                     ->where('tahap', 'Informasi Masuk')
                     ->where('tanggal', $observation->tanggal)
                     ->delete();
