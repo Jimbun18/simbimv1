@@ -33,6 +33,14 @@ export const useAuthStore = defineStore('auth', {
     isKepalaSekolah: (state) => state.user?.role === 'kepala_sekolah',
     isGuru: (state) => state.user?.role === 'guru',
     isWali: (state) => state.user?.role === 'wali',
+    isGuruBk: (state) => {
+      if (state.user?.role === 'guru') {
+        const jabatan = (state.user?.profile_detail?.jabatan || '').toLowerCase();
+        const tugas = (state.user?.profile_detail?.tugas_tambahan || '').toLowerCase();
+        return jabatan.includes('bk') || jabatan.includes('bimbingan') || tugas.includes('bk') || tugas.includes('bimbingan');
+      }
+      return false;
+    },
     userName: (state) => state.user?.nama ?? 'Pengguna',
     teacherProfile: (state) =>
       state.user?.profile_detail && (state.user?.role === 'guru' || state.user?.role === 'kepala_sekolah')

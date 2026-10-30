@@ -824,6 +824,40 @@ const handleLogout = async () => {
                   </router-link>
                 </div>
               </div>
+
+              <!-- Catatan Observasi Siswa (Bisa diakses Semua Guru) -->
+              <router-link
+                v-if="auth.isGuru || auth.isAdmin"
+                to="/observations"
+                class="flex items-center gap-3 rounded-xl font-medium transition-all group mb-0.5"
+                :class="[
+                  isSidebarOpen ? 'px-3 py-2' : 'justify-center py-2 px-0 w-11 h-10 mx-auto',
+                  route.path === '/observations' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/20' : 'text-slate-600 hover:bg-indigo-50/70 hover:text-indigo-800'
+                ]"
+                title="Catatan Observasi Siswa"
+              >
+                <svg class="w-5 h-5 shrink-0 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                <span v-show="isSidebarOpen" class="truncate">Catatan Observasi</span>
+              </router-link>
+
+              <!-- Analisis & Monitoring BK (KHUSUS GURU BK - Kepala Sekolah jangan dulu) -->
+              <router-link
+                v-if="auth.isGuruBk"
+                to="/bk-monitoring"
+                class="flex items-center gap-3 rounded-xl font-medium transition-all group mb-0.5"
+                :class="[
+                  isSidebarOpen ? 'px-3 py-2' : 'justify-center py-2 px-0 w-11 h-10 mx-auto',
+                  route.path === '/bk-monitoring' ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-emerald-50/70 hover:text-emerald-800'
+                ]"
+                title="Bimbingan Konseling (BK)"
+              >
+                <svg class="w-5 h-5 shrink-0 transition-transform group-hover:scale-110 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <span v-show="isSidebarOpen" class="truncate font-semibold">Monitoring & BK</span>
+              </router-link>
             </nav>
           </div>
 
@@ -1749,6 +1783,34 @@ const handleLogout = async () => {
                         </router-link>
                       </div>
                     </div>
+
+                    <!-- Catatan Observasi Siswa (Mobile) -->
+                    <router-link
+                      v-if="auth.isGuru || auth.isAdmin"
+                      to="/observations"
+                      class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium"
+                      :class="route.path === '/observations' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-700 hover:bg-slate-100'"
+                      @click="isMobileDrawerOpen = false"
+                    >
+                      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                      </svg>
+                      <span>Catatan Observasi</span>
+                    </router-link>
+
+                    <!-- Monitoring & BK (Mobile - Khusus Guru BK) -->
+                    <router-link
+                      v-if="auth.isGuruBk"
+                      to="/bk-monitoring"
+                      class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium"
+                      :class="route.path === '/bk-monitoring' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-700 hover:bg-slate-100'"
+                      @click="isMobileDrawerOpen = false"
+                    >
+                      <svg class="w-5 h-5 shrink-0 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                      <span>Monitoring & BK</span>
+                    </router-link>
                   </div>
                 </div>
 

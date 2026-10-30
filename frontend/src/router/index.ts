@@ -175,6 +175,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru'] },
   },
   {
+    path: '/observations',
+    name: 'observations',
+    component: () => import('../views/ObservationNotesView.vue'),
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru'] },
+  },
+  {
+    path: '/bk-monitoring',
+    name: 'bk-monitoring',
+    component: () => import('../views/BkMonitoringView.vue'),
+    meta: { requiresAuth: true, requiresGuruBk: true, role: ['guru'] },
+  },
+  {
     path: '/finance',
     name: 'finance',
     component: () => import('../views/FinanceView.vue'),
@@ -232,6 +244,12 @@ router.beforeEach((to, _from, next) => {
     if (auth.isAdmin) return next({ name: 'dashboard' });
     if (auth.isGuru) return next({ name: 'presensi' });
     if (auth.isWali) return next({ name: 'portal-wali' });
+    return next({ name: 'dashboard' });
+  }
+
+  if (to.meta.requiresGuruBk && !auth.isGuruBk) {
+    if (auth.isAdmin) return next({ name: 'dashboard' });
+    if (auth.isGuru) return next({ name: 'observations' });
     return next({ name: 'dashboard' });
   }
 

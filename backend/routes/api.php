@@ -38,6 +38,8 @@ use App\Http\Controllers\Api\TimeSlotController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CmsController;
 use App\Http\Controllers\Api\PpdbController;
+use App\Http\Controllers\Api\StudentObservationController;
+use App\Http\Controllers\Api\BkMonitoringController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -134,6 +136,29 @@ Route::prefix('v1')->group(function () {
         // Announcements (Read: All matching target_role)
         Route::get('/announcements', [AnnouncementController::class, 'index']);
         Route::get('/announcements/{id}', [AnnouncementController::class, 'show']);
+
+        // Catatan Observasi Perilaku Siswa (Bisa Diakses Semua Guru)
+        Route::get('/observations', [StudentObservationController::class, 'index']);
+        Route::post('/observations', [StudentObservationController::class, 'store']);
+        Route::get('/observations/{observation}', [StudentObservationController::class, 'show']);
+        Route::put('/observations/{observation}', [StudentObservationController::class, 'update']);
+        Route::delete('/observations/{observation}', [StudentObservationController::class, 'destroy']);
+        Route::post('/observations/{observation}/feedback-bk', [StudentObservationController::class, 'addFeedbackBk']);
+        Route::post('/observations/{observation}/escalate-to-bk', [StudentObservationController::class, 'escalateToBk']);
+
+        // Analisis & Monitoring BK (Eksklusif Khusus Guru BK)
+        Route::prefix('bk')->group(function () {
+            Route::get('/dashboard', [BkMonitoringController::class, 'dashboard']);
+            Route::get('/cases', [BkMonitoringController::class, 'indexCases']);
+            Route::post('/cases', [BkMonitoringController::class, 'storeCase']);
+            Route::get('/cases/{counselingCase}', [BkMonitoringController::class, 'showCase']);
+            Route::put('/cases/{counselingCase}', [BkMonitoringController::class, 'updateCase']);
+            Route::delete('/cases/{counselingCase}', [BkMonitoringController::class, 'destroyCase']);
+            Route::post('/cases/{counselingCase}/logs', [BkMonitoringController::class, 'storeLog']);
+            Route::put('/logs/{log}', [BkMonitoringController::class, 'updateLog']);
+            Route::delete('/logs/{log}', [BkMonitoringController::class, 'destroyLog']);
+            Route::get('/export', [BkMonitoringController::class, 'exportExcel']);
+        });
 
         // In-App Notifications (FR-NTF-01)
         Route::get('/notifications', [InAppNotificationController::class, 'index']);
