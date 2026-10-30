@@ -1,7 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
 import api from '../services/api'
 import { showSuccess, showError, showWarning, showConfirm } from '../services/swal'
+
+interface MasterStudent {
+  id: number
+  nis: string
+  nama_lengkap: string
+  class_id?: number | null
+  status: string
+}
 
 interface PpdbRecord {
   id: number
@@ -48,6 +57,8 @@ interface PpdbRecord {
   catatan_admin: string | null
   verified_by: any
   verified_at: string | null
+  student_id?: number | null
+  student?: MasterStudent | null
   created_at: string
 }
 
@@ -174,18 +185,14 @@ const saveStatus = async () => {
     })
 
     if (res.data?.success) {
-      showSuccess('Berhasil!', 'Status pendaftaran dan catatan panitia berhasil diperbarui.')
+      showSuccess('Berhasil!', res.data.message || 'Status pendaftaran berhasil diperbarui.')
       // Sinkronkan data di tampilan detail aktif
-      selectedRecord.value.status = statusForm.value.status as any
-      selectedRecord.value.catatan_admin = statusForm.value.catatan_admin
-      const statusLabels: Record<string, string> = {
-        menunggu: 'Menunggu Verifikasi',
-        diterima: 'Diterima',
-        cadangan: 'Cadangan',
-        ditolak: 'Tidak Diterima',
+      if (res.data.data) {
+        selectedRecord.value = res.data.data
+      } else {
+        selectedRecord.value.status = statusForm.value.status as any
+        selectedRecord.value.catatan_admin = statusForm.value.catatan_admin
       }
-      selectedRecord.value.status_label = statusLabels[statusForm.value.status] || statusForm.value.status
-      selectedRecord.value.verified_at = new Date().toISOString()
       
       await fetchRecords()
     }
@@ -313,7 +320,7 @@ onMounted(() => {
             Manajemen PPDB Online Terpadu (KB, TK, SD)
           </h1>
           <p class="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
-            Kelola data pendaftaran murid baru dari formulir publik tanpa login, verifikasi berkas, hubungi orang tua via WhatsApp, dan ekspor data arsip pendaftaran.
+            Kelola data pendaftaran murid baru dari formulir publik tanpa login, verifikasi berkas, hubungi orang tua via WhatsApp, dan sinkronisasi otomatis ke Data Master saat siswa diterima.
           </p>
         </div>
         <div class="absolute -right-12 -bottom-12 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -401,7 +408,7 @@ onMounted(() => {
         <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
           <div class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Diterima</div>
           <div class="text-2xl font-black text-emerald-600 mt-1 font-mono">{{ summary.diterima }}</div>
-          <div class="text-[10px] text-emerald-500 mt-0.5">Siap Masuk</div>
+          <div class="text-[10px] text-emerald-500 mt-0.5">Masuk Data Master</div>
         </div>
       </div>
 
@@ -444,7 +451,7 @@ onMounted(() => {
           >
             <option value="all">Semua Status</option>
             <option value="menunggu">Menunggu Verifikasi</option>
-            <option value="diterima">Diterima</option>
+            <option value="diterima">Diterima (Data Master)</option>
             <option value="cadangan">Cadangan</option>
             <option value="ditolak">Tidak Diterima</option>
           </select>
@@ -504,7 +511,10 @@ onMounted(() => {
               >
                 <!-- No Pendaftaran -->
                 <td class="py-3.5 px-4 font-mono font-bold text-emerald-800 whitespace-nowrap">
-                  {{ record.nomor_pendaftaran }}
+                  <div>{{ record.nomor_pendaftaran }}</div>
+                  <div v-if="record.student_id && record.student" class="text-[10px] text-emerald-600 font-bold">
+                    NIS: {{ record.student.nis }}
+                  </div>
                 </td>
 
                 <!-- Tanggal Daftar -->
@@ -536,7 +546,16 @@ onMounted(() => {
                       {{ record.jenis_kelamin }}
                     </div>
                     <div>
-                      <div class="text-xs sm:text-sm font-bold text-slate-900">{{ record.nama_lengkap }}</div>
+                      <div class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
+                        <span>{{ record.nama_lengkap }}</span>
+                        <span 
+                          v-if="record.student_id && record.student"
+                          class="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300"
+                          title="Siswa telah terdaftar di Data Master"
+                        >
+                          Tersinkron
+                        </span>
+                      </div>
                       <div class="text-[10px] text-slate-400">Panggilan: {{ record.nama_panggilan }}</div>
                     </div>
                   </div>
@@ -707,6 +726,44 @@ onMounted(() => {
             <span class="hidden sm:inline">Hapus</span>
           </button>
         </div>
+      </div>
+
+      <!-- BANNER NOTIFIKASI SINKRONISASI DATA MASTER SISWA -->
+      <div 
+        v-if="selectedRecord.status === 'diterima' && selectedRecord.student" 
+        class="bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-800 rounded-3xl p-5 sm:p-6 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg shadow-emerald-900/20"
+      >
+        <div class="flex items-start sm:items-center gap-3.5">
+          <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md text-white flex items-center justify-center shrink-0 border border-white/20">
+            <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="space-y-0.5">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="text-sm sm:text-base font-black tracking-tight text-white">
+                Otomatis Tercatat di Data Master Siswa
+              </h3>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-white text-emerald-800 uppercase tracking-wider">
+                Status: {{ selectedRecord.student.status }}
+              </span>
+            </div>
+            <p class="text-xs text-emerald-100 leading-relaxed">
+              Data ananda beserta orang tua (Ayah &amp; Ibu) telah otomatis masuk ke sistem master sekolah dengan 
+              <strong class="font-mono bg-white/20 px-2 py-0.5 rounded-md border border-white/20 text-white">NIS: {{ selectedRecord.student.nis }}</strong>.
+            </p>
+          </div>
+        </div>
+
+        <RouterLink
+          to="/students"
+          class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white text-emerald-800 hover:bg-emerald-50 text-xs font-black transition shadow-sm cursor-pointer shrink-0"
+        >
+          <span>Buka Master Data Siswa</span>
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </RouterLink>
       </div>
 
       <!-- HEADER PROFIL CALON SISWA -->
@@ -898,10 +955,16 @@ onMounted(() => {
                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
                 >
                   <option value="menunggu">🟡 Menunggu Verifikasi / Observasi</option>
-                  <option value="diterima">🟢 Diterima Sebagai Siswa Baru</option>
+                  <option value="diterima">🟢 Diterima Sebagai Siswa Baru (Masuk Master)</option>
                   <option value="cadangan">🔵 Cadangan</option>
                   <option value="ditolak">🔴 Tidak Diterima</option>
                 </select>
+                <p v-if="statusForm.status === 'diterima'" class="text-[11px] text-emerald-700 font-semibold mt-1.5 flex items-start gap-1 leading-relaxed">
+                  <svg class="w-3.5 h-3.5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Data siswa, orang tua, dan rombel otomatis terdaftar di Data Master dengan nomor NIS unik.</span>
+                </p>
               </div>
 
               <!-- Input Catatan Admin -->

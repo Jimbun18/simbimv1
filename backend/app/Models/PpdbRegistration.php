@@ -53,6 +53,7 @@ class PpdbRegistration extends Model
         'catatan_admin',
         'verified_by',
         'verified_at',
+        'student_id',
     ];
 
     protected $casts = [
@@ -110,5 +111,9 @@ class PpdbRegistration extends Model
     {
         return $this->belongsTo(User::class, 'verified_by');
     }
-}
 
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(Student::class, 'student_id');
+    }
+}

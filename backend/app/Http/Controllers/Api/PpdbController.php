@@ -3,12 +3,22 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicYear;
+use App\Models\Education;
+use App\Models\Guardian;
+use App\Models\IncomeRange;
+use App\Models\Occupation;
 use App\Models\PpdbRegistration;
+use App\Models\Religion;
+use App\Models\SchoolClass;
+use App\Models\Student;
+use App\Models\StudentEnrollment;
 use App\Services\ActivityLogService;
 use App\Services\ImageCompressionService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -64,150 +74,153 @@ class PpdbController extends Controller
             'alamat_ibu' => ['nullable', 'string'],
             'no_hp_ibu' => ['required', 'string', 'max:30'],
 
-            // Berkas
-            'pas_foto' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
-            'akta_kelahiran' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp,pdf', 'max:10240'],
-            'kartu_keluarga' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp,pdf', 'max:10240'],
+            // Berkas Upload
+            'pas_foto' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'akta_kelahiran' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
+            'kartu_keluarga' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
+        ], [
+            'required' => ':attribute wajib diisi.',
+            'in' => 'Pilihan :attribute tidak valid.',
+            'mimes' => 'Format file :attribute harus berupa format yang diizinkan (JPG, PNG, WebP, atau PDF).',
+            'max.file' => 'Ukuran berkas :attribute tidak boleh melebihi 5MB.',
+        ], [
+            'jenjang' => 'Jenjang Sekolah',
+            'nama_lengkap' => 'Nama Lengkap Calon Siswa',
+            'nama_panggilan' => 'Nama Panggilan',
+            'jenis_kelamin' => 'Jenis Kelamin',
+            'tempat_lahir' => 'Tempat Lahir',
+            'tanggal_lahir' => 'Tanggal Lahir',
+            'alamat_lengkap' => 'Alamat Tempat Tinggal',
+            'tinggal_dengan' => 'Tinggal Bersama',
+            'nama_ayah' => 'Nama Ayah',
+            'no_hp_ayah' => 'No. Handphone / WhatsApp Ayah',
+            'nama_ibu' => 'Nama Ibu',
+            'no_hp_ibu' => 'No. Handphone / WhatsApp Ibu',
+            'pas_foto' => 'Pas Foto Calon Siswa',
+            'akta_kelahiran' => 'Akta Kelahiran',
+            'kartu_keluarga' => 'Kartu Keluarga',
         ]);
 
-        $tahun = date('Y');
+        // Hitung Usia Otomatis jika belum ada
+        if (empty($validated['usia_daftar']) && !empty($validated['tanggal_lahir'])) {
+            $birth = Carbon::parse($validated['tanggal_lahir']);
+            $now = Carbon::now();
+            $diff = $birth->diff($now);
+            $validated['usia_daftar'] = "{$diff->y} tahun {$diff->m} bulan";
+        }
+
+        // Generate Nomor Pendaftaran Otomatis: PPDB-YYYY-JENJANG-XXXX
+        $year = date('Y');
         $jenjangCode = match ($validated['jenjang']) {
-            'KB' => 'KB',
+            'SD' => 'SD',
             'TK A' => 'TKA',
             'TK B' => 'TKB',
-            'SD' => 'SD',
-            default => 'GEN',
+            'KB' => 'KB',
+            default => 'REG',
         };
 
-        // Buat nomor pendaftaran unik: PPDB-2026-SD-0001
-        $countThisYear = PpdbRegistration::whereYear('created_at', $tahun)->count() + 1;
-        $nomorPendaftaran = sprintf('PPDB-%s-%s-%04d', $tahun, $jenjangCode, $countThisYear);
+        $prefix = "PPDB-{$year}-{$jenjangCode}-";
+        $lastRegistration = PpdbRegistration::where('nomor_pendaftaran', 'like', "{$prefix}%")
+            ->orderBy('id', 'desc')
+            ->first();
 
-        // Pastikan tidak tabrakan
-        while (PpdbRegistration::where('nomor_pendaftaran', $nomorPendaftaran)->exists()) {
-            $countThisYear++;
-            $nomorPendaftaran = sprintf('PPDB-%s-%s-%04d', $tahun, $jenjangCode, $countThisYear);
+        $nextSeq = 1;
+        if ($lastRegistration) {
+            $parts = explode('-', $lastRegistration->nomor_pendaftaran);
+            $lastNum = (int) end($parts);
+            $nextSeq = $lastNum + 1;
         }
 
-        // Upload Berkas
-        $pasFotoPath = null;
+        $validated['nomor_pendaftaran'] = $prefix . str_pad((string) $nextSeq, 4, '0', STR_PAD_LEFT);
+        $validated['status'] = 'menunggu';
+        $validated['tahun_ajaran'] = $validated['tahun_ajaran'] ?? '2026/2027';
+        $validated['gelombang'] = $validated['gelombang'] ?? 'Gelombang 1';
+
+        // Simpan Berkas Unggahan
         if ($request->hasFile('pas_foto')) {
-            $pasFotoPath = ImageCompressionService::compressAndStore(
-                $request->file('pas_foto'),
-                'ppdb/photos',
-                800,
-                85
-            );
+            $file = $request->file('pas_foto');
+            // Jika image compressor tersedia dan format image
+            if (in_array(strtolower($file->getClientOriginalExtension()), ['jpg', 'jpeg', 'png', 'webp'])) {
+                $validated['pas_foto_path'] = app(ImageCompressionService::class)->compressAndStore(
+                    $file,
+                    'ppdb/photos'
+                );
+            } else {
+                $validated['pas_foto_path'] = $file->store('ppdb/photos', 'public');
+            }
         }
 
-        $aktaKelahiranPath = null;
         if ($request->hasFile('akta_kelahiran')) {
             $file = $request->file('akta_kelahiran');
-            if (str_starts_with($file->getMimeType(), 'image/')) {
-                $aktaKelahiranPath = ImageCompressionService::compressAndStore($file, 'ppdb/documents', 1400, 85);
-            } else {
-                $aktaKelahiranPath = $file->store('ppdb/documents', 'public');
-            }
+            $validated['akta_kelahiran_path'] = $file->store('ppdb/documents', 'public');
         }
 
-        $kartuKeluargaPath = null;
         if ($request->hasFile('kartu_keluarga')) {
             $file = $request->file('kartu_keluarga');
-            if (str_starts_with($file->getMimeType(), 'image/')) {
-                $kartuKeluargaPath = ImageCompressionService::compressAndStore($file, 'ppdb/documents', 1400, 85);
-            } else {
-                $kartuKeluargaPath = $file->store('ppdb/documents', 'public');
-            }
+            $validated['kartu_keluarga_path'] = $file->store('ppdb/documents', 'public');
         }
 
-        // Simpan pendaftaran
-        $registration = PpdbRegistration::create([
-            'nomor_pendaftaran' => $nomorPendaftaran,
-            'tahun_ajaran' => $validated['tahun_ajaran'] ?? '2026/2027',
-            'gelombang' => $validated['gelombang'] ?? 'Gelombang 1',
-            'jenjang' => $validated['jenjang'],
+        // Hapus file dari validated array sebelum create model
+        unset($validated['pas_foto'], $validated['akta_kelahiran'], $validated['kartu_keluarga']);
 
-            'nama_lengkap' => $validated['nama_lengkap'],
-            'nama_panggilan' => $validated['nama_panggilan'],
-            'jenis_kelamin' => $validated['jenis_kelamin'],
-            'tempat_lahir' => $validated['tempat_lahir'],
-            'tanggal_lahir' => $validated['tanggal_lahir'],
-            'usia_daftar' => $validated['usia_daftar'] ?? null,
-            'jumlah_saudara' => $validated['jumlah_saudara'] ?? 0,
-            'anak_ke' => $validated['anak_ke'] ?? 1,
-            'alamat_lengkap' => $validated['alamat_lengkap'],
-            'tinggal_dengan' => $validated['tinggal_dengan'],
-            'asal_sekolah' => $validated['asal_sekolah'] ?? null,
-            'alamat_asal_sekolah' => $validated['alamat_asal_sekolah'] ?? null,
-            'pindah_ke_kelas' => $validated['pindah_ke_kelas'] ?? null,
-            'alasan_pindah' => $validated['alasan_pindah'] ?? null,
+        $registration = PpdbRegistration::create($validated);
 
-            'nama_ayah' => $validated['nama_ayah'],
-            'ttl_ayah' => $validated['ttl_ayah'] ?? null,
-            'pendidikan_ayah' => $validated['pendidikan_ayah'] ?? null,
-            'pekerjaan_ayah' => $validated['pekerjaan_ayah'] ?? null,
-            'penghasilan_ayah' => $validated['penghasilan_ayah'] ?? null,
-            'alamat_ayah' => $validated['alamat_ayah'] ?? null,
-            'no_hp_ayah' => $validated['no_hp_ayah'],
-
-            'nama_ibu' => $validated['nama_ibu'],
-            'ttl_ibu' => $validated['ttl_ibu'] ?? null,
-            'pendidikan_ibu' => $validated['pendidikan_ibu'] ?? null,
-            'pekerjaan_ibu' => $validated['pekerjaan_ibu'] ?? null,
-            'penghasilan_ibu' => $validated['penghasilan_ibu'] ?? null,
-            'alamat_ibu' => $validated['alamat_ibu'] ?? null,
-            'no_hp_ibu' => $validated['no_hp_ibu'],
-
-            'pas_foto_path' => $pasFotoPath,
-            'akta_kelahiran_path' => $aktaKelahiranPath,
-            'kartu_keluarga_path' => $kartuKeluargaPath,
-            'status' => 'menunggu',
-        ]);
-
+        // Catat Log Aktivitas
         ActivityLogService::log(
-            aksi: 'ppdb_pendaftaran_baru',
+            aksi: 'ppdb_submit',
             modul: 'ppdb',
             targetType: PpdbRegistration::class,
             targetId: $registration->id,
-            dataSebelum: null,
             dataSesudah: $registration->toArray(),
-            keterangan: "Pendaftar PPDB Online baru ({$registration->jenjang}): {$registration->nama_lengkap} ({$registration->nomor_pendaftaran})"
+            keterangan: "Pendaftaran PPDB Baru: {$registration->nama_lengkap} ({$registration->nomor_pendaftaran}) jenjang {$registration->jenjang}"
         );
 
         return response()->json([
             'success' => true,
-            'message' => 'Pendaftaran PPDB Online berhasil dikirim. Simpan nomor pendaftaran Anda untuk konfirmasi.',
-            'data' => $registration,
+            'message' => 'Alhamdulillah, formulir pendaftaran PPDB berhasil dikirim!',
+            'data' => [
+                'id' => $registration->id,
+                'nomor_pendaftaran' => $registration->nomor_pendaftaran,
+                'nama_lengkap' => $registration->nama_lengkap,
+                'jenjang' => $registration->jenjang,
+                'status' => $registration->status,
+                'status_label' => $registration->status_label,
+                'tanggal_daftar' => $registration->created_at->format('d M Y H:i'),
+            ],
         ], 201);
     }
 
     /**
-     * Cek status pendaftaran calon murid secara publik
+     * Cek Status Pendaftaran PPDB oleh Orang Tua (Publik Tanpa Login)
      */
-    public function checkStatus(string $nomor): JsonResponse
+    public function checkStatus(string $nomorPendaftaran): JsonResponse
     {
-        $reg = PpdbRegistration::where('nomor_pendaftaran', $nomor)
-            ->orWhere('no_hp_ayah', $nomor)
-            ->orWhere('no_hp_ibu', $nomor)
+        $nomor = trim($nomorPendaftaran);
+        $registration = PpdbRegistration::where('nomor_pendaftaran', $nomor)
+            ->orWhere('id', is_numeric($nomor) ? (int)$nomor : 0)
             ->first();
 
-        if (!$reg) {
+        if (!$registration) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data pendaftaran dengan nomor atau kontak tersebut tidak ditemukan.',
-            ], 440);
+                'message' => 'Nomor registrasi PPDB tidak ditemukan. Mohon periksa kembali nomor pendaftaran Anda.',
+            ], 404);
         }
 
         return response()->json([
             'success' => true,
             'data' => [
-                'nomor_pendaftaran' => $reg->nomor_pendaftaran,
-                'nama_lengkap' => $reg->nama_lengkap,
-                'jenjang' => $reg->jenjang,
-                'status' => $reg->status,
-                'status_label' => $reg->status_label,
-                'catatan_admin' => $reg->catatan_admin,
-                'tanggal_daftar' => $reg->created_at->format('d M Y H:i'),
+                'nomor_pendaftaran' => $registration->nomor_pendaftaran,
+                'nama_lengkap' => $registration->nama_lengkap,
+                'nama_panggilan' => $registration->nama_panggilan,
+                'jenjang' => $registration->jenjang,
+                'tahun_ajaran' => $registration->tahun_ajaran,
+                'gelombang' => $registration->gelombang,
+                'status' => $registration->status,
+                'status_label' => $registration->status_label,
+                'catatan_panitia' => $registration->catatan_admin,
+                'tanggal_daftar' => $registration->created_at->format('d M Y H:i'),
+                'pas_foto_url' => $registration->pas_foto_url,
             ],
         ]);
     }
@@ -217,7 +230,8 @@ class PpdbController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = PpdbRegistration::with('verifiedBy:id,nama')->orderByDesc('created_at');
+        $query = PpdbRegistration::with(['verifiedBy:id,nama', 'student:id,nis,nama_lengkap,class_id,status'])
+            ->orderByDesc('created_at');
 
         // Pencarian Nama, No Pendaftaran, Orang Tua, No WA
         if ($request->filled('search')) {
@@ -286,7 +300,8 @@ class PpdbController extends Controller
      */
     public function show(int $id): JsonResponse
     {
-        $registration = PpdbRegistration::with('verifiedBy:id,nama')->findOrFail($id);
+        $registration = PpdbRegistration::with(['verifiedBy:id,nama', 'student:id,nis,nama_lengkap,class_id,status'])
+            ->findOrFail($id);
 
         return response()->json([
             'success' => true,
@@ -296,6 +311,7 @@ class PpdbController extends Controller
 
     /**
      * ADMIN: Update Status & Verifikasi Pendaftaran
+     * Catatan: Jika status menjadi 'diterima', otomatis masuk ke Data Master Siswa & Orang Tua.
      */
     public function updateStatus(Request $request, int $id): JsonResponse
     {
@@ -306,13 +322,23 @@ class PpdbController extends Controller
 
         $registration = PpdbRegistration::findOrFail($id);
         $oldData = $registration->toArray();
+        $newStatus = $request->input('status');
 
         $registration->update([
-            'status' => $request->input('status'),
+            'status' => $newStatus,
             'catatan_admin' => $request->input('catatan_admin'),
             'verified_by' => auth()->id(),
             'verified_at' => now(),
         ]);
+
+        $createdStudent = null;
+        if ($newStatus === 'diterima') {
+            // Otomatis masukkan / aktifkan di Data Master Siswa & Orang Tua
+            $createdStudent = $this->syncToMasterStudent($registration);
+        } elseif ($registration->student_id) {
+            // Jika status dibatalkan dari diterima, jadikan status siswa nonaktif
+            Student::where('id', $registration->student_id)->update(['status' => 'nonaktif']);
+        }
 
         ActivityLogService::log(
             aksi: 'ppdb_update_status',
@@ -324,11 +350,303 @@ class PpdbController extends Controller
             keterangan: "Admin memperbarui status PPDB {$registration->nama_lengkap} ({$registration->nomor_pendaftaran}) menjadi {$registration->status_label}"
         );
 
+        $message = ($newStatus === 'diterima' && $createdStudent)
+            ? "Status pendaftaran diterima. Data siswa dan orang tua berhasil otomatis masuk ke Data Master (NIS: {$createdStudent->nis})."
+            : 'Status pendaftaran PPDB berhasil diperbarui.';
+
         return response()->json([
             'success' => true,
-            'message' => 'Status pendaftaran PPDB berhasil diperbarui.',
-            'data' => $registration->fresh()->load('verifiedBy:id,nama'),
+            'message' => $message,
+            'data' => $registration->fresh()->load(['verifiedBy:id,nama', 'student:id,nis,nama_lengkap,class_id,status']),
         ]);
+    }
+
+    /**
+     * Otomatis Sinkronkan Data Pendaftar Diterima ke Master Siswa & Orang Tua
+     */
+    protected function syncToMasterStudent(PpdbRegistration $registration): Student
+    {
+        return DB::transaction(function () use ($registration) {
+            $student = null;
+
+            if ($registration->student_id) {
+                $student = Student::find($registration->student_id);
+            }
+
+            if (!$student) {
+                $student = Student::where('nama_lengkap', $registration->nama_lengkap)
+                    ->whereDate('tgl_lahir', $registration->tanggal_lahir)
+                    ->first();
+            }
+
+            $religionId = Religion::where('nama', 'like', '%Islam%')->value('id') ?? 1;
+
+            $tinggal = 'orang_tua';
+            $tdLower = strtolower($registration->tinggal_dengan ?? '');
+            if (str_contains($tdLower, 'wali')) {
+                $tinggal = 'wali';
+            } elseif (str_contains($tdLower, 'asrama')) {
+                $tinggal = 'asrama';
+            } elseif (str_contains($tdLower, 'kakek') || str_contains($tdLower, 'bibi') || str_contains($tdLower, 'uwa')) {
+                $tinggal = 'lainnya';
+            }
+
+            $tingkat = null;
+            if (!empty($registration->pindah_ke_kelas)) {
+                $tingkat = (int) $registration->pindah_ke_kelas;
+            } elseif ($registration->jenjang === 'SD') {
+                $tingkat = 1;
+            }
+
+            $classId = null;
+            if ($tingkat) {
+                $classId = SchoolClass::where('tingkat', $tingkat)->where('status', 'aktif')->value('id');
+            }
+
+            preg_match('/(\d{4})/', $registration->tahun_ajaran, $yrMatch);
+            $tahunMasuk = isset($yrMatch[1]) ? (int) $yrMatch[1] : (int) date('Y');
+            $jenisPendaftaran = !empty($registration->pindah_ke_kelas) ? 'pindahan' : 'siswa_baru';
+
+            if (!$student) {
+                $nis = $this->generateNextNis($registration->tahun_ajaran, $registration->jenjang);
+
+                $student = Student::create([
+                    'nis' => $nis,
+                    'nama_lengkap' => $registration->nama_lengkap,
+                    'nama_panggilan' => $registration->nama_panggilan,
+                    'jenis_kelamin' => $registration->jenis_kelamin,
+                    'tempat_lahir' => $registration->tempat_lahir,
+                    'tgl_lahir' => $registration->tanggal_lahir,
+                    'agama' => $religionId,
+                    'kewarganegaraan' => 'WNI',
+                    'anak_ke' => $registration->anak_ke ?: 1,
+                    'jumlah_saudara' => $registration->jumlah_saudara ?: 0,
+                    'alamat_jalan' => $registration->alamat_lengkap,
+                    'kab_kota' => 'Kabupaten Banyumas',
+                    'provinsi' => 'Jawa Tengah',
+                    'tinggal_bersama' => $tinggal,
+                    'asal_sekolah_tk' => $registration->asal_sekolah,
+                    'jenis_pendaftaran' => $jenisPendaftaran,
+                    'tgl_masuk' => now()->toDateString(),
+                    'tahun_masuk' => $tahunMasuk,
+                    'kelas_saat_masuk' => $tingkat,
+                    'class_id' => $classId,
+                    'status' => 'aktif',
+                    'foto_path' => $registration->pas_foto_path,
+                    'catatan' => "Siswa diterima dari PPDB Online: {$registration->nomor_pendaftaran} ({$registration->gelombang} - Jenjang {$registration->jenjang})",
+                    'created_by' => auth()->id(),
+                ]);
+
+                $registration->update(['student_id' => $student->id]);
+            } else {
+                $student->update([
+                    'status' => 'aktif',
+                    'class_id' => $student->class_id ?: $classId,
+                    'foto_path' => $student->foto_path ?: $registration->pas_foto_path,
+                    'alamat_jalan' => $registration->alamat_lengkap,
+                ]);
+
+                if ($registration->student_id !== $student->id) {
+                    $registration->update(['student_id' => $student->id]);
+                }
+            }
+
+            // Hubungkan Orang Tua (Ayah & Ibu)
+            $this->syncStudentGuardians($student, $registration);
+
+            // Enroll ke kelas jika ada class_id
+            if ($student->class_id) {
+                $activeYear = AcademicYear::getActive() ?? AcademicYear::latest()->first();
+                if ($activeYear) {
+                    StudentEnrollment::firstOrCreate([
+                        'student_id' => $student->id,
+                        'academic_year_id' => $activeYear->id,
+                    ], [
+                        'class_id' => $student->class_id,
+                        'tgl_masuk_kelas' => $student->tgl_masuk ?: now()->toDateString(),
+                        'status_kelas' => 'aktif',
+                        'created_by' => auth()->id(),
+                    ]);
+                }
+            }
+
+            ActivityLogService::log(
+                aksi: 'create',
+                modul: 'students',
+                targetType: Student::class,
+                targetId: $student->id,
+                dataSesudah: $student->fresh()->toArray(),
+                keterangan: "Siswa {$student->nama_lengkap} (NIS: {$student->nis}) otomatis dimasukkan ke Data Master Siswa dari PPDB Online ({$registration->nomor_pendaftaran})."
+            );
+
+            return $student;
+        });
+    }
+
+    /**
+     * Generate NIS Baru Otomatis untuk Siswa Baru
+     */
+    protected function generateNextNis(string $tahunAjaran = '2026/2027', string $jenjang = 'SD'): string
+    {
+        preg_match('/(\d{4})/', $tahunAjaran, $matches);
+        $yearPrefix = isset($matches[1]) ? substr($matches[1], -2) : date('y');
+
+        $levelCode = match (strtoupper(trim($jenjang))) {
+            'SD' => '01',
+            'TK B' => '02',
+            'TK A' => '03',
+            'KB' => '04',
+            default => '01',
+        };
+
+        $prefix = $yearPrefix . $levelCode; // e.g. 2601
+
+        $lastNis = Student::where('nis', 'like', "{$prefix}%")
+            ->orderByRaw('LENGTH(nis) DESC')
+            ->orderBy('nis', 'desc')
+            ->value('nis');
+
+        if ($lastNis && strlen($lastNis) >= 6) {
+            $sequence = (int) substr($lastNis, 4) + 1;
+        } else {
+            $sequence = 1;
+        }
+
+        $candidate = $prefix . str_pad((string) $sequence, 2, '0', STR_PAD_LEFT);
+
+        while (Student::where('nis', $candidate)->exists()) {
+            $sequence++;
+            $candidate = $prefix . str_pad((string) $sequence, 2, '0', STR_PAD_LEFT);
+        }
+
+        return $candidate;
+    }
+
+    /**
+     * Hubungkan Data Ayah & Ibu ke Tabel Master Guardians & Student_Guardian
+     */
+    protected function syncStudentGuardians(Student $student, PpdbRegistration $registration): void
+    {
+        // AYAH
+        if (!empty($registration->nama_ayah)) {
+            $occId = null;
+            if ($registration->pekerjaan_ayah) {
+                $occId = Occupation::where('nama', 'like', '%' . trim($registration->pekerjaan_ayah) . '%')->value('id');
+            }
+            $eduId = null;
+            if ($registration->pendidikan_ayah) {
+                $eduId = Education::where('nama', 'like', '%' . trim($registration->pendidikan_ayah) . '%')->value('id');
+            }
+            $incId = null;
+            if ($registration->penghasilan_ayah) {
+                $cleanInc = str_replace(['Rp', '.', ' '], '', $registration->penghasilan_ayah);
+                $incId = IncomeRange::where('nama', 'like', '%' . $cleanInc . '%')->value('id');
+            }
+
+            $cleanPhone = substr(preg_replace('/[^0-9]/', '', $registration->no_hp_ayah), 0, 16);
+
+            $ayah = $student->guardians()->wherePivot('hubungan', 'ayah')->first();
+            if (!$ayah && $cleanPhone) {
+                $ayah = Guardian::where('no_hp', $cleanPhone)->where('nama_lengkap', $registration->nama_ayah)->first();
+            }
+
+            if ($ayah) {
+                $ayah->update([
+                    'nama_lengkap' => $registration->nama_ayah,
+                    'pekerjaan' => $occId ?: $ayah->pekerjaan,
+                    'pendidikan_terakhir' => $eduId ?: $ayah->pendidikan_terakhir,
+                    'penghasilan_bulanan' => $incId ?: $ayah->penghasilan_bulanan,
+                    'no_hp' => $cleanPhone ?: $ayah->no_hp,
+                    'no_whatsapp' => $cleanPhone ?: $ayah->no_whatsapp,
+                    'alamat_jalan' => $registration->alamat_ayah ?: $registration->alamat_lengkap,
+                ]);
+            } else {
+                $ayah = Guardian::create([
+                    'hubungan' => 'ayah',
+                    'nama_lengkap' => $registration->nama_ayah,
+                    'pekerjaan' => $occId,
+                    'pendidikan_terakhir' => $eduId,
+                    'penghasilan_bulanan' => $incId,
+                    'no_hp' => $cleanPhone ?: '0812' . rand(10000000, 99999999),
+                    'no_whatsapp' => $cleanPhone ?: '0812' . rand(10000000, 99999999),
+                    'alamat_jalan' => $registration->alamat_ayah ?: $registration->alamat_lengkap,
+                    'kab_kota' => 'Kabupaten Banyumas',
+                    'provinsi' => 'Jawa Tengah',
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            if (!$student->guardians()->where('guardians.id', $ayah->id)->exists()) {
+                $student->guardians()->attach($ayah->id, [
+                    'hubungan' => 'ayah',
+                    'is_kontak_utama' => true,
+                    'boleh_lihat_keuangan' => true,
+                    'boleh_jemput' => true,
+                ]);
+            }
+        }
+
+        // IBU
+        if (!empty($registration->nama_ibu)) {
+            $occId = null;
+            if ($registration->pekerjaan_ibu) {
+                $occId = Occupation::where('nama', 'like', '%' . trim($registration->pekerjaan_ibu) . '%')->value('id');
+                if (!$occId && (stripos($registration->pekerjaan_ibu, 'rumah tangga') !== false || stripos($registration->pekerjaan_ibu, 'irt') !== false)) {
+                    $occId = Occupation::where('nama', 'like', '%Ibu Rumah Tangga%')->value('id');
+                }
+            }
+            $eduId = null;
+            if ($registration->pendidikan_ibu) {
+                $eduId = Education::where('nama', 'like', '%' . trim($registration->pendidikan_ibu) . '%')->value('id');
+            }
+            $incId = null;
+            if ($registration->penghasilan_ibu) {
+                $cleanInc = str_replace(['Rp', '.', ' '], '', $registration->penghasilan_ibu);
+                $incId = IncomeRange::where('nama', 'like', '%' . $cleanInc . '%')->value('id');
+            }
+
+            $cleanPhone = substr(preg_replace('/[^0-9]/', '', $registration->no_hp_ibu), 0, 16);
+
+            $ibu = $student->guardians()->wherePivot('hubungan', 'ibu')->first();
+            if (!$ibu && $cleanPhone) {
+                $ibu = Guardian::where('no_hp', $cleanPhone)->where('nama_lengkap', $registration->nama_ibu)->first();
+            }
+
+            if ($ibu) {
+                $ibu->update([
+                    'nama_lengkap' => $registration->nama_ibu,
+                    'pekerjaan' => $occId ?: $ibu->pekerjaan,
+                    'pendidikan_terakhir' => $eduId ?: $ibu->pendidikan_terakhir,
+                    'penghasilan_bulanan' => $incId ?: $ibu->penghasilan_bulanan,
+                    'no_hp' => $cleanPhone ?: $ibu->no_hp,
+                    'no_whatsapp' => $cleanPhone ?: $ibu->no_whatsapp,
+                    'alamat_jalan' => $registration->alamat_ibu ?: $registration->alamat_lengkap,
+                ]);
+            } else {
+                $ibu = Guardian::create([
+                    'hubungan' => 'ibu',
+                    'nama_lengkap' => $registration->nama_ibu,
+                    'pekerjaan' => $occId,
+                    'pendidikan_terakhir' => $eduId,
+                    'penghasilan_bulanan' => $incId,
+                    'no_hp' => $cleanPhone ?: '0812' . rand(10000000, 99999999),
+                    'no_whatsapp' => $cleanPhone ?: '0812' . rand(10000000, 99999999),
+                    'alamat_jalan' => $registration->alamat_ibu ?: $registration->alamat_lengkap,
+                    'kab_kota' => 'Kabupaten Banyumas',
+                    'provinsi' => 'Jawa Tengah',
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            if (!$student->guardians()->where('guardians.id', $ibu->id)->exists()) {
+                $student->guardians()->attach($ibu->id, [
+                    'hubungan' => 'ibu',
+                    'is_kontak_utama' => empty($registration->nama_ayah),
+                    'boleh_lihat_keuangan' => true,
+                    'boleh_jemput' => true,
+                ]);
+            }
+        }
     }
 
     /**
@@ -350,6 +668,11 @@ class PpdbController extends Controller
             Storage::disk('public')->delete($registration->kartu_keluarga_path);
         }
 
+        // Jika terhubung ke siswa master, nonaktifkan atau hapus
+        if ($registration->student_id) {
+            Student::where('id', $registration->student_id)->delete();
+        }
+
         $registration->delete();
 
         ActivityLogService::log(
@@ -358,8 +681,7 @@ class PpdbController extends Controller
             targetType: PpdbRegistration::class,
             targetId: $id,
             dataSebelum: $oldData,
-            dataSesudah: null,
-            keterangan: "Admin menghapus data pendaftaran PPDB: {$oldData['nama_lengkap']} ({$oldData['nomor_pendaftaran']})"
+            keterangan: "Admin menghapus data PPDB {$registration->nama_lengkap} ({$registration->nomor_pendaftaran})"
         );
 
         return response()->json([
@@ -369,7 +691,7 @@ class PpdbController extends Controller
     }
 
     /**
-     * ADMIN: Export Data Pendaftar PPDB ke File Excel (.xlsx)
+     * ADMIN: Export Data PPDB ke File Excel
      */
     public function exportExcel(Request $request): StreamedResponse
     {
@@ -378,17 +700,18 @@ class PpdbController extends Controller
         if ($request->filled('jenjang') && $request->input('jenjang') !== 'all') {
             $query->where('jenjang', $request->input('jenjang'));
         }
+
         if ($request->filled('status') && $request->input('status') !== 'all') {
             $query->where('status', $request->input('status'));
         }
+
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('nama_lengkap', 'like', "%{$search}%")
                   ->orWhere('nomor_pendaftaran', 'like', "%{$search}%")
                   ->orWhere('nama_ayah', 'like', "%{$search}%")
-                  ->orWhere('nama_ibu', 'like', "%{$search}%")
-                  ->orWhere('no_hp_ayah', 'like', "%{$search}%");
+                  ->orWhere('nama_ibu', 'like', "%{$search}%");
             });
         }
 
@@ -397,48 +720,44 @@ class PpdbController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Data PPDB Online');
-        $sheet->setShowGridlines(true);
 
         // Header Dokumen
-        $sheet->setCellValue('A1', 'REKAPITULASI PENERIMAAN PESERTA DIDIK BARU (PPDB) ONLINE');
-        $sheet->setCellValue('A2', 'PAUD TERPADU & SD ISLAM TERPADU BINA INSAN MANDIRI PURWOKERTO');
-        $sheet->setCellValue('A3', 'Diekspor pada: ' . date('d F Y H:i:s') . ' WIB | Total: ' . $records->count() . ' Siswa');
+        $sheet->setCellValue('A1', 'DATA PENDAFTARAN PESERTA DIDIK BARU (PPDB) ONLINE');
+        $sheet->setCellValue('A2', 'SEKOLAH ISLAM TERPADU BINA INSAN MANDIRI PURWOKERTO');
+        $sheet->setCellValue('A3', 'Diekspor pada: ' . date('d F Y H:i:s') . ' WIB');
 
-        $sheet->mergeCells('A1:AA1');
-        $sheet->mergeCells('A2:AA2');
-        $sheet->mergeCells('A3:AA3');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(12);
+        $sheet->getStyle('A3')->getFont()->setItalic(true)->setSize(10);
 
-        $sheet->getStyle('A1:A2')->getFont()->setBold(true)->setSize(14)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('003366'));
-        $sheet->getStyle('A3')->getFont()->setItalic(true)->setSize(10)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('666666'));
-
-        // Headers Tabel
+        // Header Kolom Tabel
         $headers = [
             'A5' => 'No',
-            'B5' => 'No Pendaftaran',
-            'C5' => 'Tgl Daftar',
+            'B5' => 'No. Pendaftaran',
+            'C5' => 'Tanggal Daftar',
             'D5' => 'Jenjang',
             'E5' => 'Nama Lengkap',
             'F5' => 'Nama Panggilan',
-            'G5' => 'L/P',
+            'G5' => 'Jenis Kelamin',
             'H5' => 'Tempat Lahir',
             'I5' => 'Tanggal Lahir',
             'J5' => 'Usia Saat Daftar',
             'K5' => 'Anak Ke',
-            'L5' => 'Jml Saudara',
-            'M5' => 'Alamat Calon Siswa',
+            'L5' => 'Jml Sdr',
+            'M5' => 'Alamat Lengkap',
             'N5' => 'Tinggal Bersama',
             'O5' => 'Asal Sekolah',
             'P5' => 'Alamat Asal Sekolah',
-            'Q5' => 'Siswa Pindahan (Kelas/Alasan)',
+            'Q5' => 'Pindahan / Mutasi',
             'R5' => 'Nama Ayah',
             'S5' => 'Pendidikan Ayah',
             'T5' => 'Pekerjaan Ayah',
             'U5' => 'Penghasilan Ayah',
-            'V5' => 'No WA Ayah',
+            'V5' => 'No. HP Ayah',
             'W5' => 'Nama Ibu',
             'X5' => 'Pendidikan Ibu',
             'Y5' => 'Pekerjaan Ibu',
-            'Z5' => 'No WA Ibu',
+            'Z5' => 'No. HP Ibu',
             'AA5' => 'Status Pendaftaran',
             'AB5' => 'Catatan Panitia',
         ];
@@ -529,4 +848,3 @@ class PpdbController extends Controller
         ]);
     }
 }
-
