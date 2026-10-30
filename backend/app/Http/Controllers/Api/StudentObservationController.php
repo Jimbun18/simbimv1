@@ -18,6 +18,205 @@ use Illuminate\Support\Facades\DB;
 class StudentObservationController extends Controller
 {
     /**
+     * Daftar Ringkasan Peserta Didik yang Memiliki Catatan Observasi.
+     * Mengelompokkan catatan per-peserta didik sehingga siswa yang punya banyak catatan tidak berulang.
+     * Memiliki indikator pengingat apakah catatan sudah dilihat/ditanggapi oleh Guru BK.
+     */
+    public function studentsSummary(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $isGuruBk = $user?->isGuruBk() ?? false;
+        $teacher = $user?->teacher;
+
+        $obsQuery = StudentObservation::query();
+
+        // Jika guru biasa, hanya hitung dan ambil observasi milik guru tersebut
+        if (!$isGuruBk) {
+            if ($teacher) {
+                $obsQuery->where('teacher_id', $teacher->id);
+            } else {
+                $obsQuery->where('created_by', $user?->id);
+            }
+        }
+
+        if ($request->filled('class_id')) {
+            $classId = $request->query('class_id');
+            $obsQuery->where(function ($q) use ($classId) {
+                $q->where('class_id', $classId)
+                  ->orWhereHas('student', function ($sq) use ($classId) {
+                      $sq->where('class_id', $classId);
+                  });
+            });
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->query('search');
+            $obsQuery->where(function ($q) use ($search) {
+                $q->whereHas('student', function ($sq) use ($search) {
+                    $sq->where('nama_lengkap', 'like', "%{$search}%")
+                       ->orWhere('nis', 'like', "%{$search}%");
+                })
+                ->orWhere('perilaku_diamati', 'like', "%{$search}%");
+            });
+        }
+
+        $studentIds = (clone $obsQuery)->select('student_id')->distinct()->pluck('student_id');
+
+        $students = Student::with(['schoolClass:id,nama,tingkat,kode', 'currentClass:id,nama,tingkat,kode'])
+            ->whereIn('id', $studentIds)
+            ->get();
+
+        $result = $students->map(function ($student) use ($isGuruBk, $teacher, $user) {
+            $studentObsQuery = StudentObservation::where('student_id', $student->id);
+            if (!$isGuruBk) {
+                if ($teacher) {
+                    $studentObsQuery->where('teacher_id', $teacher->id);
+                } else {
+                    $studentObsQuery->where('created_by', $user?->id);
+                }
+            }
+
+            $allObs = (clone $studentObsQuery)
+                ->with(['observer:id,nama_lengkap,jabatan', 'bkTeacher:id,nama_lengkap,jabatan', 'schoolClass:id,nama,tingkat,kode'])
+                ->orderBy('tanggal', 'desc')
+                ->orderBy('id', 'desc')
+                ->get();
+
+            $totalCount = $allObs->count();
+            $latestObs = $allObs->first();
+
+            $unseenCount = $allObs->whereNull('dilihat_bk_at')->count();
+            $unreviewedCount = $allObs->whereNull('rekomendasi_bk')->count();
+            $escalatedCount = $allObs->where('is_escalated_to_bk', true)->count();
+
+            // Status Pengingat & Pemantauan
+            $statusTinjauan = 'sudah_ditanggapi';
+            if ($unseenCount > 0) {
+                $statusTinjauan = 'belum_dilihat';
+            } elseif ($unreviewedCount > 0) {
+                $statusTinjauan = 'menunggu_tanggapan';
+            } elseif ($escalatedCount > 0) {
+                $statusTinjauan = 'masuk_bk';
+            }
+
+            return [
+                'student' => $student,
+                'total_observations' => $totalCount,
+                'unseen_count' => $unseenCount,
+                'unreviewed_count' => $unreviewedCount,
+                'escalated_count' => $escalatedCount,
+                'status_tinjauan' => $statusTinjauan,
+                'latest_observation' => $latestObs,
+            ];
+        });
+
+        // Sorting: Dahulukan yang belum dilihat / menunggu tanggapan BK
+        $sorted = $result->sort(function ($a, $b) {
+            $priority = ['belum_dilihat' => 1, 'menunggu_tanggapan' => 2, 'masuk_bk' => 3, 'sudah_ditanggapi' => 4];
+            $pA = $priority[$a['status_tinjauan']] ?? 5;
+            $pB = $priority[$b['status_tinjauan']] ?? 5;
+            if ($pA !== $pB) {
+                return $pA <=> $pB;
+            }
+            $tA = $a['latest_observation'] ? Carbon::parse($a['latest_observation']->tanggal)->timestamp : 0;
+            $tB = $b['latest_observation'] ? Carbon::parse($b['latest_observation']->tanggal)->timestamp : 0;
+            return $tB <=> $tA;
+        })->values();
+
+        // Filter opsi status_tinjauan
+        if ($request->filled('status_tinjauan')) {
+            $filterTinjauan = $request->query('status_tinjauan');
+            $sorted = $sorted->filter(function ($item) use ($filterTinjauan) {
+                return $item['status_tinjauan'] === $filterTinjauan;
+            })->values();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar rekap siswa dengan catatan observasi berhasil diambil.',
+            'data' => $sorted,
+            'meta' => [
+                'total_students' => $sorted->count(),
+                'total_unseen' => $sorted->where('unseen_count', '>', 0)->count(),
+                'total_unreviewed' => $sorted->where('unreviewed_count', '>', 0)->count(),
+            ],
+        ]);
+    }
+
+    /**
+     * Seluruh Riwayat Catatan Observasi untuk 1 Peserta Didik Tertentu.
+     * Otomatis menandai catatan belum dilihat menjadi 'Sudah Dilihat' jika dibuka oleh Guru BK.
+     */
+    public function studentObservations(Request $request, Student $student): JsonResponse
+    {
+        $user = $request->user();
+        $isGuruBk = $user?->isGuruBk() ?? false;
+        $teacher = $user?->teacher;
+
+        // Jika Guru BK membuka rekam catatan siswa ini,
+        // tandai semua observasi siswa ini yang belum dilihat menjadi 'Sudah Dilihat'
+        if ($isGuruBk) {
+            StudentObservation::where('student_id', $student->id)
+                ->whereNull('dilihat_bk_at')
+                ->update([
+                    'dilihat_bk_at' => Carbon::now(),
+                    'dilihat_bk_by' => $teacher?->id ?? 12,
+                ]);
+        }
+
+        $query = StudentObservation::with([
+            'student:id,nis,nama_lengkap,jenis_kelamin,foto_path,class_id',
+            'student.schoolClass:id,nama,tingkat,kode',
+            'schoolClass:id,nama,tingkat,kode',
+            'observer:id,nama_lengkap,jabatan',
+            'bkTeacher:id,nama_lengkap,jabatan',
+            'bkViewer:id,nama_lengkap,jabatan',
+        ])->where('student_id', $student->id);
+
+        if (!$isGuruBk) {
+            if ($teacher) {
+                $query->where('teacher_id', $teacher->id);
+            } else {
+                $query->where('created_by', $user?->id);
+            }
+        }
+
+        $observations = $query->orderBy('tanggal', 'desc')->orderBy('id', 'desc')->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Seluruh riwayat catatan observasi untuk siswa {$student->nama_lengkap} berhasil diambil.",
+            'data' => [
+                'student' => $student->load(['schoolClass', 'currentClass']),
+                'observations' => $observations,
+                'total' => $observations->count(),
+                'unreviewed_count' => $observations->whereNull('rekomendasi_bk')->count(),
+            ],
+        ]);
+    }
+
+    /**
+     * Tandai Catatan Observasi Siswa Ini Sudah Dilihat oleh BK.
+     */
+    public function markStudentObservationsSeen(Request $request, Student $student): JsonResponse
+    {
+        $user = $request->user();
+        $teacher = $user?->teacher;
+
+        StudentObservation::where('student_id', $student->id)
+            ->whereNull('dilihat_bk_at')
+            ->update([
+                'dilihat_bk_at' => Carbon::now(),
+                'dilihat_bk_by' => $teacher?->id ?? 12,
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Catatan observasi siswa {$student->nama_lengkap} telah ditandai sudah dilihat.",
+        ]);
+    }
+
+    /**
      * Daftar Catatan Observasi Perilaku Siswa.
      * Guru kelas/mata pelajaran hanya melihat catatannya sendiri (pelaporan ke BK).
      * Guru BK dapat melihat semua laporan dari seluruh guru.

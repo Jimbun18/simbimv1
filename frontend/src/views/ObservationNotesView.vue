@@ -7,32 +7,41 @@ import { formatDateIndo } from '../utils/date'
 
 const auth = useAuthStore()
 
-// Navigation View State: 'list' | 'detail' | 'form' | 'feedback'
-const currentView = ref<'list' | 'detail' | 'form' | 'feedback'>('list')
+// Navigation View State: 'student-list' | 'student-history' | 'all-incidents' | 'form' | 'feedback'
+const currentView = ref<'student-list' | 'student-history' | 'all-incidents' | 'form' | 'feedback'>('student-list')
+const returnView = ref<'student-list' | 'student-history' | 'all-incidents'>('student-list')
 
-// State
-const loading = ref(false)
-const observations = ref<any[]>([])
+// State: Student Summaries (Daftar Siswa dengan Catatan Observasi)
+const loadingSummaries = ref(false)
+const studentSummaries = ref<any[]>([])
+const summaryMeta = ref({
+  total_students: 0,
+  total_unseen: 0,
+  total_unreviewed: 0,
+})
+
+// State: All Incidents (Semua Kejadian Mentah)
+const loadingIncidents = ref(false)
+const rawObservations = ref<any[]>([])
+const incidentsCurrentPage = ref(1)
+const incidentsLastPage = ref(1)
+const incidentsTotal = ref(0)
+
+// State: Single Student History (Rekam Jejak Siswa Terpilih)
+const selectedStudent = ref<any>(null)
+const studentHistoryObservations = ref<any[]>([])
+const loadingStudentHistory = ref(false)
+
+// Reference Data
 const classes = ref<any[]>([])
 const students = ref<any[]>([])
 
 // Filters
 const filterClass = ref<string>('')
-const filterStatus = ref<string>('')
-const filterBkStatus = ref<string>('')
+const filterTinjauan = ref<string>('')
 const searchQuery = ref<string>('')
-const filterDateFrom = ref<string>('')
-const filterDateTo = ref<string>('')
 
-// Pagination
-const currentPage = ref(1)
-const lastPage = ref(1)
-const totalItems = ref(0)
-
-// Selected for Detail
-const selectedObs = ref<any>(null)
-
-// Form State (Create / Edit)
+// Form State (Create / Edit Observation)
 const isEditing = ref(false)
 const editingId = ref<number | null>(null)
 const submitting = ref(false)
@@ -74,16 +83,28 @@ const focusList = [
   'Lainnya',
 ]
 
-// Computed Stats
-const countTotal = computed(() => totalItems.value)
-const countBelumDitanggapi = computed(() => {
-  return observations.value.filter(o => !o.rekomendasi_bk).length
-})
-const countMasukBk = computed(() => {
-  return observations.value.filter(o => o.is_escalated_to_bk).length
-})
+// Helpers
+const getInitials = (name?: string) => {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return name.substring(0, 2).toUpperCase()
+}
 
-// Methods
+const getClassName = (item: any) => {
+  if (!item) return '-'
+  return item.school_class?.nama ||
+         item.schoolClass?.nama ||
+         item.student?.school_class?.nama ||
+         item.student?.current_class?.nama ||
+         item.student?.kelas?.nama ||
+         item.student?.class_name ||
+         item.class_name ||
+         item.kelas?.nama ||
+         '-'
+}
+
+// Fetch Master Reference
 const fetchClasses = async () => {
   try {
     const res = await api.get('/classes')
@@ -106,35 +127,80 @@ const fetchStudents = async () => {
   }
 }
 
-const fetchObservations = async (page = 1) => {
-  loading.value = true
+// Fetch Grouped Student Summaries
+const fetchStudentSummaries = async () => {
+  loadingSummaries.value = true
   try {
-    let url = `/observations?page=${page}`
+    let url = '/observations/students?'
     if (filterClass.value) url += `&class_id=${filterClass.value}`
-    if (filterStatus.value) url += `&status_pemantauan=${encodeURIComponent(filterStatus.value)}`
+    if (filterTinjauan.value) url += `&status_tinjauan=${encodeURIComponent(filterTinjauan.value)}`
     if (searchQuery.value) url += `&search=${encodeURIComponent(searchQuery.value)}`
-    if (filterDateFrom.value) url += `&tanggal_dari=${filterDateFrom.value}`
-    if (filterDateTo.value) url += `&tanggal_sampai=${filterDateTo.value}`
 
     const res = await api.get(url)
     if (res.data.success) {
-      observations.value = res.data.data || []
-      currentPage.value = res.data.meta?.current_page || 1
-      lastPage.value = res.data.meta?.last_page || 1
-      totalItems.value = res.data.meta?.total || 0
+      studentSummaries.value = res.data.data || []
+      summaryMeta.value = res.data.meta || { total_students: 0, total_unseen: 0, total_unreviewed: 0 }
     }
   } catch (err) {
-    console.error('Gagal mengambil catatan observasi', err)
+    console.error('Gagal memuat rekap siswa observasi', err)
   } finally {
-    loading.value = false
+    loadingSummaries.value = false
   }
 }
 
-const openCreateForm = () => {
+// Fetch Flat Incidents List
+const fetchRawIncidents = async (page = 1) => {
+  loadingIncidents.value = true
+  try {
+    let url = `/observations?page=${page}`
+    if (filterClass.value) url += `&class_id=${filterClass.value}`
+    if (searchQuery.value) url += `&search=${encodeURIComponent(searchQuery.value)}`
+
+    const res = await api.get(url)
+    if (res.data.success) {
+      rawObservations.value = res.data.data || []
+      incidentsCurrentPage.value = res.data.meta?.current_page || 1
+      incidentsLastPage.value = res.data.meta?.last_page || 1
+      incidentsTotal.value = res.data.meta?.total || 0
+    }
+  } catch (err) {
+    console.error('Gagal memuat daftar mentah observasi', err)
+  } finally {
+    loadingIncidents.value = false
+  }
+}
+
+// Open Dedicated Student History Page
+const openStudentHistory = async (student: any) => {
+  selectedStudent.value = student
+  loadingStudentHistory.value = true
+  currentView.value = 'student-history'
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+
+  try {
+    const res = await api.get(`/observations/students/${student.id}`)
+    if (res.data.success) {
+      selectedStudent.value = res.data.data?.student || student
+      studentHistoryObservations.value = res.data.data?.observations || []
+
+      // Refresh summaries counter in background if Guru BK viewed
+      if (auth.isGuruBk) {
+        fetchStudentSummaries()
+      }
+    }
+  } catch (err) {
+    showError('Gagal Memuat Riwayat Catatan', err)
+  } finally {
+    loadingStudentHistory.value = false
+  }
+}
+
+// Form Handlers
+const openCreateForm = (preselectedStudentId?: string | number) => {
   isEditing.value = false
   editingId.value = null
   form.value = {
-    student_id: '',
+    student_id: preselectedStudentId ? String(preselectedStudentId) : '',
     tanggal: new Date().toISOString().split('T')[0],
     waktu: 'Jam Pelajaran',
     tempat: 'Ruang Kelas',
@@ -144,6 +210,7 @@ const openCreateForm = () => {
     catatan_wali_kelas: '',
     status_pemantauan: 'Baru',
   }
+  returnView.value = currentView.value === 'student-history' ? 'student-history' : 'student-list'
   currentView.value = 'form'
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -162,18 +229,8 @@ const openEditForm = (obs: any) => {
     catatan_wali_kelas: obs.catatan_wali_kelas || '',
     status_pemantauan: obs.status_pemantauan || 'Baru',
   }
+  returnView.value = currentView.value === 'student-history' ? 'student-history' : 'student-list'
   currentView.value = 'form'
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-const openDetailView = (obs: any) => {
-  selectedObs.value = obs
-  currentView.value = 'detail'
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-const backToList = () => {
-  currentView.value = 'list'
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -193,15 +250,13 @@ const submitForm = async () => {
       const res = await api.put(`/observations/${editingId.value}`, form.value)
       if (res.data.success) {
         showSuccess('Berhasil!', 'Catatan observasi berhasil diperbarui.')
-        currentView.value = 'list'
-        fetchObservations(currentPage.value)
+        handleReturnAfterSave()
       }
     } else {
       const res = await api.post('/observations', form.value)
       if (res.data.success) {
-        showSuccess('Berhasil Dilaporkan!', 'Laporan catatan observasi berhasil dikirimkan ke Guru BK.')
-        currentView.value = 'list'
-        fetchObservations(1)
+        showSuccess('Berhasil Dilaporkan!', 'Laporan kejadian berhasil disimpan dan dikirimkan ke Guru BK.')
+        handleReturnAfterSave()
       }
     }
   } catch (err: any) {
@@ -211,6 +266,17 @@ const submitForm = async () => {
   }
 }
 
+const handleReturnAfterSave = () => {
+  if (returnView.value === 'student-history' && selectedStudent.value?.id) {
+    openStudentHistory(selectedStudent.value)
+  } else {
+    currentView.value = 'student-list'
+    fetchStudentSummaries()
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// BK Feedback Handlers
 const openFeedbackForm = (obs: any) => {
   feedbackObs.value = obs
   feedbackForm.value = {
@@ -220,6 +286,7 @@ const openFeedbackForm = (obs: any) => {
     fokus_pemantauan: 'Perilaku',
     status_pemantauan: obs.status_pemantauan || (obs.is_escalated_to_bk ? 'Dalam Pemantauan' : 'Selesai / Cukup di Kelas'),
   }
+  returnView.value = currentView.value === 'student-history' ? 'student-history' : 'student-list'
   currentView.value = 'feedback'
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -235,8 +302,7 @@ const submitFeedback = async () => {
     const res = await api.post(`/observations/${feedbackObs.value.id}/feedback-bk`, feedbackForm.value)
     if (res.data.success) {
       showSuccess('Tanggapan Tersimpan!', res.data.message)
-      currentView.value = 'list'
-      fetchObservations(currentPage.value)
+      handleReturnAfterSave()
     }
   } catch (err: any) {
     showError('Gagal Menyimpan Rekomendasi', err)
@@ -245,6 +311,7 @@ const submitFeedback = async () => {
   }
 }
 
+// Delete Observation
 const deleteObservation = async (obs: any) => {
   const confirmed = await showConfirm(
     'Hapus Catatan Observasi?',
@@ -258,124 +325,142 @@ const deleteObservation = async (obs: any) => {
     const res = await api.delete(`/observations/${obs.id}`)
     if (res.data.success) {
       showSuccess('Berhasil Dihapus!', res.data.message)
-      if (currentView.value === 'detail') {
-        currentView.value = 'list'
+      if (currentView.value === 'student-history' && selectedStudent.value?.id) {
+        openStudentHistory(selectedStudent.value)
+      } else {
+        fetchStudentSummaries()
       }
-      fetchObservations(currentPage.value)
     }
   } catch (err: any) {
     showError('Gagal Menghapus', err)
   }
 }
 
-const getInitials = (name?: string) => {
-  if (!name) return '?'
-  const parts = name.trim().split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return name.substring(0, 2).toUpperCase()
-}
-
-const getClassName = (item: any) => {
-  if (!item) return '-'
-  return item.school_class?.nama ||
-         item.schoolClass?.nama ||
-         item.student?.school_class?.nama ||
-         item.student?.current_class?.nama ||
-         item.student?.kelas?.nama ||
-         item.student?.class_name ||
-         item.class_name ||
-         item.kelas?.nama ||
-         '-'
+const backToStudentList = () => {
+  currentView.value = 'student-list'
+  fetchStudentSummaries()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 onMounted(() => {
   fetchClasses()
   fetchStudents()
-  fetchObservations()
+  fetchStudentSummaries()
 })
 </script>
 
 <template>
   <div class="space-y-6 animate-in fade-in duration-200">
 
-    <!-- ======================================================== -->
-    <!-- VIEW 1: TABEL DATA CATATAN OBSERVASI (TABLE VIEW)        -->
-    <!-- ======================================================== -->
-    <template v-if="currentView === 'list'">
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: DAFTAR PESERTA DIDIK DENGAN CATATAN OBSERVASI (STUDENT LIST VIEW) -->
+    <!-- ========================================================================= -->
+    <template v-if="currentView === 'student-list' || currentView === 'all-incidents'">
       <!-- Header Banner Card -->
       <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-sky-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0">
             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
           </div>
           <div>
             <div class="flex items-center gap-2">
               <span v-if="auth.isGuruBk" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200">
-                Layanan Guru BK (Seluruh Laporan Guru)
+                Mode Layanan Guru BK
               </span>
               <span v-else class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
-                Pencatatan &amp; Pelaporan Guru ke BK
+                Pencatatan Guru Kelas
               </span>
             </div>
             <h1 class="text-xl sm:text-2xl font-black text-gray-900 leading-tight mt-1">
-              {{ auth.isGuruBk ? 'Daftar Laporan Observasi Perilaku Siswa' : 'Catatan Observasi & Laporan Kejadian Siswa' }}
+              Catatan Observasi Perilaku Siswa
             </h1>
             <p class="text-xs text-gray-500 mt-0.5">
-              {{ auth.isGuruBk 
-                ? 'Laporan kejadian faktual kelas dari para guru untuk ditelaah, ditanggapi, dan ditentukan apakah masuk ke Analisis & Monitoring BK.' 
-                : 'Mencatat dan melaporkan kejadian perilaku faktual di kelas secara langsung kepada Guru Bimbingan Konseling (BK).' }}
+              Daftar peserta didik yang memiliki rekam catatan observasi kelas. Klik <strong>"Lihat Catatan"</strong> untuk membuka seluruh rekam jejak kejadian dan tindak lanjut BK.
             </p>
           </div>
         </div>
 
         <div class="flex items-center gap-2.5 self-start md:self-auto">
           <button
-            @click="openCreateForm"
+            @click="openCreateForm()"
             type="button"
             class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/20 transition active:scale-95 cursor-pointer"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
             </svg>
-            <span>+ Catat Laporan Kejadian</span>
+            <span>+ Catat Kejadian Baru</span>
           </button>
         </div>
       </div>
 
-      <!-- Quick Metrics Ribbon (Khusus Guru BK) -->
-      <div v-if="auth.isGuruBk" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <!-- Quick Metrics Ribbon: Pengingat Status Tinjauan BK -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <!-- Metric 1: Total Siswa -->
         <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
           <div>
-            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Laporan Masuk</span>
-            <div class="text-xl font-black text-gray-900 mt-0.5">{{ countTotal }}</div>
+            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Siswa Memiliki Catatan</span>
+            <div class="text-xl font-black text-gray-900 mt-0.5">{{ summaryMeta.total_students }} Siswa</div>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-            📥
+          <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-base">
+            👥
           </div>
         </div>
-        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+
+        <!-- Metric 2: Belum Dilihat BK (Pengingat Utama) -->
+        <div class="bg-white p-4 rounded-2xl border border-rose-100 shadow-xs flex items-center justify-between" :class="summaryMeta.total_unseen > 0 ? 'ring-2 ring-rose-400/30 bg-rose-50/10' : ''">
           <div>
-            <span class="text-[11px] font-bold text-amber-500 uppercase tracking-wider">Menunggu Tanggapan BK</span>
-            <div class="text-xl font-black text-amber-600 mt-0.5">{{ countBelumDitanggapi }}</div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-[11px] font-bold text-rose-600 uppercase tracking-wider">Belum Dilihat Guru BK</span>
+              <span v-if="summaryMeta.total_unseen > 0" class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+            </div>
+            <div class="text-xl font-black text-rose-600 mt-0.5">{{ summaryMeta.total_unseen }} Siswa</div>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+          <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-base">
+            🔔
+          </div>
+        </div>
+
+        <!-- Metric 3: Menunggu Rekomendasi BK -->
+        <div class="bg-white p-4 rounded-2xl border border-amber-100 shadow-xs flex items-center justify-between">
+          <div>
+            <span class="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Menunggu Rekomendasi BK</span>
+            <div class="text-xl font-black text-amber-600 mt-0.5">{{ summaryMeta.total_unreviewed }} Siswa</div>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-base">
             ⏳
-          </div>
-        </div>
-        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-          <div>
-            <span class="text-[11px] font-bold text-rose-500 uppercase tracking-wider">Masuk Pemantauan BK</span>
-            <div class="text-xl font-black text-rose-600 mt-0.5">{{ countMasukBk }}</div>
-          </div>
-          <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
-            🎯
           </div>
         </div>
       </div>
 
-      <!-- Filter & Search Toolbar -->
+      <!-- Navigation Switcher Tab (Siswa vs Semua Kejadian) -->
+      <div class="flex items-center justify-between border-b border-gray-200 pb-1">
+        <div class="flex items-center gap-2">
+          <button
+            @click="currentView = 'student-list'"
+            type="button"
+            class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2"
+            :class="currentView === 'student-list' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+          >
+            <span>👤 Daftar Peserta Didik</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20">
+              {{ summaryMeta.total_students }}
+            </span>
+          </button>
+          <button
+            @click="currentView = 'all-incidents'; fetchRawIncidents(1)"
+            type="button"
+            class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2"
+            :class="currentView === 'all-incidents' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+          >
+            <span>📋 Semua Catatan Kejadian Faktual</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Toolbar -->
       <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
           <!-- Search Input -->
@@ -385,9 +470,9 @@ onMounted(() => {
             </svg>
             <input
               v-model="searchQuery"
-              @keyup.enter="fetchObservations(1)"
+              @keyup.enter="currentView === 'student-list' ? fetchStudentSummaries() : fetchRawIncidents(1)"
               type="text"
-              placeholder="Cari siswa, perilaku, atau tempat..."
+              placeholder="Cari nama siswa, NIS, atau perilaku..."
               class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
           </div>
@@ -395,57 +480,223 @@ onMounted(() => {
           <!-- Filter Kelas -->
           <select
             v-model="filterClass"
-            @change="fetchObservations(1)"
+            @change="currentView === 'student-list' ? fetchStudentSummaries() : fetchRawIncidents(1)"
             class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
           >
             <option value="">Semua Rombel / Kelas</option>
             <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.nama }}</option>
           </select>
 
-          <!-- Filter Status Pemantauan -->
+          <!-- Filter Status Tinjauan BK (Untuk Tampilan Siswa) -->
           <select
-            v-model="filterStatus"
-            @change="fetchObservations(1)"
+            v-if="currentView === 'student-list'"
+            v-model="filterTinjauan"
+            @change="fetchStudentSummaries()"
             class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
           >
-            <option value="">Semua Status</option>
-            <option value="Baru">Baru</option>
-            <option value="Dalam Pemantauan">Dalam Pemantauan</option>
-            <option value="Selesai / Cukup di Kelas">Selesai / Cukup di Kelas</option>
-            <option value="Menunjukkan Perkembangan">Menunjukkan Perkembangan</option>
+            <option value="">Semua Status Tinjauan</option>
+            <option value="belum_dilihat">🔔 Belum Dilihat BK</option>
+            <option value="menunggu_tanggapan">⏳ Menunggu Rekomendasi BK</option>
+            <option value="masuk_bk">🎯 Masuk Pantauan BK</option>
+            <option value="sudah_ditanggapi">✓ Cukup di Kelas</option>
           </select>
         </div>
 
-        <div class="flex items-center gap-2">
-          <button
-            @click="fetchObservations(1)"
-            type="button"
-            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition cursor-pointer"
-          >
-            Segarkan
-          </button>
+        <button
+          @click="currentView === 'student-list' ? fetchStudentSummaries() : fetchRawIncidents(1)"
+          type="button"
+          class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition cursor-pointer"
+        >
+          Segarkan
+        </button>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- SUBTAB A: TABEL PESERTA DIDIK (GROUPED)        -->
+      <!-- ============================================== -->
+      <div v-if="currentView === 'student-list'" class="bg-white rounded-3xl border border-gray-100 shadow-xs overflow-hidden">
+        <div v-if="loadingSummaries" class="p-12 text-center text-slate-400">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent mb-2"></div>
+          <p class="text-xs font-medium">Memuat daftar peserta didik...</p>
+        </div>
+
+        <div v-else-if="studentSummaries.length === 0" class="p-12 text-center">
+          <div class="w-16 h-16 mx-auto bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 mb-3">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </div>
+          <h3 class="text-sm font-bold text-gray-800">Belum Ada Peserta Didik dengan Catatan</h3>
+          <p class="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
+            Klik tombol "+ Catat Kejadian Baru" untuk mendokumentasikan observasi perilaku pertama bagi peserta didik.
+          </p>
+        </div>
+
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                <th class="py-3.5 px-4 w-12 text-center">No.</th>
+                <th class="py-3.5 px-4 min-w-[220px]">Peserta Didik</th>
+                <th class="py-3.5 px-4 text-center min-w-[120px]">Total Catatan</th>
+                <th class="py-3.5 px-4 min-w-[260px]">Kejadian Terakhir &amp; Pelapor</th>
+                <th class="py-3.5 px-4 min-w-[200px]">Status Tinjauan BK</th>
+                <th class="py-3.5 px-4 text-center w-40">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr
+                v-for="(row, idx) in studentSummaries"
+                :key="row.student.id"
+                class="hover:bg-indigo-50/30 transition-colors"
+                :class="row.unseen_count > 0 ? 'bg-rose-50/20' : ''"
+              >
+                <!-- 1. Nomor -->
+                <td class="py-3.5 px-4 text-center font-mono text-slate-400">
+                  {{ idx + 1 }}
+                </td>
+
+                <!-- 2. Peserta Didik -->
+                <td class="py-3.5 px-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                      <img
+                        v-if="row.student?.foto_path"
+                        :src="row.student.foto_path.startsWith('http') ? row.student.foto_path : `/storage/${row.student.foto_path}`"
+                        alt="Foto"
+                        class="w-full h-full object-cover"
+                      />
+                      <span v-else class="text-xs font-bold text-slate-500 uppercase">
+                        {{ getInitials(row.student?.nama_lengkap) }}
+                      </span>
+                    </div>
+                    <div>
+                      <div class="font-bold text-gray-900 leading-snug flex items-center gap-1.5">
+                        <span>{{ row.student?.nama_lengkap }}</span>
+                      </div>
+                      <div class="flex items-center gap-1.5 text-[10px] text-gray-400 mt-0.5">
+                        <span class="px-1.5 py-0.5 rounded bg-slate-100 font-bold text-slate-700">
+                          {{ getClassName(row.student) }}
+                        </span>
+                        <span>NIS: {{ row.student?.nis || '-' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- 3. Total Catatan -->
+                <td class="py-3.5 px-4 text-center">
+                  <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>{{ row.total_observations }} Catatan</span>
+                  </span>
+                </td>
+
+                <!-- 4. Kejadian Terakhir & Pelapor -->
+                <td class="py-3.5 px-4">
+                  <div v-if="row.latest_observation" class="space-y-0.5">
+                    <div class="flex items-center gap-2 text-[11px] font-bold text-gray-700">
+                      <span>🗓️ {{ formatDateIndo(row.latest_observation.tanggal) }}</span>
+                      <span v-if="row.latest_observation.tempat" class="text-gray-400 font-normal">📍 {{ row.latest_observation.tempat }}</span>
+                    </div>
+                    <p class="text-xs text-gray-900 font-medium line-clamp-1">
+                      {{ row.latest_observation.perilaku_diamati }}
+                    </p>
+                    <div class="text-[10px] text-slate-400">
+                      Pelapor: <strong>{{ row.latest_observation.observer?.nama_lengkap || 'Guru' }}</strong>
+                    </div>
+                  </div>
+                  <div v-else class="text-slate-400 text-xs italic">
+                    Belum ada kejadian tercatat
+                  </div>
+                </td>
+
+                <!-- 5. Status Tinjauan BK (PENGINGAT SUDAH DILIHAT / BELUM) -->
+                <td class="py-3.5 px-4">
+                  <!-- Kondisi 1: Belum Dilihat oleh BK -->
+                  <div v-if="row.unseen_count > 0" class="space-y-1">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
+                      <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+                      <span>Belum Dilihat BK ({{ row.unseen_count }} Baru)</span>
+                    </span>
+                    <p class="text-[10px] text-rose-700">Perlu ditinjau Guru BK</p>
+                  </div>
+
+                  <!-- Kondisi 2: Sudah Dilihat tapi Menunggu Rekomendasi BK -->
+                  <div v-else-if="row.unreviewed_count > 0" class="space-y-1">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                      <span>⏳</span>
+                      <span>Menunggu Rekomendasi BK</span>
+                    </span>
+                    <p class="text-[10px] text-slate-400">Sudah dilihat oleh Guru BK</p>
+                  </div>
+
+                  <!-- Kondisi 3: Masuk ke Kasus BK -->
+                  <div v-else-if="row.escalated_count > 0" class="space-y-1">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                      <span>🎯</span>
+                      <span>Masuk Pantauan BK</span>
+                    </span>
+                    <p class="text-[10px] text-slate-400">Tercatat di sistem monitoring</p>
+                  </div>
+
+                  <!-- Kondisi 4: Sudah Ditanggapi & Selesai di Kelas -->
+                  <div v-else class="space-y-1">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-200">
+                      <span>✓</span>
+                      <span>Cukup di Kelas</span>
+                    </span>
+                    <p class="text-[10px] text-slate-400">Semua catatan telah ditanggapi</p>
+                  </div>
+                </td>
+
+                <!-- 6. Aksi: Lihat Catatan & Catat Baru -->
+                <td class="py-3.5 px-4 text-center">
+                  <div class="flex items-center justify-center gap-1.5">
+                    <button
+                      @click="openStudentHistory(row.student)"
+                      type="button"
+                      class="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                      title="Buka Halaman Rekam Catatan Lengkap Siswa"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <span>Lihat Catatan</span>
+                    </button>
+
+                    <button
+                      @click="openCreateForm(row.student.id)"
+                      type="button"
+                      class="p-1.5 rounded-xl border border-slate-200 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 transition cursor-pointer"
+                      title="Tambah Catatan untuk Siswa Ini"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <!-- MAIN DATA TABLE -->
-      <div class="bg-white rounded-3xl border border-gray-100 shadow-xs overflow-hidden">
-        <div v-if="loading" class="p-12 text-center text-slate-400">
+      <!-- ======================================================= -->
+      <!-- SUBTAB B: TABEL SEMUA CATATAN KEJADIAN FAKTUAL (RAW)    -->
+      <!-- ======================================================= -->
+      <div v-else-if="currentView === 'all-incidents'" class="bg-white rounded-3xl border border-gray-100 shadow-xs overflow-hidden">
+        <div v-if="loadingIncidents" class="p-12 text-center text-slate-400">
           <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent mb-2"></div>
-          <p class="text-xs font-medium">Memuat data observasi...</p>
+          <p class="text-xs font-medium">Memuat data semua kejadian...</p>
         </div>
 
-        <div v-else-if="observations.length === 0" class="p-12 text-center">
-          <div class="w-16 h-16 mx-auto bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 mb-3">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <h3 class="text-sm font-bold text-gray-800">Belum Ada Catatan Observasi</h3>
-          <p class="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
-            {{ auth.isGuruBk 
-              ? 'Belum ada laporan observasi perilaku yang dikirimkan oleh guru ke Guru BK.' 
-              : 'Anda belum mencatat laporan observasi. Klik tombol "+ Catat Laporan Kejadian" di atas untuk melaporkan kejadian siswa ke Guru BK.' }}
-          </p>
+        <div v-else-if="rawObservations.length === 0" class="p-12 text-center">
+          <p class="text-xs text-gray-400">Tidak ada catatan kejadian yang sesuai filter.</p>
         </div>
 
         <div v-else class="overflow-x-auto">
@@ -456,166 +707,51 @@ onMounted(() => {
                 <th class="py-3.5 px-4 min-w-[140px]">Tanggal &amp; Lokasi</th>
                 <th class="py-3.5 px-4 min-w-[200px]">Peserta Didik</th>
                 <th v-if="auth.isGuruBk" class="py-3.5 px-4 min-w-[150px]">Guru Pelapor</th>
-                <th class="py-3.5 px-4 min-w-[240px]">Kejadian Faktual (Perilaku)</th>
-                <th class="py-3.5 px-4 min-w-[200px]">Tanggapan &amp; Status BK</th>
+                <th class="py-3.5 px-4 min-w-[240px]">Kejadian Faktual</th>
+                <th class="py-3.5 px-4 min-w-[180px]">Status Tinjauan BK</th>
                 <th class="py-3.5 px-4 text-center w-28">Aksi</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr 
-                v-for="(obs, idx) in observations" 
-                :key="obs.id"
-                class="hover:bg-indigo-50/20 transition-colors"
-              >
-                <!-- 1. Nomor -->
+              <tr v-for="(obs, idx) in rawObservations" :key="obs.id" class="hover:bg-slate-50/80">
                 <td class="py-3.5 px-4 text-center font-mono text-slate-400">
-                  {{ (currentPage - 1) * 15 + idx + 1 }}
+                  {{ (incidentsCurrentPage - 1) * 15 + idx + 1 }}
                 </td>
-
-                <!-- 2. Tanggal & Lokasi -->
-                <td class="py-3.5 px-4 whitespace-nowrap">
+                <td class="py-3.5 px-4">
                   <div class="font-bold text-gray-900">{{ formatDateIndo(obs.tanggal) }}</div>
-                  <div class="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
-                    <span v-if="obs.waktu">⏰ {{ obs.waktu }}</span>
-                    <span v-if="obs.tempat">📍 {{ obs.tempat }}</span>
-                  </div>
+                  <div class="text-[10px] text-gray-400">{{ obs.tempat }} {{ obs.waktu ? '• ' + obs.waktu : '' }}</div>
                 </td>
-
-                <!-- 3. Siswa & Kelas -->
                 <td class="py-3.5 px-4">
-                  <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
-                      <img
-                        v-if="obs.student?.foto_path"
-                        :src="obs.student.foto_path.startsWith('http') ? obs.student.foto_path : `/storage/${obs.student.foto_path}`"
-                        alt="Foto"
-                        class="w-full h-full object-cover"
-                      />
-                      <span v-else class="text-[11px] font-bold text-slate-500 uppercase">
-                        {{ getInitials(obs.student?.nama_lengkap) }}
-                      </span>
-                    </div>
-                    <div>
-                      <div class="font-bold text-gray-900 leading-snug">
-                        {{ obs.student?.nama_lengkap || 'Siswa' }}
-                      </div>
-                      <div class="flex items-center gap-1.5 text-[10px] text-gray-400 mt-0.5">
-                        <span class="px-1.5 py-0.5 rounded bg-slate-100 font-bold text-slate-700">
-                          {{ getClassName(obs) }}
-                        </span>
-                        <span>NIS: {{ obs.student?.nis || '-' }}</span>
-                      </div>
-                    </div>
-                  </div>
+                  <div class="font-bold text-gray-900">{{ obs.student?.nama_lengkap }}</div>
+                  <div class="text-[10px] text-gray-400">{{ getClassName(obs) }}</div>
                 </td>
-
-                <!-- 4. Guru Pelapor (Khusus Tampilan BK) -->
                 <td v-if="auth.isGuruBk" class="py-3.5 px-4">
-                  <div class="font-semibold text-gray-900">
-                    {{ obs.observer?.nama_lengkap || 'Guru' }}
-                  </div>
-                  <div class="text-[10px] text-slate-400">
-                    {{ obs.observer?.jabatan || 'Wali / Guru Tema' }}
-                  </div>
+                  <div class="font-medium text-gray-800">{{ obs.observer?.nama_lengkap || 'Guru' }}</div>
                 </td>
-
-                <!-- 5. Kejadian Faktual -->
                 <td class="py-3.5 px-4">
-                  <div class="line-clamp-2 font-medium text-gray-900 text-xs">
-                    {{ obs.perilaku_diamati }}
-                  </div>
-                  <div v-if="obs.situasi_sebelum" class="text-[10px] text-slate-400 mt-0.5 line-clamp-1 italic">
-                    Sebelum: {{ obs.situasi_sebelum }}
-                  </div>
+                  <p class="line-clamp-2 text-xs text-gray-900">{{ obs.perilaku_diamati }}</p>
                 </td>
-
-                <!-- 6. Tanggapan & Status BK -->
                 <td class="py-3.5 px-4">
-                  <!-- Kasus: Sudah Ditanggapi BK -->
-                  <div v-if="obs.rekomendasi_bk" class="space-y-1">
-                    <div class="flex items-center gap-1.5">
-                      <span 
-                        v-if="obs.is_escalated_to_bk" 
-                        class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1"
-                      >
-                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-                        Masuk Pantauan BK
-                      </span>
-                      <span 
-                        v-else 
-                        class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-teal-50 text-teal-700 border border-teal-200"
-                      >
-                        ✓ Cukup di Kelas
-                      </span>
-                    </div>
-                    <p class="text-[11px] text-slate-600 line-clamp-1 italic">
-                      "{{ obs.rekomendasi_bk }}"
-                    </p>
-                    <div v-if="obs.bkTeacher" class="text-[9px] text-gray-400">
-                      Oleh: {{ obs.bkTeacher.nama_lengkap }}
-                    </div>
-                  </div>
-
-                  <!-- Kasus: Belum Ditanggapi BK -->
-                  <div v-else>
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1">
-                      <span>⏳</span>
-                      Menunggu Tanggapan BK
-                    </span>
-                  </div>
+                  <span v-if="!obs.dilihat_bk_at" class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-800">
+                    Belum Dilihat BK
+                  </span>
+                  <span v-else-if="!obs.rekomendasi_bk" class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800">
+                    Menunggu Rekomendasi
+                  </span>
+                  <span v-else-if="obs.is_escalated_to_bk" class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                    Masuk Pantauan BK
+                  </span>
+                  <span v-else class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                    Cukup di Kelas
+                  </span>
                 </td>
-
-                <!-- 7. Aksi -->
                 <td class="py-3.5 px-4 text-center">
                   <div class="flex items-center justify-center gap-1">
-                    <!-- Tombol Detail -->
                     <button
-                      @click="openDetailView(obs)"
-                      type="button"
-                      class="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition cursor-pointer"
-                      title="Lihat Detail Kejadian & Rekomendasi"
+                      @click="openStudentHistory(obs.student)"
+                      class="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg font-bold text-[11px] hover:bg-indigo-100 cursor-pointer"
                     >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    </button>
-
-                    <!-- Tombol Beri Tanggapan (Khusus Guru BK) -->
-                    <button
-                      v-if="auth.isGuruBk"
-                      @click="openFeedbackForm(obs)"
-                      type="button"
-                      class="p-1.5 rounded-lg text-rose-600 hover:text-rose-800 hover:bg-rose-50 transition cursor-pointer"
-                      :title="obs.rekomendasi_bk ? 'Edit Tanggapan & Status BK' : 'Beri Tanggapan & Status BK'"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-
-                    <!-- Tombol Edit Observasi (Guru Pelapor / Admin) -->
-                    <button
-                      @click="openEditForm(obs)"
-                      type="button"
-                      class="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition cursor-pointer"
-                      title="Edit Kejadian Observasi"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </button>
-
-                    <!-- Tombol Hapus -->
-                    <button
-                      @click="deleteObservation(obs)"
-                      type="button"
-                      class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                      title="Hapus Catatan"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                      Buka Siswa
                     </button>
                   </div>
                 </td>
@@ -623,228 +759,279 @@ onMounted(() => {
             </tbody>
           </table>
         </div>
-
-        <!-- Pagination Bar -->
-        <div v-if="lastPage > 1" class="flex items-center justify-between bg-slate-50/50 px-5 py-3 border-t border-slate-100">
-          <span class="text-xs text-gray-500">
-            Halaman {{ currentPage }} dari {{ lastPage }} (Total {{ totalItems }} laporan)
-          </span>
-          <div class="flex items-center gap-1.5">
-            <button
-              :disabled="currentPage <= 1"
-              @click="fetchObservations(currentPage - 1)"
-              type="button"
-              class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
-            >
-              Sebelumnya
-            </button>
-            <button
-              :disabled="currentPage >= lastPage"
-              @click="fetchObservations(currentPage + 1)"
-              type="button"
-              class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
-            >
-              Berikutnya
-            </button>
-          </div>
-        </div>
       </div>
     </template>
 
-    <!-- ======================================================== -->
-    <!-- VIEW 2: HALAMAN DETAIL CATATAN OBSERVASI (FULL PAGE)     -->
-    <!-- ======================================================== -->
-    <template v-else-if="currentView === 'detail' && selectedObs">
-      <!-- Top Action Bar -->
-      <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <button
-            @click="backToList"
-            type="button"
-            class="w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition cursor-pointer shrink-0"
-            title="Kembali ke Tabel Observasi"
-          >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-          </button>
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
-                Detail Catatan Observasi
-              </span>
-              <span class="text-xs text-gray-400">/ Tanggal {{ formatDateIndo(selectedObs.tanggal) }}</span>
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: HALAMAN BARU REKAM JEJAK LENGKAP SISWA (STUDENT HISTORY VIEW)     -->
+    <!-- ========================================================================= -->
+    <template v-else-if="currentView === 'student-history' && selectedStudent">
+      <!-- Top Action Bar & Profil Siswa Header -->
+      <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <button
+              @click="backToStudentList"
+              type="button"
+              class="w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition cursor-pointer shrink-0"
+              title="Kembali ke Daftar Peserta Didik"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </button>
+            <div class="flex items-center gap-3.5">
+              <div class="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-200 overflow-hidden flex items-center justify-center shrink-0">
+                <img
+                  v-if="selectedStudent.foto_path"
+                  :src="selectedStudent.foto_path.startsWith('http') ? selectedStudent.foto_path : `/storage/${selectedStudent.foto_path}`"
+                  alt="Foto"
+                  class="w-full h-full object-cover"
+                />
+                <span v-else class="text-base font-black text-indigo-700 uppercase">
+                  {{ getInitials(selectedStudent.nama_lengkap) }}
+                </span>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    Rekam Jejak Observasi Siswa
+                  </span>
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                    {{ getClassName(selectedStudent) }}
+                  </span>
+                </div>
+                <h1 class="text-xl sm:text-2xl font-black text-gray-900 leading-tight mt-1">
+                  {{ selectedStudent.nama_lengkap }}
+                </h1>
+                <p class="text-xs text-gray-500 mt-0.5">
+                  NIS: <strong>{{ selectedStudent.nis || '-' }}</strong> | Total Kejadian: <strong>{{ studentHistoryObservations.length }} Catatan</strong>
+                </p>
+              </div>
             </div>
-            <h1 class="text-xl sm:text-2xl font-black text-gray-900 leading-tight mt-1">
-              {{ selectedObs.student?.nama_lengkap || 'Siswa' }}
-            </h1>
-            <p class="text-xs text-gray-500 mt-0.5">
-              Rombel: <strong class="text-gray-800">{{ getClassName(selectedObs) }}</strong> |
-              NIS: {{ selectedObs.student?.nis }} |
-              Pelapor: <strong>{{ selectedObs.observer?.nama_lengkap || 'Guru' }}</strong> ({{ selectedObs.observer?.jabatan || 'Wali Kelas' }})
-            </p>
+          </div>
+
+          <div class="flex items-center gap-2.5 self-start md:self-auto">
+            <button
+              @click="backToStudentList"
+              type="button"
+              class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+            >
+              Kembali ke Daftar
+            </button>
+            <button
+              @click="openCreateForm(selectedStudent.id)"
+              type="button"
+              class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/20 transition active:scale-95 cursor-pointer"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>+ Catat Kejadian Siswa Ini</span>
+            </button>
           </div>
         </div>
 
-        <div class="flex items-center gap-2 self-start md:self-auto">
-          <button
-            v-if="auth.isGuruBk"
-            @click="openFeedbackForm(selectedObs)"
-            type="button"
-            class="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            <span>{{ selectedObs.rekomendasi_bk ? 'Edit Tanggapan BK' : '+ Beri Tanggapan BK' }}</span>
-          </button>
-          <button
-            @click="openEditForm(selectedObs)"
-            type="button"
-            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
-          >
-            Edit Laporan
-          </button>
-          <button
-            @click="backToList"
-            type="button"
-            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
-          >
-            Kembali
-          </button>
+        <!-- Notification Banner: Status Dilihat BK -->
+        <div class="p-3.5 rounded-2xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-gradient-to-r from-slate-50 to-indigo-50/20 border-slate-200">
+          <div class="flex items-center gap-2">
+            <span class="p-1 rounded-lg bg-indigo-100 text-indigo-700 font-bold">ℹ️</span>
+            <span class="text-gray-700">
+              <strong v-if="auth.isGuruBk">Mode Guru BK Aktif:</strong>
+              <strong v-else>Status di Layanan BK:</strong>
+              Catatan siswa ini dikompilasi secara longitudinal agar pola perilaku anak terpantau secara utuh.
+            </span>
+          </div>
+          <div class="text-[11px] font-semibold text-gray-500">
+            Terakhir diperbarui: {{ studentHistoryObservations[0] ? formatDateIndo(studentHistoryObservations[0].tanggal) : 'Hari ini' }}
+          </div>
         </div>
       </div>
 
-      <!-- Detail Content Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Kolom Kiri: 3 Pilar ABC Faktual -->
-        <div class="lg:col-span-2 space-y-5">
-          <!-- ABC Pillars Card -->
-          <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-5">
-            <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-              <div class="flex items-center gap-2">
-                <span class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xs">
-                  ABC
-                </span>
-                <div>
-                  <h3 class="text-sm font-bold text-gray-900">Uraian Faktual Observasi</h3>
-                  <p class="text-[11px] text-gray-400">Deskripsi kronologis tanpa asumsi subjektif.</p>
+      <!-- Timeline Records of Student Observations -->
+      <div v-if="loadingStudentHistory" class="p-12 text-center text-slate-400 bg-white rounded-3xl border border-gray-100">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent mb-2"></div>
+        <p class="text-xs font-medium">Memuat seluruh rekam kejadian siswa...</p>
+      </div>
+
+      <div v-else-if="studentHistoryObservations.length === 0" class="p-12 text-center bg-white rounded-3xl border border-gray-100 shadow-xs">
+        <h3 class="text-sm font-bold text-gray-800">Belum Ada Catatan Kejadian</h3>
+        <p class="text-xs text-gray-400 mt-1">Gunakan tombol "+ Catat Kejadian Siswa Ini" untuk menambahkan observasi.</p>
+      </div>
+
+      <div v-else class="space-y-5">
+        <div
+          v-for="(obs, idx) in studentHistoryObservations"
+          :key="obs.id"
+          class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-4 hover:border-indigo-200 transition"
+        >
+          <!-- Card Header: No Urut Kejadian, Tanggal, Pelapor & Status -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 font-black text-xs flex items-center justify-center">
+                #{{ studentHistoryObservations.length - idx }}
+              </span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-sm font-black text-gray-900">
+                    Kejadian {{ formatDateIndo(obs.tanggal) }}
+                  </h3>
+                  <!-- Badge Status Dilihat BK -->
+                  <span
+                    v-if="!obs.dilihat_bk_at"
+                    class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 animate-pulse"
+                  >
+                    🔔 Belum Dilihat BK
+                  </span>
+                  <span
+                    v-else
+                    class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200"
+                  >
+                    ✓ Dilihat BK
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5">
+                  <span v-if="obs.waktu">⏰ {{ obs.waktu }}</span>
+                  <span v-if="obs.tempat">📍 {{ obs.tempat }}</span>
+                  <span>👤 Pelapor: <strong class="text-gray-700">{{ obs.observer?.nama_lengkap || 'Guru' }}</strong></span>
                 </div>
               </div>
-              <div class="text-xs text-gray-500">
-                <span>📍 {{ selectedObs.tempat || 'Ruang Kelas' }}</span>
-                <span v-if="selectedObs.waktu" class="ml-2">⏰ {{ selectedObs.waktu }}</span>
-              </div>
             </div>
 
-            <!-- Antecedent -->
-            <div class="p-4 bg-slate-50/70 rounded-2xl border border-slate-100 space-y-1">
-              <div class="flex items-center gap-1.5 text-xs font-bold text-slate-600 uppercase tracking-wide">
-                <span class="w-5 h-5 rounded-md bg-slate-200 text-slate-700 flex items-center justify-center text-[10px]">A</span>
-                <span>Situasi Sebelum (Antecedent)</span>
-              </div>
-              <p class="text-xs text-gray-800 whitespace-pre-line leading-relaxed pl-6">
-                {{ selectedObs.situasi_sebelum || '— (Tidak dicatat oleh pelapor)' }}
-              </p>
-            </div>
-
-            <!-- Behavior -->
-            <div class="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-200/80 space-y-1">
-              <div class="flex items-center gap-1.5 text-xs font-bold text-indigo-900 uppercase tracking-wide">
-                <span class="w-5 h-5 rounded-md bg-indigo-200 text-indigo-900 flex items-center justify-center text-[10px]">B</span>
-                <span>Perilaku yang Diamati (Behavior)</span>
-              </div>
-              <p class="text-xs text-gray-900 font-semibold whitespace-pre-line leading-relaxed pl-6">
-                {{ selectedObs.perilaku_diamati }}
-              </p>
-            </div>
-
-            <!-- Consequence -->
-            <div class="p-4 bg-slate-50/70 rounded-2xl border border-slate-100 space-y-1">
-              <div class="flex items-center gap-1.5 text-xs font-bold text-slate-600 uppercase tracking-wide">
-                <span class="w-5 h-5 rounded-md bg-slate-200 text-slate-700 flex items-center justify-center text-[10px]">C</span>
-                <span>Respons Siswa Lain / Lingkungan (Consequence)</span>
-              </div>
-              <p class="text-xs text-gray-800 whitespace-pre-line leading-relaxed pl-6">
-                {{ selectedObs.respons_lingkungan || '— (Tidak dicatat oleh pelapor)' }}
-              </p>
-            </div>
-
-            <!-- Catatan Refleksi Pelapor -->
-            <div v-if="selectedObs.catatan_wali_kelas" class="p-4 bg-amber-50/30 rounded-2xl border border-amber-100 space-y-1">
-              <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
-                Catatan Tambahan Guru Pelapor:
+            <!-- Keputusan BK Badge -->
+            <div class="flex items-center gap-2 self-start sm:self-auto">
+              <span
+                v-if="obs.is_escalated_to_bk"
+                class="px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200"
+              >
+                🎯 Masuk Kasus BK
               </span>
-              <p class="text-xs text-gray-800 italic">
-                {{ selectedObs.catatan_wali_kelas }}
+              <span
+                v-else-if="obs.rekomendasi_bk"
+                class="px-3 py-1 rounded-full text-xs font-bold bg-teal-50 text-teal-700 border border-teal-200"
+              >
+                ✓ Cukup di Kelas
+              </span>
+              <span
+                v-else
+                class="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200"
+              >
+                ⏳ Menunggu Rekomendasi BK
+              </span>
+            </div>
+          </div>
+
+          <!-- Uraian 3 Pilar ABC Faktual -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-100 space-y-1">
+              <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                1. Situasi Sebelum (Antecedent)
+              </div>
+              <p class="text-xs text-gray-700 whitespace-pre-line leading-relaxed">
+                {{ obs.situasi_sebelum || '— (Tidak dicatat)' }}
+              </p>
+            </div>
+
+            <div class="p-3.5 bg-indigo-50/40 rounded-2xl border border-indigo-100 space-y-1">
+              <div class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">
+                2. Perilaku yang Diamati (Behavior) *
+              </div>
+              <p class="text-xs text-gray-900 font-semibold whitespace-pre-line leading-relaxed">
+                {{ obs.perilaku_diamati }}
+              </p>
+            </div>
+
+            <div class="p-3.5 bg-slate-50/70 rounded-2xl border border-slate-100 space-y-1">
+              <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                3. Respons Lingkungan (Consequence)
+              </div>
+              <p class="text-xs text-gray-700 whitespace-pre-line leading-relaxed">
+                {{ obs.respons_lingkungan || '— (Tidak dicatat)' }}
               </p>
             </div>
           </div>
-        </div>
 
-        <!-- Kolom Kanan: Tanggapan & Keputusan Guru BK -->
-        <div class="space-y-5">
-          <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-4">
-            <div class="flex items-center gap-2 pb-3 border-b border-gray-100">
-              <span class="w-8 h-8 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center font-bold text-xs">
-                🧠
-              </span>
-              <div>
-                <h3 class="text-sm font-bold text-rose-950">Tanggapan &amp; Keputusan BK</h3>
-                <p class="text-[11px] text-gray-400">Asesmen dan tindak lanjut Bimbingan Konseling.</p>
+          <!-- Bagian Tanggapan & Rekomendasi Guru BK -->
+          <div v-if="obs.rekomendasi_bk || obs.saran_untuk_guru" class="p-4 bg-gradient-to-r from-rose-50/50 via-amber-50/30 to-indigo-50/30 rounded-2xl border border-rose-200/60 space-y-2">
+            <div class="flex items-center justify-between pb-1 border-b border-rose-100/60">
+              <div class="flex items-center gap-2">
+                <span class="p-1 rounded-lg bg-rose-100 text-rose-700 font-bold text-xs">🧠</span>
+                <h4 class="text-xs font-bold text-rose-950">
+                  Tanggapan &amp; Telaah Guru Bimbingan Konseling (BK)
+                </h4>
               </div>
+              <span v-if="obs.bkTeacher" class="text-[10px] text-gray-500">
+                Oleh: <strong>{{ obs.bkTeacher.nama_lengkap }}</strong>
+              </span>
             </div>
 
-            <!-- Status Keputusan Pemantauan BK -->
-            <div>
-              <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
-                Keputusan Masuk Pemantauan BK
-              </span>
-              <div v-if="selectedObs.is_escalated_to_bk" class="p-3 bg-rose-50 rounded-2xl border border-rose-200 space-y-1">
-                <div class="flex items-center gap-1.5 font-bold text-xs text-rose-900">
-                  <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-                  <span>MASUK DAFTAR PEMANTAUAN BK</span>
-                </div>
-                <p class="text-[11px] text-rose-700">
-                  Siswa telah dimasukkan ke dalam menu Analisis &amp; Monitoring BK untuk pemantauan berkala.
-                </p>
-              </div>
-              <div v-else-if="selectedObs.rekomendasi_bk" class="p-3 bg-teal-50 rounded-2xl border border-teal-200 space-y-1">
-                <div class="flex items-center gap-1.5 font-bold text-xs text-teal-900">
-                  <span>✓</span>
-                  <span>CUKUP PENANGANAN DI KELAS</span>
-                </div>
-                <p class="text-[11px] text-teal-700">
-                  Tidak dimasukkan ke daftar Analisis &amp; Monitoring BK. Guru cukup mendampingi sesuai saran praktis BK.
-                </p>
-              </div>
-              <div v-else class="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-800">
-                ⏳ Belum ditanggapi oleh Guru Bimbingan Konseling.
-              </div>
+            <div v-if="obs.rekomendasi_bk" class="space-y-0.5">
+              <span class="text-[10px] font-bold text-rose-800 uppercase tracking-wider">Telaah / Analisis Psikologis BK:</span>
+              <p class="text-xs text-gray-800 italic bg-white/80 p-2.5 rounded-xl border border-rose-100">
+                "{{ obs.rekomendasi_bk }}"
+              </p>
             </div>
 
-            <!-- Rekomendasi BK -->
-            <div v-if="selectedObs.rekomendasi_bk" class="space-y-1">
-              <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                Telaah &amp; Rekomendasi BK
-              </span>
-              <div class="p-3 bg-slate-50 rounded-2xl text-xs text-gray-800 whitespace-pre-line leading-relaxed">
-                {{ selectedObs.rekomendasi_bk }}
-              </div>
+            <div v-if="obs.saran_untuk_guru" class="space-y-0.5">
+              <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Saran Praktis untuk Guru di Kelas:</span>
+              <p class="text-xs text-gray-800 bg-white/80 p-2.5 rounded-xl border border-amber-100">
+                {{ obs.saran_untuk_guru }}
+              </p>
+            </div>
+          </div>
+
+          <div v-else class="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-800 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span>⏳</span>
+              <span>Laporan kejadian ini belum mendapatkan tanggapan/rekomendasi tertulis dari Guru BK.</span>
+            </div>
+            <button
+              v-if="auth.isGuruBk"
+              @click="openFeedbackForm(obs)"
+              type="button"
+              class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-[11px] cursor-pointer"
+            >
+              + Beri Rekomendasi BK Sekarang
+            </button>
+          </div>
+
+          <!-- Action Buttons per Incident Record -->
+          <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+            <div class="flex items-center gap-2">
+              <button
+                v-if="auth.isGuruBk"
+                @click="openFeedbackForm(obs)"
+                type="button"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 transition cursor-pointer"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span>{{ obs.rekomendasi_bk ? 'Edit Rekomendasi BK' : '+ Beri Rekomendasi BK' }}</span>
+              </button>
             </div>
 
-            <!-- Saran untuk Guru -->
-            <div v-if="selectedObs.saran_untuk_guru" class="space-y-1">
-              <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                Saran Praktis untuk Guru Kelas
-              </span>
-              <div class="p-3 bg-amber-50/50 border border-amber-100 rounded-2xl text-xs text-gray-800 whitespace-pre-line leading-relaxed">
-                {{ selectedObs.saran_untuk_guru }}
-              </div>
-            </div>
-
-            <div v-if="selectedObs.bkTeacher" class="pt-2 border-t border-gray-100 text-[11px] text-gray-400">
-              Ditanggapi oleh: <strong class="text-gray-700">{{ selectedObs.bkTeacher.nama_lengkap }}</strong>
+            <div class="flex items-center gap-1.5">
+              <button
+                @click="openEditForm(obs)"
+                type="button"
+                class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition cursor-pointer border border-slate-200"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                <span>Edit</span>
+              </button>
+              <button
+                @click="deleteObservation(obs)"
+                type="button"
+                class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer border border-slate-200"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span>Hapus</span>
+              </button>
             </div>
           </div>
         </div>
@@ -858,10 +1045,10 @@ onMounted(() => {
       <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <button
-            @click="backToList"
+            @click="handleReturnAfterSave"
             type="button"
             class="w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition cursor-pointer shrink-0"
-            title="Kembali ke Tabel Observasi"
+            title="Kembali"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -885,7 +1072,7 @@ onMounted(() => {
 
         <div class="flex items-center gap-2.5 self-start md:self-auto">
           <button
-            @click="backToList"
+            @click="handleReturnAfterSave"
             type="button"
             class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
           >
@@ -901,7 +1088,7 @@ onMounted(() => {
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
             </svg>
-            <span>{{ submitting ? 'Menyimpan...' : (isEditing ? 'Simpan Perubahan' : 'Kirim Laporan ke BK') }}</span>
+            <span>{{ submitting ? 'Menyimpan...' : (isEditing ? 'Simpan Perubahan' : 'Kirim Laporan ke Guru BK') }}</span>
           </button>
         </div>
       </div>
@@ -1071,7 +1258,7 @@ onMounted(() => {
         <!-- Actions -->
         <div class="flex items-center justify-end gap-3 pt-2">
           <button
-            @click="backToList"
+            @click="handleReturnAfterSave"
             type="button"
             class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
           >
@@ -1100,10 +1287,10 @@ onMounted(() => {
       <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <button
-            @click="backToList"
+            @click="handleReturnAfterSave"
             type="button"
             class="w-12 h-12 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 flex items-center justify-center transition cursor-pointer shrink-0"
-            title="Kembali ke Tabel Observasi"
+            title="Kembali"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -1128,7 +1315,7 @@ onMounted(() => {
 
         <div class="flex items-center gap-2.5 self-start md:self-auto">
           <button
-            @click="backToList"
+            @click="handleReturnAfterSave"
             type="button"
             class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
           >
@@ -1306,7 +1493,7 @@ onMounted(() => {
         <!-- Actions -->
         <div class="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
           <button
-            @click="backToList"
+            @click="handleReturnAfterSave"
             type="button"
             class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
           >

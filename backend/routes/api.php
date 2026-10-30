@@ -138,6 +138,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/announcements/{id}', [AnnouncementController::class, 'show']);
 
         // Catatan Observasi Perilaku Siswa (Bisa Diakses Semua Guru)
+        Route::get('/observations/students', [StudentObservationController::class, 'studentsSummary']);
+        Route::get('/observations/students/{student}', [StudentObservationController::class, 'studentObservations']);
+        Route::post('/observations/students/{student}/mark-seen', [StudentObservationController::class, 'markStudentObservationsSeen']);
         Route::get('/observations', [StudentObservationController::class, 'index']);
         Route::post('/observations', [StudentObservationController::class, 'store']);
         Route::get('/observations/{observation}', [StudentObservationController::class, 'show']);

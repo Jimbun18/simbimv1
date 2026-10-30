@@ -24,6 +24,8 @@ class StudentObservation extends Model
         'rekomendasi_bk',
         'rekomendasi_bk_by',
         'rekomendasi_bk_at',
+        'dilihat_bk_at',
+        'dilihat_bk_by',
         'saran_untuk_guru',
         'catatan_wali_kelas',
         'status_pemantauan',
@@ -35,6 +37,7 @@ class StudentObservation extends Model
     protected $casts = [
         'tanggal' => 'date',
         'rekomendasi_bk_at' => 'datetime',
+        'dilihat_bk_at' => 'datetime',
         'is_escalated_to_bk' => 'boolean',
     ];
 
@@ -73,6 +76,11 @@ class StudentObservation extends Model
     public function bkTeacher(): BelongsTo
     {
         return $this->belongsTo(Teacher::class, 'rekomendasi_bk_by');
+    }
+
+    public function bkViewer(): BelongsTo
+    {
+        return $this->belongsTo(Teacher::class, 'dilihat_bk_by');
     }
 }
 
