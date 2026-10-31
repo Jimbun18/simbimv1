@@ -80,7 +80,7 @@
 
         <div class="relative z-20 pt-6 border-t border-white/10 text-[11px] text-emerald-300/80 flex justify-between items-center">
           <span>Purwokerto, Jawa Tengah</span>
-          <span>TA 2024/2025</span>
+          <span>TA 2026/2027</span>
         </div>
       </div>
 

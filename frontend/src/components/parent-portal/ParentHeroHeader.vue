@@ -10,7 +10,7 @@
           <span class="px-3.5 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider text-emerald-200 border border-white/20">
             Portal Terpadu Wali Murid
           </span>
-          <span class="text-xs text-emerald-300 font-semibold">• TA 2024/2025</span>
+          <span class="text-xs text-emerald-300 font-semibold">• TA 2026/2027</span>
         </div>
         <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight mt-2">
           Bapak/Ibu {{ userName }}

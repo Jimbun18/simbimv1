@@ -58,7 +58,7 @@
 
       <div class="sm:text-right flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">
         <span class="text-[11px] text-slate-400 font-semibold uppercase">Tahun Pelajaran</span>
-        <span class="text-xs sm:text-sm font-extrabold text-slate-800">2024/2025</span>
+        <span class="text-xs sm:text-sm font-extrabold text-slate-800">2026/2027</span>
         <span class="text-[10px] text-slate-400">Semester Ganjil</span>
       </div>
     </div>
