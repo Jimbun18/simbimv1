@@ -10,6 +10,7 @@ use App\Models\Student;
 use App\Models\StudentObservation;
 use App\Models\Teacher;
 use App\Services\ActivityLogService;
+use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -346,6 +347,23 @@ class StudentObservationController extends Controller
             keterangan: "Menambahkan catatan observasi perilaku untuk siswa: {$student->nama_lengkap}."
         );
 
+        // Notifikasi ke seluruh Guru BK (In-App Dashboard + Email via teachers.email)
+        $namaPelapor = $teacher?->nama_lengkap ?? $user->nama;
+        NotificationService::notifyGuruBk(
+            title: "Laporan Observasi Baru: {$student->nama_lengkap}",
+            message: "Ustadz/ah {$namaPelapor} melaporkan catatan observasi perilaku untuk siswa {$student->nama_lengkap}. Mohon ditinjau dan diberikan tanggapan.",
+            targetUrl: "/observations",
+            sendEmail: true,
+            extraDetails: [
+                'Nama Siswa' => $student->nama_lengkap,
+                'NIS' => $student->nis,
+                'Guru Pelapor' => $namaPelapor,
+                'Tanggal Kejadian' => Carbon::parse($observation->tanggal)->format('d/m/Y'),
+                'Tempat / Waktu' => ($observation->tempat ?? '-') . ' (' . ($observation->waktu ?? '-') . ')',
+                'Perilaku Diamati' => $observation->perilaku_diamati,
+            ]
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Catatan observasi siswa berhasil disimpan.',
@@ -524,6 +542,26 @@ class StudentObservationController extends Controller
             dataSesudah: $observation->fresh()->toArray(),
             keterangan: "Guru BK memberikan tanggapan dan menentukan status pemantauan untuk observasi siswa ID {$observation->student_id}."
         );
+
+        // Notifikasi ke Guru Pelapor bahwa laporan telah ditinjau dan ditanggapi oleh Guru BK
+        if ($observation->teacher_id) {
+            $student = $observation->student ?? Student::find($observation->student_id);
+            $namaSiswa = $student ? $student->nama_lengkap : 'Siswa';
+            NotificationService::notifyTeacher(
+                teacher: $observation->teacher_id,
+                title: "Tanggapan BK: Observasi Siswa {$namaSiswa}",
+                message: "Guru BK telah menanggapi laporan observasi perilaku siswa {$namaSiswa}. Keputusan: " . ($masukBk ? 'Masuk Pemantauan BK' : 'Cukup Penanganan di Kelas') . ".",
+                type: 'success',
+                targetUrl: '/observations',
+                sendEmail: true,
+                extraDetails: [
+                    'Nama Siswa' => $namaSiswa,
+                    'Rekomendasi BK' => $validated['rekomendasi_bk'],
+                    'Saran untuk Guru' => $validated['saran_untuk_guru'] ?? '-',
+                    'Status Tindak Lanjut' => $masukBk ? 'Eskalasi ke Bimbingan Konseling (BK)' : 'Selesai di Tingkat Kelas',
+                ]
+            );
+        }
 
         return response()->json([
             'success' => true,

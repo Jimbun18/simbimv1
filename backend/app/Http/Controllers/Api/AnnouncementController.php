@@ -8,6 +8,7 @@ use App\Models\InAppNotification;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\ActivityLogService;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -59,6 +60,22 @@ class AnnouncementController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Kepala Sekolah dan Staf Administrasi yang berhak membuat pengumuman.',
+            ], 403);
+        }
+
+        // Normalisasi field jika dikirim sebagai 'konten' atau 'wali_murid'
+        if ($request->has('konten') && !$request->has('isi')) {
+            $request->merge(['isi' => $request->input('konten')]);
+        }
+        if ($request->input('target_role') === 'wali_murid') {
+            $request->merge(['target_role' => 'wali']);
+        }
+
         $validated = $request->validate([
             'judul' => ['required', 'string', 'max:200'],
             'isi' => ['required', 'string'],
@@ -76,7 +93,6 @@ class AnnouncementController extends Controller
             $lampiranPath = $request->file('lampiran')->store('announcements', 'public');
         }
 
-        $user = $request->user();
         $announcement = Announcement::create([
             'judul' => $validated['judul'],
             'isi' => $validated['isi'],
@@ -99,30 +115,12 @@ class AnnouncementController extends Controller
             keterangan: "Menerbitkan pengumuman baru: {$announcement->judul} (Target: {$announcement->target_role})."
         );
 
-        // Broadcast in-app notification to target users
-        $targetRoleName = $validated['target_role'];
-        $usersQuery = User::where('status', 'aktif')->where('id', '!=', $user->id);
-        if ($targetRoleName !== 'semua') {
-            $role = Role::where('nama', $targetRoleName)->first();
-            if ($role) {
-                $usersQuery->where('role_id', $role->id);
-            }
-        }
-
-        $targetUsers = $usersQuery->select('id')->get();
-        foreach ($targetUsers as $targetUser) {
-            InAppNotification::send(
-                userId: $targetUser->id,
-                judul: "Pengumuman: {$announcement->judul}",
-                isi: substr(strip_tags($announcement->isi), 0, 100) . '...',
-                tipe: 'pengumuman',
-                targetUrl: "/announcements/{$announcement->id}"
-            );
-        }
+        // Broadcast Pengumuman ke In-App Dashboard & Email SMTP (Khusus Guru via teachers.email)
+        NotificationService::broadcastAnnouncement($announcement->load('creator'));
 
         return response()->json([
             'success' => true,
-            'message' => 'Pengumuman berhasil diterbitkan.',
+            'message' => 'Pengumuman berhasil diterbitkan dan disebarkan ke notifikasi dashboard serta email.',
             'data' => $announcement->load('creator'),
         ], 201);
     }
@@ -140,6 +138,21 @@ class AnnouncementController extends Controller
 
     public function update(Request $request, int $id): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Kepala Sekolah dan Staf Administrasi yang berhak mengubah pengumuman.',
+            ], 403);
+        }
+
+        if ($request->has('konten') && !$request->has('isi')) {
+            $request->merge(['isi' => $request->input('konten')]);
+        }
+        if ($request->input('target_role') === 'wali_murid') {
+            $request->merge(['target_role' => 'wali']);
+        }
+
         $announcement = Announcement::findOrFail($id);
 
         $validated = $request->validate([
@@ -182,8 +195,16 @@ class AnnouncementController extends Controller
         ]);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Kepala Sekolah dan Staf Administrasi yang berhak menghapus pengumuman.',
+            ], 403);
+        }
+
         $announcement = Announcement::findOrFail($id);
         $oldData = $announcement->toArray();
         $announcement->delete();

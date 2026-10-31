@@ -157,6 +157,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, role: ['guru', 'kepala_sekolah', 'staf_admin'] },
   },
   {
+    path: '/announcements',
+    name: 'announcements',
+    component: () => import('../views/AnnouncementsView.vue'),
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru', 'wali'] },
+  },
+  {
     path: '/progress-activities',
     name: 'progress-activities',
     component: () => import('../views/ProgressAndActivitiesView.vue'),

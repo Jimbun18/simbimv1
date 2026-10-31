@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import api from '../services/api'
 import { useAuthStore } from '../stores/auth'
 import { showConfirm, showSuccess, showError, confirmDeleteWithKeyword } from '../services/swal'
+import { formatDateTimeIndo } from '../utils/date'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -28,6 +29,22 @@ const userForm = ref({
 // Activity Logs State
 const activityLogs = ref<any[]>([])
 const logSearch = ref('')
+const logFilterModul = ref('')
+const logFilterAksi = ref('')
+const logCurrentPage = ref(1)
+const logPerPage = ref(20)
+const logMeta = ref<{
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+}>({
+  current_page: 1,
+  last_page: 1,
+  per_page: 20,
+  total: 0,
+})
+const selectedLogForDetail = ref<any | null>(null)
 
 // Settings State
 const schoolProfile = ref<any>({})
@@ -153,16 +170,58 @@ const resetPassword = async (user: any) => {
   }
 }
 
-const fetchLogs = async () => {
+const fetchLogs = async (page = 1) => {
   loading.value = true
+  logCurrentPage.value = page
   try {
-    const res = await api.get('/activity-logs', { params: { search: logSearch.value } })
+    const params: any = {
+      page,
+      per_page: logPerPage.value,
+    }
+    if (logSearch.value.trim()) params.search = logSearch.value.trim()
+    if (logFilterModul.value) params.modul = logFilterModul.value
+    if (logFilterAksi.value) params.aksi = logFilterAksi.value
+
+    const res = await api.get('/activity-logs', { params })
     activityLogs.value = res.data.data?.data || res.data.data || []
+    if (res.data.meta) {
+      logMeta.value = res.data.meta
+    }
   } catch (err) {
     console.error('Failed to load logs', err)
   } finally {
     loading.value = false
   }
+}
+
+const resetLogFilters = () => {
+  logSearch.value = ''
+  logFilterModul.value = ''
+  logFilterAksi.value = ''
+  fetchLogs(1)
+}
+
+const getActionBadgeClass = (aksi: string | undefined) => {
+  const a = (aksi || '').toLowerCase()
+  if (a.includes('login') || a.includes('auth')) return 'bg-blue-100 text-blue-800 border-blue-200'
+  if (a.includes('logout')) return 'bg-slate-100 text-slate-700 border-slate-200'
+  if (a.includes('create') || a.includes('store') || a.includes('tambah') || a.includes('publish')) return 'bg-emerald-100 text-emerald-800 border-emerald-200'
+  if (a.includes('update') || a.includes('edit') || a.includes('ubah') || a.includes('sync')) return 'bg-amber-100 text-amber-800 border-amber-200'
+  if (a.includes('delete') || a.includes('hapus') || a.includes('destroy') || a.includes('reject')) return 'bg-rose-100 text-rose-800 border-rose-200'
+  if (a.includes('import') || a.includes('export') || a.includes('download')) return 'bg-purple-100 text-purple-800 border-purple-200'
+  return 'bg-gray-100 text-gray-700 border-gray-200'
+}
+
+const getModuleBadgeClass = (modul: string | undefined) => {
+  const m = (modul || '').toLowerCase()
+  if (m === 'auth') return 'bg-indigo-50 text-indigo-700 border-indigo-200'
+  if (m === 'students') return 'bg-emerald-50 text-emerald-700 border-emerald-200'
+  if (m === 'teachers') return 'bg-teal-50 text-teal-700 border-teal-200'
+  if (m === 'attendance') return 'bg-cyan-50 text-cyan-700 border-cyan-200'
+  if (m === 'finance') return 'bg-amber-50 text-amber-700 border-amber-200'
+  if (m === 'announcements') return 'bg-orange-50 text-orange-700 border-orange-200'
+  if (m === 'settings' || m === 'users') return 'bg-violet-50 text-violet-700 border-violet-200'
+  return 'bg-slate-50 text-slate-700 border-slate-200'
 }
 
 const fetchSettingsAndProfile = async () => {
@@ -616,54 +675,256 @@ onMounted(() => {
 
     <!-- TAB 2: AUDIT LOGS -->
     <div v-else-if="activeTab === 'logs'" class="space-y-4">
-      <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex gap-4 items-center">
-        <input 
-          v-model="logSearch" 
-          @input="fetchLogs"
-          type="text" 
-          placeholder="Cari aktivitas log..." 
-          class="border border-gray-200 rounded-xl px-4 py-2 text-sm w-72 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-        />
-        <button 
-          @click="fetchLogs" 
-          class="text-xs font-semibold bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 px-3 py-2 rounded-xl cursor-pointer"
-        >
-          Muat Ulang
-        </button>
+      <!-- Filter Bar -->
+      <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+        <div class="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center flex-1">
+          <!-- Search input -->
+          <div class="relative flex-1 max-w-sm">
+            <input 
+              v-model="logSearch" 
+              @keyup.enter="fetchLogs(1)"
+              type="text" 
+              placeholder="Cari aktivitas, nama, keterangan, IP..." 
+              class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            />
+            <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+
+          <!-- Modul filter -->
+          <select 
+            v-model="logFilterModul" 
+            @change="fetchLogs(1)"
+            class="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none text-gray-700"
+          >
+            <option value="">Semua Modul</option>
+            <option value="auth">Auth (Login/Logout)</option>
+            <option value="users">Pengguna</option>
+            <option value="students">Siswa</option>
+            <option value="teachers">Guru & Tendik</option>
+            <option value="attendance">Presensi</option>
+            <option value="classes">Kelas & Jadwal</option>
+            <option value="finance">Keuangan & SPP</option>
+            <option value="announcements">Papan Pengumuman</option>
+            <option value="settings">Pengaturan Sistem</option>
+            <option value="ppdb">PPDB Online</option>
+            <option value="cms">CMS Web Sekolah</option>
+          </select>
+
+          <!-- Aksi filter -->
+          <select 
+            v-model="logFilterAksi" 
+            @change="fetchLogs(1)"
+            class="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none text-gray-700"
+          >
+            <option value="">Semua Aksi</option>
+            <option value="login">Login</option>
+            <option value="logout">Logout</option>
+            <option value="create">Tambah (Create)</option>
+            <option value="update">Ubah (Update)</option>
+            <option value="delete">Hapus (Delete)</option>
+            <option value="import">Import Excel</option>
+            <option value="export">Export Data</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button 
+            v-if="logSearch || logFilterModul || logFilterAksi"
+            @click="resetLogFilters" 
+            class="text-xs font-semibold text-rose-600 hover:text-rose-700 px-3 py-2 rounded-xl hover:bg-rose-50 transition cursor-pointer"
+          >
+            Reset
+          </button>
+          <button 
+            @click="fetchLogs(logCurrentPage)" 
+            class="inline-flex items-center gap-1.5 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 px-3 py-2 rounded-xl transition cursor-pointer"
+          >
+            <svg class="w-3.5 h-3.5" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Muat Ulang
+          </button>
+        </div>
       </div>
 
+      <!-- Table Container -->
       <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs sm:text-sm min-w-[650px]">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm min-w-[750px]">
             <thead>
-              <tr class="bg-gray-50 border-b border-gray-100 text-gray-600 font-semibold">
-                <th class="p-3">Waktu</th>
-                <th class="p-3">Pengguna</th>
-                <th class="p-3">Aksi</th>
-                <th class="p-3">Keterangan Aktivitas</th>
-                <th class="p-3">IP Address</th>
+              <tr class="bg-gray-50/80 border-b border-gray-100 text-gray-600 font-semibold">
+                <th class="p-3.5 w-44">Waktu</th>
+                <th class="p-3.5 w-48">Pengguna</th>
+                <th class="p-3.5 w-40">Modul & Aksi</th>
+                <th class="p-3.5">Keterangan Aktivitas</th>
+                <th class="p-3.5 w-32">IP Address</th>
+                <th class="p-3.5 w-16 text-center">Detail</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-              <tr v-if="loading">
-                <td colspan="5" class="text-center py-8 text-gray-400">Memuat log aktivitas...</td>
+              <tr v-if="loading && activityLogs.length === 0">
+                <td colspan="6" class="text-center py-10 text-gray-400">
+                  <div class="flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5 animate-spin text-emerald-600" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                    <span>Memuat log aktivitas...</span>
+                  </div>
+                </td>
               </tr>
               <tr v-else-if="activityLogs.length === 0">
-                <td colspan="5" class="text-center py-8 text-gray-400">Belum ada riwayat aktivitas yang tercatat.</td>
+                <td colspan="6" class="text-center py-10 text-gray-400">
+                  Belum ada riwayat aktivitas yang tercatat.
+                </td>
               </tr>
               <tr v-for="log in activityLogs" :key="log.id" class="hover:bg-gray-50/70 transition">
-                <td class="p-3 text-xs text-gray-500 whitespace-nowrap">{{ log.created_at }}</td>
-                <td class="p-3 font-semibold text-gray-800 whitespace-nowrap">{{ log.user?.nama || 'Sistem' }}</td>
-                <td class="p-3 whitespace-nowrap">
-                  <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-gray-100 text-gray-700 font-mono uppercase">
-                    {{ log.action }}
+                <!-- Waktu -->
+                <td class="p-3.5 text-xs whitespace-nowrap">
+                  <div class="font-semibold text-gray-800">{{ formatDateTimeIndo(log.created_at) }}</div>
+                  <div class="text-[10px] text-gray-400 font-mono">{{ log.created_at ? new Date(log.created_at).toISOString().substring(11, 19) + ' UTC' : '' }}</div>
+                </td>
+
+                <!-- Pengguna -->
+                <td class="p-3.5 whitespace-nowrap">
+                  <div class="font-bold text-gray-900">{{ log.user?.nama || 'Sistem' }}</div>
+                  <div class="text-[11px] text-gray-400 font-mono">@{{ log.user?.username || 'system' }}</div>
+                </td>
+
+                <!-- Modul & Aksi -->
+                <td class="p-3.5 whitespace-nowrap">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span 
+                      v-if="log.modul" 
+                      class="px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider"
+                      :class="getModuleBadgeClass(log.modul)"
+                    >
+                      {{ log.modul }}
+                    </span>
+                    <span 
+                      class="px-2 py-0.5 rounded text-[11px] font-bold border font-mono uppercase"
+                      :class="getActionBadgeClass(log.aksi || log.action)"
+                    >
+                      {{ log.aksi || log.action || '-' }}
+                    </span>
+                  </div>
+                </td>
+
+                <!-- Keterangan -->
+                <td class="p-3.5">
+                  <p class="text-gray-800 font-medium text-xs sm:text-sm leading-relaxed">
+                    {{ log.keterangan || log.description || '-' }}
+                  </p>
+                  <p v-if="log.target_type" class="text-[11px] text-gray-400 font-mono mt-0.5">
+                    Target: {{ log.target_type }} {{ log.target_id ? '#' + log.target_id : '' }}
+                  </p>
+                </td>
+
+                <!-- IP Address -->
+                <td class="p-3.5 whitespace-nowrap">
+                  <span class="inline-flex items-center gap-1 font-mono text-xs text-gray-600 bg-gray-50 px-2 py-0.5 rounded border border-gray-200">
+                    {{ log.ip || log.ip_address || '-' }}
                   </span>
                 </td>
-                <td class="p-3 text-gray-700">{{ log.description }}</td>
-                <td class="p-3 font-mono text-xs text-gray-400 whitespace-nowrap">{{ log.ip_address || '-' }}</td>
+
+                <!-- Detail Modal Button -->
+                <td class="p-3.5 text-center whitespace-nowrap">
+                  <button 
+                    v-if="log.data_sebelum || log.data_sesudah"
+                    @click="selectedLogForDetail = log"
+                    class="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg transition cursor-pointer"
+                    title="Lihat Data Perubahan"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </button>
+                  <span v-else class="text-gray-300 text-xs">-</span>
+                </td>
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Pagination Bar -->
+        <div v-if="logMeta.total > 0" class="p-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-600 bg-gray-50/50">
+          <div>
+            Menampilkan 
+            <span class="font-bold text-gray-800">{{ ((logMeta.current_page - 1) * logMeta.per_page) + 1 }}</span>
+            -
+            <span class="font-bold text-gray-800">{{ Math.min(logMeta.current_page * logMeta.per_page, logMeta.total) }}</span>
+            dari 
+            <span class="font-bold text-gray-800">{{ logMeta.total }}</span>
+            aktivitas
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button 
+              :disabled="logMeta.current_page <= 1"
+              @click="fetchLogs(logMeta.current_page - 1)"
+              class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+            >
+              Sebelumnya
+            </button>
+            <span class="px-2 font-bold text-gray-700">Halaman {{ logMeta.current_page }} / {{ logMeta.last_page }}</span>
+            <button 
+              :disabled="logMeta.current_page >= logMeta.last_page"
+              @click="fetchLogs(logMeta.current_page + 1)"
+              class="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+            >
+              Selanjutnya
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Modal Data Sebelum/Sesudah -->
+      <div 
+        v-if="selectedLogForDetail" 
+        class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4"
+        @click.self="selectedLogForDetail = null"
+      >
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl border border-gray-100 space-y-4 max-h-[85vh] flex flex-col">
+          <div class="flex items-center justify-between pb-3 border-b">
+            <div>
+              <h3 class="font-bold text-gray-900 text-base">Detail Rekam Jejak Data</h3>
+              <p class="text-xs text-gray-500">Aksi: {{ selectedLogForDetail.aksi || selectedLogForDetail.action }} | Modul: {{ selectedLogForDetail.modul }}</p>
+            </div>
+            <button 
+              @click="selectedLogForDetail = null" 
+              class="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div class="overflow-y-auto space-y-4 flex-1 pr-1 text-xs font-mono">
+            <div v-if="selectedLogForDetail.data_sebelum">
+              <div class="font-bold text-rose-600 mb-1 flex items-center gap-1 font-sans text-xs">
+                <span>Data Sebelum Perubahan:</span>
+              </div>
+              <pre class="bg-rose-50 text-rose-950 p-3 rounded-xl border border-rose-100 overflow-x-auto whitespace-pre-wrap">{{ JSON.stringify(selectedLogForDetail.data_sebelum, null, 2) }}</pre>
+            </div>
+
+            <div v-if="selectedLogForDetail.data_sesudah">
+              <div class="font-bold text-emerald-600 mb-1 flex items-center gap-1 font-sans text-xs">
+                <span>Data Sesudah Perubahan:</span>
+              </div>
+              <pre class="bg-emerald-50 text-emerald-950 p-3 rounded-xl border border-emerald-100 overflow-x-auto whitespace-pre-wrap">{{ JSON.stringify(selectedLogForDetail.data_sesudah, null, 2) }}</pre>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t flex justify-end">
+            <button 
+              @click="selectedLogForDetail = null" 
+              class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-xs transition cursor-pointer"
+            >
+              Tutup
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -46,6 +46,18 @@ export const formatDateIndo = (dateStr: string | null | undefined): string => {
 };
 
 /**
+ * Format tanggal & waktu Indonesia ramah pengguna: "15 Jul 2024, 08:30:15 WIB"
+ */
+export const formatDateTimeIndo = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '-';
+  const dateFormatted = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  const timeFormatted = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\./g, ':');
+  return `${dateFormatted}, ${timeFormatted} WIB`;
+};
+
+/**
  * Mengonversi tanggal ke format 'YYYY-MM-DD' yang dibutuhkan oleh <input type="date">.
  * Menangani format string ISO (misal '2024-05-15T00:00:00Z'), 'YYYY-MM-DD', atau Date object tanpa pergeseran zona waktu.
  */

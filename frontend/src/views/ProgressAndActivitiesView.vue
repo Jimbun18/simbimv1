@@ -6,7 +6,7 @@ import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
 const route = useRoute()
-const activeTab = ref<'progress' | 'activities' | 'announcements'>('progress')
+const activeTab = ref<'progress' | 'activities'>('progress')
 const loading = ref(false)
 const message = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -37,17 +37,6 @@ const activityForm = ref({
   deskripsi: '',
   kategori: 'kbm',
   tanggal: new Date().toISOString().split('T')[0]
-})
-
-// Announcements State
-const announcementsList = ref<any[]>([])
-const showAnnouncementModal = ref(false)
-const announcementForm = ref({
-  judul: '',
-  konten: '',
-  kategori: 'akademik',
-  target_role: 'semua',
-  is_pinned: false
 })
 
 const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
@@ -164,48 +153,23 @@ const submitActivity = async () => {
   }
 }
 
-const fetchAnnouncements = async () => {
-  loading.value = true
-  try {
-    const res = await api.get('/announcements')
-    announcementsList.value = res.data.data?.data || res.data.data || []
-  } catch (err) {
-    console.error('Failed to load announcements', err)
-  } finally {
-    loading.value = false
-  }
-}
-
-const submitAnnouncement = async () => {
-  try {
-    await api.post('/announcements', announcementForm.value)
-    showMessage('Pengumuman sekolah berhasil diterbitkan!')
-    showAnnouncementModal.value = false
-    fetchAnnouncements()
-  } catch (err: any) {
-    showMessage(err.response?.data?.message || 'Gagal menerbitkan pengumuman', 'error')
-  }
-}
-
 watch(() => route.query.tab, (newTab) => {
-  if (newTab && ['progress', 'activities', 'announcements'].includes(newTab as string)) {
+  if (newTab && ['progress', 'activities'].includes(newTab as string)) {
     if (activeTab.value !== newTab) {
       activeTab.value = newTab as any
       if (newTab === 'progress') fetchProgress()
       else if (newTab === 'activities') fetchActivities()
-      else if (newTab === 'announcements') fetchAnnouncements()
     }
   }
 })
 
 onMounted(() => {
-  if (route.query.tab && ['progress', 'activities', 'announcements'].includes(route.query.tab as string)) {
+  if (route.query.tab && ['progress', 'activities'].includes(route.query.tab as string)) {
     activeTab.value = route.query.tab as any
   }
   fetchClassesAndStudents()
   if (activeTab.value === 'progress') fetchProgress()
   else if (activeTab.value === 'activities') fetchActivities()
-  else if (activeTab.value === 'announcements') fetchAnnouncements()
 })
 </script>
 
@@ -214,8 +178,8 @@ onMounted(() => {
     <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
       <div>
-        <h1 class="text-2xl font-bold text-gray-800">Progres Siswa, Kegiatan & Pengumuman</h1>
-        <p class="text-sm text-gray-500 mt-1">Pantau capaian hafalan Al-Qur'an, pembiasaan ibadah, kegiatan harian, dan informasi resmi sekolah.</p>
+        <h1 class="text-2xl font-bold text-gray-800">Tahfidz & Kegiatan Harian Siswa</h1>
+        <p class="text-sm text-gray-500 mt-1">Pantau capaian hafalan Al-Qur'an, pembiasaan ibadah, dan jurnal agenda kegiatan harian sekolah.</p>
       </div>
       <div>
         <button 
@@ -231,13 +195,6 @@ onMounted(() => {
           class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2"
         >
           <span>Tambah Kegiatan Harian</span>
-        </button>
-        <button 
-          v-else-if="activeTab === 'announcements' && auth.role !== 'wali'"
-          @click="showAnnouncementModal = true"
-          class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2"
-        >
-          <span>Buat Pengumuman Baru</span>
         </button>
       </div>
     </div>
@@ -386,33 +343,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- TAB 3: ANNOUNCEMENTS -->
-    <div v-if="activeTab === 'announcements'" class="space-y-4">
-      <div v-if="loading" class="text-center py-12 text-gray-400">Memuat pengumuman...</div>
-      <div v-else-if="announcementsList.length === 0" class="text-center py-12 text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200">
-        Belum ada pengumuman yang aktif.
-      </div>
-      <div v-else class="space-y-4">
-        <div 
-          v-for="anc in announcementsList" 
-          :key="anc.id"
-          class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm transition hover:shadow-md space-y-3"
-          :class="anc.is_pinned ? 'border-l-4 border-l-amber-500' : ''"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span v-if="anc.is_pinned" class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded">SEMATAN</span>
-              <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">{{ anc.target_role }}</span>
-              <span class="text-xs text-gray-400">{{ anc.tgl_terbit }}</span>
-            </div>
-            <span class="text-xs text-gray-400">Oleh: {{ anc.creator?.nama || 'Admin SDI BIM' }}</span>
-          </div>
-          <h3 class="text-lg font-bold text-gray-800">{{ anc.judul }}</h3>
-          <div class="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{{ anc.konten }}</div>
-        </div>
-      </div>
-    </div>
-
     <!-- MODAL INPUT JURNAL TAHFIDZ/PROGRES -->
     <div v-if="showProgressModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4">
       <div class="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-5 sm:p-6 shadow-2xl space-y-4">
@@ -519,53 +449,6 @@ onMounted(() => {
           <div class="flex justify-end gap-2 pt-2">
             <button type="button" @click="showActivityModal = false" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-xl">Batal</button>
             <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md">Publikasikan</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- MODAL ANNOUNCEMENT -->
-    <div v-if="showAnnouncementModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4">
-      <div class="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-5 sm:p-6 shadow-2xl space-y-4">
-        <div class="flex justify-between items-center border-b pb-3">
-          <h3 class="font-bold text-gray-800 text-base sm:text-lg">Buat Pengumuman Baru</h3>
-          <button @click="showAnnouncementModal = false" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
-        </div>
-        <form @submit.prevent="submitAnnouncement" class="space-y-4 text-sm">
-          <div>
-            <label class="block font-semibold text-gray-700 mb-1">Judul Pengumuman</label>
-            <input v-model="announcementForm.judul" type="text" required class="w-full border rounded-xl p-2.5" />
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block font-semibold text-gray-700 mb-1">Target Pembaca</label>
-              <select v-model="announcementForm.target_role" class="w-full border rounded-xl p-2.5">
-                <option value="semua">Semua (Guru, Staf, & Wali)</option>
-                <option value="wali_murid">Khusus Wali Murid</option>
-                <option value="guru">Khusus Dewan Guru</option>
-              </select>
-            </div>
-            <div>
-              <label class="block font-semibold text-gray-700 mb-1">Kategori</label>
-              <select v-model="announcementForm.kategori" class="w-full border rounded-xl p-2.5">
-                <option value="akademik">Akademik</option>
-                <option value="kegiatan">Kegiatan</option>
-                <option value="keuangan">Keuangan / SPP</option>
-                <option value="umum">Umum</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label class="block font-semibold text-gray-700 mb-1">Isi Pengumuman</label>
-            <textarea v-model="announcementForm.konten" rows="4" required class="w-full border rounded-xl p-2.5"></textarea>
-          </div>
-          <div class="flex items-center gap-2">
-            <input type="checkbox" v-model="announcementForm.is_pinned" id="pinned" class="rounded text-emerald-600" />
-            <label for="pinned" class="font-semibold text-gray-700">Sematkan di bagian atas (Pinned)</label>
-          </div>
-          <div class="flex justify-end gap-2 pt-2">
-            <button type="button" @click="showAnnouncementModal = false" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-xl">Batal</button>
-            <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md">Terbitkan</button>
           </div>
         </form>
       </div>

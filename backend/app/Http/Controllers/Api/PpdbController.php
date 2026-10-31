@@ -15,6 +15,7 @@ use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Services\ActivityLogService;
 use App\Services\ImageCompressionService;
+use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -173,6 +174,14 @@ class PpdbController extends Controller
             targetId: $registration->id,
             dataSesudah: $registration->toArray(),
             keterangan: "Pendaftaran PPDB Baru: {$registration->nama_lengkap} ({$registration->nomor_pendaftaran}) jenjang {$registration->jenjang}"
+        );
+
+        // Notifikasi ke Dashboard Staf Admin & Kepala Sekolah
+        NotificationService::notifyAdmins(
+            title: "Pendaftaran Calon Siswa Baru (PPDB)",
+            message: "Pendaftar baru an. {$registration->nama_lengkap} ({$registration->jenjang}) telah mendaftar online. No. Pendaftaran: {$registration->nomor_pendaftaran}.",
+            type: 'info',
+            targetUrl: '/ppdb-management'
         );
 
         return response()->json([

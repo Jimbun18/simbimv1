@@ -12,6 +12,7 @@ use App\Services\Export\AttendanceRecapExportService;
 use App\Services\GeofenceService;
 use App\Services\PhotoCompressionService;
 use App\Services\TeacherAttendanceService;
+use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -420,6 +421,15 @@ class TeacherAttendanceController extends Controller
             keterangan: "Pengajuan {$validated['status']} oleh " . ($teacher?->nama_lengkap ?? $staff?->nama_lengkap) . " dari {$validated['tanggal_mulai']} s.d {$validated['tanggal_selesai']}."
         );
 
+        // Notifikasi ke Kepala Sekolah & Staf Admin
+        $pemohonName = $teacher?->nama_lengkap ?? $staff?->nama_lengkap ?? $user->nama;
+        NotificationService::notifyAdmins(
+            title: "Pengajuan {$validated['status']}: {$pemohonName}",
+            message: "Ustadz/ah {$pemohonName} mengajukan permohonan {$validated['status']} dari {$validated['tanggal_mulai']} s.d {$validated['tanggal_selesai']}.",
+            type: 'warning',
+            targetUrl: '/attendance-management'
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Pengajuan izin/sakit berhasil dikirim dan menunggu persetujuan Kepala Sekolah.',
@@ -454,6 +464,26 @@ class TeacherAttendanceController extends Controller
             dataSesudah: $attendance->fresh()->toArray(),
             keterangan: "Kepala Sekolah {$validated['status_persetujuan']} permohonan {$attendance->status} ID #{$attendance->id}."
         );
+
+        // Notifikasi ke Guru Pemohon (In-App Dashboard + Email via teachers.email)
+        if ($attendance->teacher_id) {
+            $statusText = $validated['status_persetujuan'] === 'disetujui' ? 'DISETUJUI' : 'DITOLAK';
+            $tglStr = $attendance->tanggal instanceof Carbon ? $attendance->tanggal->format('d/m/Y') : Carbon::parse($attendance->tanggal)->format('d/m/Y');
+            NotificationService::notifyTeacher(
+                teacher: $attendance->teacher_id,
+                title: "Pengajuan Izin {$statusText}",
+                message: "Permohonan izin Anda untuk tanggal {$tglStr} telah {$statusText} oleh Kepala Sekolah." . ($validated['alasan'] ? " Catatan: {$validated['alasan']}" : ""),
+                type: $validated['status_persetujuan'] === 'disetujui' ? 'success' : 'danger',
+                targetUrl: '/my-attendance-history',
+                sendEmail: true,
+                extraDetails: [
+                    'Tanggal Izin' => $tglStr,
+                    'Jenis Permohonan' => strtoupper($attendance->status),
+                    'Keputusan' => $statusText,
+                    'Catatan Pimpinan' => $validated['alasan'] ?? 'Tidak ada catatan khusus',
+                ]
+            );
+        }
 
         return response()->json([
             'success' => true,

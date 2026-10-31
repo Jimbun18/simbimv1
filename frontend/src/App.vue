@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import api from './services/api'
 import { showConfirm } from './services/swal'
+import NotificationBell from './components/NotificationBell.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -292,6 +293,22 @@ const handleLogout = async () => {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
                 <span v-show="isSidebarOpen" class="truncate">Profil Saya</span>
+              </router-link>
+
+              <!-- Papan Pengumuman (Tersendiri) -->
+              <router-link
+                to="/announcements"
+                class="flex items-center rounded-xl font-medium transition-all group"
+                :class="[
+                  isSidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center py-2.5 px-0 w-11 h-11 mx-auto',
+                  route.path === '/announcements' ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-emerald-50/70 hover:text-emerald-800'
+                ]"
+                title="Papan Pengumuman"
+              >
+                <svg class="w-5 h-5 shrink-0 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                </svg>
+                <span v-show="isSidebarOpen" class="truncate">Papan Pengumuman</span>
               </router-link>
             </nav>
           </div>
@@ -709,14 +726,6 @@ const handleLogout = async () => {
                   >
                     <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="route.path === '/progress-activities' && route.query.tab === 'activities' ? 'bg-emerald-600' : 'bg-slate-300'"></span>
                     <span class="truncate">Kegiatan Harian Sekolah</span>
-                  </router-link>
-                  <router-link
-                    to="/progress-activities?tab=announcements"
-                    class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] transition-all"
-                    :class="route.path === '/progress-activities' && route.query.tab === 'announcements' ? 'bg-emerald-100/70 text-emerald-900 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'"
-                  >
-                    <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="route.path === '/progress-activities' && route.query.tab === 'announcements' ? 'bg-emerald-600' : 'bg-slate-300'"></span>
-                    <span class="truncate">Papan Pengumuman</span>
                   </router-link>
                 </div>
               </div>
@@ -1161,8 +1170,11 @@ const handleLogout = async () => {
             </div>
           </div>
 
-          <!-- Right: User Profile & Logout -->
-          <div class="flex items-center gap-2 sm:gap-4">
+          <!-- Right: Notification Bell, User Profile & Logout -->
+          <div class="flex items-center gap-2 sm:gap-3.5">
+            <!-- Lonceng Notifikasi Sistem -->
+            <NotificationBell />
+
             <!-- User Info Badge (Clickable link to profile) -->
             <router-link 
               to="/profile" 
@@ -1315,6 +1327,19 @@ const handleLogout = async () => {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                       <span>Profil Saya</span>
+                    </router-link>
+
+                    <!-- Papan Pengumuman (Mobile) -->
+                    <router-link 
+                      to="/announcements" 
+                      class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all"
+                      :class="route.path === '/announcements' ? 'bg-emerald-600 text-white font-bold shadow-sm' : 'text-slate-700 hover:bg-slate-100'"
+                      @click="isMobileDrawerOpen = false"
+                    >
+                      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                      </svg>
+                      <span>Papan Pengumuman</span>
                     </router-link>
                   </div>
                 </div>
@@ -1680,15 +1705,6 @@ const handleLogout = async () => {
                         >
                           <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="route.path === '/progress-activities' && route.query.tab === 'activities' ? 'bg-emerald-600' : 'bg-slate-300'"></span>
                           <span>Kegiatan Harian Sekolah</span>
-                        </router-link>
-                        <router-link
-                          to="/progress-activities?tab=announcements"
-                          class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px]"
-                          :class="route.path === '/progress-activities' && route.query.tab === 'announcements' ? 'bg-emerald-100/70 text-emerald-900 font-bold' : 'text-slate-600 hover:bg-slate-100'"
-                          @click="isMobileDrawerOpen = false"
-                        >
-                          <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="route.path === '/progress-activities' && route.query.tab === 'announcements' ? 'bg-emerald-600' : 'bg-slate-300'"></span>
-                          <span>Papan Pengumuman</span>
                         </router-link>
                       </div>
                     </div>

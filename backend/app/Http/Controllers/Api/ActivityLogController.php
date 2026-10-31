@@ -15,10 +15,14 @@ class ActivityLogController extends Controller
 
         if ($request->filled('modul')) {
             $query->where('modul', $request->query('modul'));
+        } elseif ($request->filled('module')) {
+            $query->where('modul', $request->query('module'));
         }
 
         if ($request->filled('aksi')) {
             $query->where('aksi', $request->query('aksi'));
+        } elseif ($request->filled('action')) {
+            $query->where('aksi', $request->query('action'));
         }
 
         if ($request->filled('user_id')) {
@@ -30,6 +34,8 @@ class ActivityLogController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('keterangan', 'like', "%{$search}%")
                   ->orWhere('ip', 'like', "%{$search}%")
+                  ->orWhere('modul', 'like', "%{$search}%")
+                  ->orWhere('aksi', 'like', "%{$search}%")
                   ->orWhereHas('user', function ($uq) use ($search) {
                       $uq->where('nama', 'like', "%{$search}%")
                          ->orWhere('username', 'like', "%{$search}%");
