@@ -114,6 +114,41 @@ class UserController extends Controller
         $oldData = $user->only(['nama', 'username', 'email', 'no_hp', 'role_id', 'status']);
         $user->update($validated);
 
+        // Sinkronisasi otomatis ke profil Master Guru jika terkait
+        if ($user->teacher) {
+            $teacherSync = [];
+            if (isset($validated['nama'])) {
+                $teacherSync['nama_lengkap'] = $validated['nama'];
+            }
+            if (array_key_exists('email', $validated)) {
+                $teacherSync['email'] = $validated['email'] ?: '';
+            }
+            if (isset($validated['no_hp'])) {
+                $teacherSync['no_hp'] = $validated['no_hp'] ?: '';
+            }
+            if (!empty($teacherSync)) {
+                $user->teacher->update($teacherSync);
+            }
+        }
+
+        // Sinkronisasi otomatis ke profil Master Wali Murid jika terkait
+        if ($user->guardian) {
+            $guardianSync = [];
+            if (isset($validated['nama'])) {
+                $guardianSync['nama_lengkap'] = $validated['nama'];
+            }
+            if (array_key_exists('email', $validated)) {
+                $guardianSync['email'] = $validated['email'] ?: null;
+            }
+            if (isset($validated['no_hp'])) {
+                $guardianSync['no_hp'] = $validated['no_hp'] ?: '';
+                $guardianSync['no_whatsapp'] = $validated['no_hp'] ?: null;
+            }
+            if (!empty($guardianSync)) {
+                $user->guardian->update($guardianSync);
+            }
+        }
+
         ActivityLogService::log(
             aksi: 'update',
             modul: 'users',

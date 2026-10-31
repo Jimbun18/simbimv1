@@ -101,7 +101,7 @@
       </div>
       <div class="footer">
         <p><strong>SDI Bina Insan Mandiri Purwokerto</strong></p>
-        <p>Jl. Sunan Kalijaga No. 18, Purwokerto, Banyumas, Jawa Tengah</p>
+        <p>Jl. Wadas Kelir RT.04 RW.05 Kel. Karangklesem, Kec. Purwokerto Selatan, Kab. Banyumas 53144</p>
         <p style="margin-top: 8px; color: #94a3b8; font-size: 11px;">
           Email ini dikirim secara otomatis oleh Sistem Informasi SIM-BIM. Mohon tidak membalas email ini secara langsung.
         </p>

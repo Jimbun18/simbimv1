@@ -41,7 +41,7 @@ class StudentObservation extends Model
         'is_escalated_to_bk' => 'boolean',
     ];
 
-    protected $appends = ['class_name'];
+    protected $appends = ['class_name', 'observer_name'];
 
     public function getClassNameAttribute(): ?string
     {
@@ -66,6 +66,28 @@ class StudentObservation extends Model
     public function academicYear(): BelongsTo
     {
         return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function getObserverNameAttribute(): string
+    {
+        if ($this->observer) {
+            return $this->observer->nama_lengkap;
+        }
+        if ($this->creator) {
+            if ($this->creator->staff) {
+                return $this->creator->staff->nama_lengkap;
+            }
+            if ($this->creator->teacher) {
+                return $this->creator->teacher->nama_lengkap;
+            }
+            return $this->creator->nama;
+        }
+        return 'Guru / Staf';
     }
 
     public function observer(): BelongsTo

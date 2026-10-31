@@ -249,7 +249,7 @@ class NotificationService
                             judul: "Pengumuman: {$announcement->judul}",
                             isi: $excerpt,
                             tipe: 'info',
-                            targetUrl: '/progress-activities?tab=announcements'
+                            targetUrl: '/announcements'
                         );
                     } catch (\Throwable $e) {
                         Log::warning("Gagal kirim in-app announcement ke guru ID {$teacher->id}: " . $e->getMessage());
@@ -267,7 +267,7 @@ class NotificationService
                             recipientName: $teacher->nama_lengkap,
                             tglTerbit: $tglFormatted,
                             publisherName: $publisher,
-                            actionUrl: rtrim($appUrl, '/') . '/progress-activities?tab=announcements',
+                            actionUrl: rtrim($appUrl, '/') . '/announcements',
                             lampiranUrl: $lampiranUrl
                         ));
                     } catch (\Throwable $e) {
@@ -337,7 +337,7 @@ class NotificationService
                         judul: "Pengumuman: {$announcement->judul}",
                         isi: $excerpt,
                         tipe: 'info',
-                        targetUrl: '/progress-activities?tab=announcements'
+                        targetUrl: '/announcements'
                     );
                 } catch (\Throwable $e) {
                     Log::warning("Gagal kirim in-app announcement ke staff ID {$staffUser->id}: " . $e->getMessage());
@@ -352,7 +352,7 @@ class NotificationService
                             recipientName: $staffUser->nama,
                             tglTerbit: $tglFormatted,
                             publisherName: $publisher,
-                            actionUrl: rtrim($appUrl, '/') . '/progress-activities?tab=announcements',
+                            actionUrl: rtrim($appUrl, '/') . '/announcements',
                             lampiranUrl: $lampiranUrl
                         ));
                     } catch (\Throwable $e) {

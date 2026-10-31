@@ -130,6 +130,33 @@ class AuthController extends Controller
 
         $user->update($validated);
 
+        // Sinkronisasi otomatis nama, email, no_hp ke Guru atau Wali jika terkait
+        if ($user->teacher) {
+            $teacherSync = [];
+            if (isset($validated['nama'])) $teacherSync['nama_lengkap'] = $validated['nama'];
+            if (array_key_exists('email', $validated)) $teacherSync['email'] = $validated['email'] ?: '';
+            if (isset($validated['no_hp'])) $teacherSync['no_hp'] = $validated['no_hp'] ?: '';
+            if (!empty($teacherSync)) $user->teacher->update($teacherSync);
+        }
+        if ($user->guardian) {
+            $guardianSync = [];
+            if (isset($validated['nama'])) $guardianSync['nama_lengkap'] = $validated['nama'];
+            if (array_key_exists('email', $validated)) $guardianSync['email'] = $validated['email'] ?: null;
+            if (isset($validated['no_hp'])) {
+                $guardianSync['no_hp'] = $validated['no_hp'] ?: '';
+                $guardianSync['no_whatsapp'] = $validated['no_hp'] ?: null;
+            }
+            if (!empty($guardianSync)) $user->guardian->update($guardianSync);
+        }
+
+        if ($user->staff) {
+            $staffSync = [];
+            if (isset($validated['nama'])) $staffSync['nama_lengkap'] = $validated['nama'];
+            if (array_key_exists('email', $validated)) $staffSync['email'] = $validated['email'] ?: null;
+            if (isset($validated['no_hp'])) $staffSync['no_hp'] = $validated['no_hp'] ?: null;
+            if (!empty($staffSync)) $user->staff->update($staffSync);
+        }
+
         ActivityLogService::log(
             aksi: 'update_profile',
             modul: 'auth',

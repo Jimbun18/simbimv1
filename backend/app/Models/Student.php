@@ -188,4 +188,9 @@ class Student extends Model
     {
         return $this->hasMany(ReportCard::class);
     }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
 }

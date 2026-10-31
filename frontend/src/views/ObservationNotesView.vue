@@ -605,7 +605,7 @@ onMounted(() => {
                       {{ row.latest_observation.perilaku_diamati }}
                     </p>
                     <div class="text-[10px] text-slate-400">
-                      Pelapor: <strong>{{ row.latest_observation.observer?.nama_lengkap || 'Guru' }}</strong>
+                      Pelapor: <strong>{{ row.latest_observation.observer_name || row.latest_observation.observer?.nama_lengkap || 'Guru / Staf' }}</strong>
                     </div>
                   </div>
                   <div v-else class="text-slate-400 text-xs italic">
@@ -726,7 +726,7 @@ onMounted(() => {
                   <div class="text-[10px] text-gray-400">{{ getClassName(obs) }}</div>
                 </td>
                 <td v-if="auth.isGuruBk" class="py-3.5 px-4">
-                  <div class="font-medium text-gray-800">{{ obs.observer?.nama_lengkap || 'Guru' }}</div>
+                  <div class="font-medium text-gray-800">{{ obs.observer_name || obs.observer?.nama_lengkap || 'Guru / Staf' }}</div>
                 </td>
                 <td class="py-3.5 px-4">
                   <p class="line-clamp-2 text-xs text-gray-900">{{ obs.perilaku_diamati }}</p>
@@ -893,7 +893,7 @@ onMounted(() => {
                 <div class="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5">
                   <span v-if="obs.waktu">⏰ {{ obs.waktu }}</span>
                   <span v-if="obs.tempat">📍 {{ obs.tempat }}</span>
-                  <span>👤 Pelapor: <strong class="text-gray-700">{{ obs.observer?.nama_lengkap || 'Guru' }}</strong></span>
+                  <span>👤 Pelapor: <strong class="text-gray-700">{{ obs.observer_name || obs.observer?.nama_lengkap || 'Guru / Staf' }}</strong></span>
                 </div>
               </div>
             </div>
@@ -1308,7 +1308,7 @@ onMounted(() => {
             </h1>
             <p class="text-xs text-gray-500 mt-0.5">
               Memberikan asesmen profesional untuk siswa: <strong class="text-rose-700 font-bold">{{ feedbackObs?.student?.nama_lengkap }}</strong>
-              (Pelapor: {{ feedbackObs?.observer?.nama_lengkap }})
+              (Pelapor: {{ feedbackObs?.observer_name || feedbackObs?.observer?.nama_lengkap }})
             </p>
           </div>
         </div>
@@ -1348,7 +1348,7 @@ onMounted(() => {
                 Laporan Faktual Guru Pelapor
               </h3>
               <p class="text-[11px] text-gray-500">
-                Oleh: <strong>{{ feedbackObs?.observer?.nama_lengkap }}</strong> pada {{ formatDateIndo(feedbackObs?.tanggal) }} ({{ feedbackObs?.tempat || 'Kelas' }})
+                Oleh: <strong>{{ feedbackObs?.observer_name || feedbackObs?.observer?.nama_lengkap }}</strong> pada {{ formatDateIndo(feedbackObs?.tanggal) }} ({{ feedbackObs?.tempat || 'Kelas' }})
               </p>
             </div>
           </div>

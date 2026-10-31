@@ -196,6 +196,24 @@ class GuardianController extends Controller
         $validated['updated_by'] = auth()->id();
         $guardian->update($validated);
 
+        // Sinkronisasi otomatis ke Akun Pengguna (User)
+        if ($guardian->user) {
+            $userSync = [];
+            if (isset($validated['nama_lengkap'])) {
+                $userSync['nama'] = $validated['nama_lengkap'];
+            }
+            if (array_key_exists('email', $validated)) {
+                $userSync['email'] = $validated['email'] ?: null;
+            }
+            $phone = $validated['no_whatsapp'] ?? ($validated['no_hp'] ?? null);
+            if ($phone !== null) {
+                $userSync['no_hp'] = $phone ?: null;
+            }
+            if (!empty($userSync)) {
+                $guardian->user->update($userSync);
+            }
+        }
+
         ActivityLogService::log(
             aksi: 'update',
             modul: 'guardians',

@@ -330,6 +330,23 @@ class TeacherController extends Controller
         $validated['updated_by'] = auth()->id();
         $teacher->update($validated);
 
+        // Sinkronisasi otomatis ke Akun Pengguna (User)
+        if ($teacher->user) {
+            $userSync = [];
+            if (isset($validated['nama_lengkap'])) {
+                $userSync['nama'] = $validated['nama_lengkap'];
+            }
+            if (array_key_exists('email', $validated)) {
+                $userSync['email'] = $validated['email'] ?: null;
+            }
+            if (isset($validated['no_hp'])) {
+                $userSync['no_hp'] = $validated['no_hp'] ?: null;
+            }
+            if (!empty($userSync)) {
+                $teacher->user->update($userSync);
+            }
+        }
+
         ActivityLogService::log(
             aksi: 'update',
             modul: 'teachers',

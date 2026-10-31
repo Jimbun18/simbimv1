@@ -178,6 +178,8 @@ Route::prefix('v1')->group(function () {
         // Invoices & Payments (Read: Wali for their children, Admin for all - FR-KEU-07)
         Route::get('/invoices', [InvoiceController::class, 'index']);
         Route::get('/invoices/{id}', [InvoiceController::class, 'show']);
+        Route::get('/finance/student-recap', [InvoiceController::class, 'studentRecap']);
+        Route::get('/finance/student-recap/{studentId}', [InvoiceController::class, 'studentRecapDetail']);
         Route::get('/payments', [PaymentController::class, 'index']);
         Route::get('/payments/{id}', [PaymentController::class, 'show']);
         Route::get('/payments/{id}/receipt', [PaymentController::class, 'receipt']);

@@ -101,7 +101,7 @@
           </p>
 
           <!-- Detail PTK Guru / Staf -->
-          <div v-if="!auth.isWali && teacherDetail" class="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-emerald-100">
+          <div v-if="!auth.isWali && (teacherDetail || staffDetail)" class="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-emerald-100">
             <span v-if="teacherDetail?.nip" class="flex items-center gap-1.5">
               <strong>NIP:</strong> {{ teacherDetail.nip }}
             </span>
@@ -247,7 +247,7 @@
         </div>
       </form>
     </div>    <!-- TAB 2A: DATA KEPEGAWAIAN GURU (READ-ONLY DETAILS, KHUSUS GURU/TENDIK) -->
-    <div v-if="activeTab === 'kepegawaian' && !auth.isWali && teacherDetail" class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
+    <div v-if="activeTab === 'kepegawaian' && !auth.isWali && (teacherDetail || staffDetail)" class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
       <div class="border-b border-slate-100 pb-4 flex justify-between items-center">
         <div>
           <h3 class="text-base font-bold text-slate-800">Data Pokok Kepegawaian & Kependidikan</h3>
@@ -261,54 +261,54 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 text-xs">
         <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
           <span class="text-slate-400 font-semibold uppercase text-[10px]">Nomor Induk Kependudukan (NIK)</span>
-          <div class="font-bold text-slate-800 text-sm font-mono">{{ teacherDetail.nik || '-' }}</div>
+          <div class="font-bold text-slate-800 text-sm font-mono">{{ teacherDetail?.nik || staffDetail?.nik || '-' }}</div>
         </div>
 
         <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
           <span class="text-slate-400 font-semibold uppercase text-[10px]">NUPTK</span>
-          <div class="font-bold text-slate-800 text-sm font-mono">{{ teacherDetail.nuptk || '-' }}</div>
+          <div class="font-bold text-slate-800 text-sm font-mono">{{ teacherDetail?.nuptk || staffDetail?.nuptk || '-' }}</div>
         </div>
 
         <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
           <span class="text-slate-400 font-semibold uppercase text-[10px]">Status Kepegawaian</span>
-          <div class="font-bold text-slate-800 text-sm">{{ teacherDetail.status_kepegawaian || 'GTY / Tetap Yayasan' }}</div>
+          <div class="font-bold text-slate-800 text-sm">{{ teacherDetail?.status_kepegawaian || staffDetail?.status_kepegawaian || 'Pegawai Tetap / Kontrak' }}</div>
         </div>
 
         <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
           <span class="text-slate-400 font-semibold uppercase text-[10px]">Jenis PTK / Jabatan</span>
-          <div class="font-bold text-slate-800 text-sm">{{ teacherDetail.jenis_ptk || teacherDetail.jabatan || 'Guru Kelas' }}</div>
+          <div class="font-bold text-slate-800 text-sm">{{ teacherDetail?.jenis_ptk || teacherDetail?.jabatan || staffDetail?.jabatan || 'Tenaga Kependidikan / Administrasi' }}</div>
         </div>
 
         <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
           <span class="text-slate-400 font-semibold uppercase text-[10px]">Tugas Tambahan</span>
-          <div class="font-bold text-slate-800 text-sm">{{ teacherDetail.tugas_tambahan || '-' }}</div>
+          <div class="font-bold text-slate-800 text-sm">{{ teacherDetail?.tugas_tambahan || staffDetail?.tugas_tambahan || '-' }}</div>
         </div>
 
         <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
           <span class="text-slate-400 font-semibold uppercase text-[10px]">Jam Mengajar / Minggu</span>
-          <div class="font-bold text-slate-800 text-sm">{{ teacherDetail.jam_mengajar_per_minggu ? teacherDetail.jam_mengajar_per_minggu + ' Jam' : '-' }}</div>
+          <div class="font-bold text-slate-800 text-sm">{{ teacherDetail ? (teacherDetail.jam_mengajar_per_minggu ? teacherDetail.jam_mengajar_per_minggu + ' Jam' : '-') : (staffDetail ? '40 Jam / Minggu (Penuh Waktu)' : '-') }}</div>
         </div>
 
         <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
           <span class="text-slate-400 font-semibold uppercase text-[10px]">Pendidikan Terakhir</span>
           <div class="font-bold text-slate-800 text-sm">
-            {{ teacherDetail.pendidikan_terakhir || 'S1' }} {{ teacherDetail.jurusan_prodi ? ' - ' + teacherDetail.jurusan_prodi : '' }}
+            {{ teacherDetail?.pendidikan_terakhir || staffDetail?.pendidikan_terakhir || 'S1' }} {{ teacherDetail?.jurusan_prodi ? ' - ' + teacherDetail.jurusan_prodi : '' }}
           </div>
-          <div class="text-[11px] text-slate-500">{{ teacherDetail.institusi || '' }}</div>
+          <div class="text-[11px] text-slate-500">{{ teacherDetail?.institusi || '' }}</div>
         </div>
 
         <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
           <span class="text-slate-400 font-semibold uppercase text-[10px]">Alamat Domisili</span>
-          <div class="font-bold text-slate-800 text-sm">{{ teacherDetail.alamat_jalan || 'Purwokerto, Banyumas' }}</div>
+          <div class="font-bold text-slate-800 text-sm">{{ teacherDetail?.alamat_jalan || staffDetail?.alamat_jalan || 'Purwokerto, Banyumas' }}</div>
           <div class="text-[11px] text-slate-500">
-            {{ [teacherDetail.desa_kelurahan, teacherDetail.kecamatan, teacherDetail.kab_kota].filter(Boolean).join(', ') }}
+            {{ [(teacherDetail?.desa_kelurahan || staffDetail?.desa_kelurahan), (teacherDetail?.kecamatan || staffDetail?.kecamatan), (teacherDetail?.kab_kota || staffDetail?.kab_kota)].filter(Boolean).join(', ') }}
           </div>
         </div>
 
         <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
           <span class="text-slate-400 font-semibold uppercase text-[10px]">Kontak Darurat</span>
-          <div class="font-bold text-slate-800 text-sm">{{ teacherDetail.kontak_darurat_nama || '-' }}</div>
-          <div class="text-[11px] text-slate-500">{{ teacherDetail.kontak_darurat_hp || '-' }} ({{ teacherDetail.kontak_darurat_hubungan || '-' }})</div>
+          <div class="font-bold text-slate-800 text-sm">{{ teacherDetail?.kontak_darurat_nama || staffDetail?.kontak_darurat_nama || '-' }}</div>
+          <div class="text-[11px] text-slate-500">{{ teacherDetail?.kontak_darurat_hp || staffDetail?.kontak_darurat_hp || '-' }} ({{ teacherDetail?.kontak_darurat_hubungan || staffDetail?.kontak_darurat_hubungan || '-' }})</div>
         </div>
       </div>
     </div>
@@ -435,6 +435,7 @@ const activeTab = ref<'biodata' | 'kepegawaian' | 'wali' | 'security'>('biodata'
 
 const profileData = ref<any>({});
 const teacherDetail = ref<any>(null);
+const staffDetail = ref<any>(null);
 const guardianDetail = ref<any>(null);
 
 const profileForm = ref({
@@ -554,8 +555,14 @@ const fetchProfileData = async () => {
       if (auth.isWali) {
         guardianDetail.value = res.data.data.profile_detail;
         teacherDetail.value = null;
-      } else {
+        staffDetail.value = null;
+      } else if (res.data.data.profile_detail?.jenis_ptk || res.data.data.profile_detail?.nuptk !== undefined) {
         teacherDetail.value = res.data.data.profile_detail;
+        staffDetail.value = null;
+        guardianDetail.value = null;
+      } else {
+        staffDetail.value = res.data.data.profile_detail;
+        teacherDetail.value = null;
         guardianDetail.value = null;
       }
 

@@ -10,6 +10,7 @@ import { formatRupiah, getGuardianPhone, formatPhoneForWA, generateWAMessage } f
 
 import InvoicesTab from '../components/finance/InvoicesTab.vue'
 import PaymentsTab from '../components/finance/PaymentsTab.vue'
+import StudentRecapTab from '../components/finance/StudentRecapTab.vue'
 import BatchGeneratorTab from '../components/finance/BatchGeneratorTab.vue'
 import CashbookTab from '../components/finance/CashbookTab.vue'
 import FeeTypesTab from '../components/finance/FeeTypesTab.vue'
@@ -25,7 +26,7 @@ const router = useRouter()
 const viewMode = ref<'main' | 'pay' | 'receipt' | 'cash_form' | 'fee_form'>('main')
 
 // Active tab in main view
-const activeTab = ref<'invoices' | 'payments' | 'batch' | 'cashbook' | 'fee_types'>('invoices')
+const activeTab = ref<'invoices' | 'payments' | 'student_recap' | 'batch' | 'cashbook' | 'fee_types'>('invoices')
 const loading = ref(false)
 const message = ref<{ type: 'success' | 'error' | 'warning'; text: string } | null>(null)
 
@@ -430,7 +431,7 @@ const openFeeTypeForm = (fee?: FeeType) => {
 }
 
 // Switch tabs and update query
-const switchTab = (tab: 'invoices' | 'payments' | 'batch' | 'cashbook' | 'fee_types') => {
+const switchTab = (tab: 'invoices' | 'payments' | 'student_recap' | 'batch' | 'cashbook' | 'fee_types') => {
   activeTab.value = tab
   viewMode.value = 'main'
   router.replace({ query: { ...route.query, tab } })
@@ -442,7 +443,7 @@ const switchTab = (tab: 'invoices' | 'payments' | 'batch' | 'cashbook' | 'fee_ty
 
 // Watchers and lifecycle
 watch(() => route.query.tab, (newTab) => {
-  if (newTab && ['invoices', 'payments', 'batch', 'cashbook', 'fee_types'].includes(newTab as string)) {
+  if (newTab && ['invoices', 'payments', 'student_recap', 'batch', 'cashbook', 'fee_types'].includes(newTab as string)) {
     if (activeTab.value !== newTab) {
       activeTab.value = newTab as any
       viewMode.value = 'main'
@@ -455,7 +456,7 @@ watch(() => route.query.tab, (newTab) => {
 })
 
 onMounted(async () => {
-  if (route.query.tab && ['invoices', 'payments', 'batch', 'cashbook', 'fee_types'].includes(route.query.tab as string)) {
+  if (route.query.tab && ['invoices', 'payments', 'student_recap', 'batch', 'cashbook', 'fee_types'].includes(route.query.tab as string)) {
     activeTab.value = route.query.tab as any
   }
   await fetchMetadata()
@@ -564,6 +565,14 @@ onMounted(async () => {
           <span>Riwayat Kuitansi</span>
         </button>
         <button
+          @click="switchTab('student_recap')"
+          :class="activeTab === 'student_recap' ? 'bg-emerald-600 text-white shadow-xs font-bold' : 'bg-white text-slate-600 hover:bg-slate-100 font-semibold'"
+          class="px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+        >
+          <span>📊</span>
+          <span>Rekap Keuangan Siswa</span>
+        </button>
+        <button
           @click="switchTab('batch')"
           :class="activeTab === 'batch' ? 'bg-emerald-600 text-white shadow-xs font-bold' : 'bg-white text-slate-600 hover:bg-slate-100 font-semibold'"
           class="px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap flex items-center gap-1.5"
@@ -613,6 +622,15 @@ onMounted(async () => {
         @filter-change="fetchPayments"
         @view-receipt="viewReceipt"
         @cancel-payment="cancelPayment"
+      />
+
+      <!-- TAB: REKAP KEUANGAN SISWA -->
+      <StudentRecapTab
+        v-if="activeTab === 'student_recap'"
+        :classes="classes"
+        :academic-years="academicYears"
+        @pay="openPaymentPage"
+        @view-receipt="viewReceipt"
       />
 
       <!-- TAB 3: BATCH GENERATOR -->

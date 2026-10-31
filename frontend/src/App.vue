@@ -939,6 +939,14 @@ const handleLogout = async () => {
                     <span class="truncate">Riwayat Kuitansi & Bayar</span>
                   </router-link>
                   <router-link
+                    to="/finance?tab=student_recap"
+                    class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] transition-all"
+                    :class="route.path === '/finance' && route.query.tab === 'student_recap' ? 'bg-emerald-100/70 text-emerald-900 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'"
+                  >
+                    <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="route.path === '/finance' && route.query.tab === 'student_recap' ? 'bg-emerald-600' : 'bg-slate-300'"></span>
+                    <span class="truncate">Rekap Keuangan Siswa</span>
+                  </router-link>
+                  <router-link
                     to="/finance?tab=batch"
                     class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] transition-all"
                     :class="route.path === '/finance' && route.query.tab === 'batch' ? 'bg-emerald-100/70 text-emerald-900 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'"
@@ -1886,6 +1894,15 @@ const handleLogout = async () => {
                         >
                           <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="route.path === '/finance' && route.query.tab === 'payments' ? 'bg-emerald-600' : 'bg-slate-300'"></span>
                           <span>Riwayat Kuitansi & Bayar</span>
+                        </router-link>
+                        <router-link
+                          to="/finance?tab=student_recap"
+                          class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px]"
+                          :class="route.path === '/finance' && route.query.tab === 'student_recap' ? 'bg-emerald-100/70 text-emerald-900 font-bold' : 'text-slate-600 hover:bg-slate-100'"
+                          @click="isMobileDrawerOpen = false"
+                        >
+                          <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="route.path === '/finance' && route.query.tab === 'student_recap' ? 'bg-emerald-600' : 'bg-slate-300'"></span>
+                          <span>Rekap Keuangan Siswa</span>
                         </router-link>
                         <router-link
                           to="/finance?tab=batch"

@@ -34,7 +34,10 @@ class StudentObservationController extends Controller
         // Jika guru biasa, hanya hitung dan ambil observasi milik guru tersebut
         if (!$isGuruBk) {
             if ($teacher) {
-                $obsQuery->where('teacher_id', $teacher->id);
+                $obsQuery->where(function ($q) use ($teacher, $user) {
+                    $q->where('teacher_id', $teacher->id)
+                      ->orWhere('created_by', $user?->id);
+                });
             } else {
                 $obsQuery->where('created_by', $user?->id);
             }
@@ -71,7 +74,10 @@ class StudentObservationController extends Controller
             $studentObsQuery = StudentObservation::where('student_id', $student->id);
             if (!$isGuruBk) {
                 if ($teacher) {
-                    $studentObsQuery->where('teacher_id', $teacher->id);
+                    $studentObsQuery->where(function ($q) use ($teacher, $user) {
+                        $q->where('teacher_id', $teacher->id)
+                          ->orWhere('created_by', $user?->id);
+                    });
                 } else {
                     $studentObsQuery->where('created_by', $user?->id);
                 }
@@ -170,13 +176,19 @@ class StudentObservationController extends Controller
             'student.schoolClass:id,nama,tingkat,kode',
             'schoolClass:id,nama,tingkat,kode',
             'observer:id,nama_lengkap,jabatan',
+            'creator:id,nama',
+            'creator.staff:id,user_id,nama_lengkap,jabatan',
+            'creator.teacher:id,user_id,nama_lengkap,jabatan',
             'bkTeacher:id,nama_lengkap,jabatan',
             'bkViewer:id,nama_lengkap,jabatan',
         ])->where('student_id', $student->id);
 
         if (!$isGuruBk) {
             if ($teacher) {
-                $query->where('teacher_id', $teacher->id);
+                $query->where(function ($q) use ($teacher, $user) {
+                    $q->where('teacher_id', $teacher->id)
+                      ->orWhere('created_by', $user?->id);
+                });
             } else {
                 $query->where('created_by', $user?->id);
             }
@@ -232,6 +244,9 @@ class StudentObservationController extends Controller
             'student.schoolClass:id,nama,tingkat,kode',
             'schoolClass:id,nama,tingkat,kode',
             'observer:id,nama_lengkap,jabatan',
+            'creator:id,nama',
+            'creator.staff:id,user_id,nama_lengkap,jabatan',
+            'creator.teacher:id,user_id,nama_lengkap,jabatan',
             'bkTeacher:id,nama_lengkap,jabatan',
         ]);
 
@@ -240,7 +255,10 @@ class StudentObservationController extends Controller
         if (!$isGuruBk) {
             $teacher = $user?->teacher;
             if ($teacher) {
-                $query->where('teacher_id', $teacher->id);
+                $query->where(function ($q) use ($teacher, $user) {
+                    $q->where('teacher_id', $teacher->id)
+                      ->orWhere('created_by', $user?->id);
+                });
             } else {
                 $query->where('created_by', $user?->id);
             }
@@ -326,7 +344,7 @@ class StudentObservationController extends Controller
 
         $validated['class_id'] = $student->class_id;
         $validated['academic_year_id'] = $activeYear?->id;
-        $validated['teacher_id'] = $teacher ? $teacher->id : 1;
+        $validated['teacher_id'] = $teacher ? $teacher->id : null;
         $validated['created_by'] = $user->id;
         $validated['status_pemantauan'] = $validated['status_pemantauan'] ?? 'Baru';
 
