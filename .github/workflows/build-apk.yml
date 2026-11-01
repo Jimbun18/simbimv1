@@ -54,15 +54,28 @@ jobs:
         run: |
           chmod +x frontend/android/gradlew
 
-      - name: Build Debug APK with Gradle
+      - name: Generate Release Keystore
+        run: |
+          keytool -genkeypair -v -keystore frontend/android/app/release.keystore -alias simbim -keyalg RSA -keysize 2048 -validity 10000 -storepass simbim123 -keypass simbim123 -dname "CN=SIM-BIM, OU=IT, O=SDI Bina Insan Mandiri, L=Purwokerto, ST=Jawa Tengah, C=ID"
+
+      - name: Build Release and Debug APK with Gradle
         run: |
           cd frontend/android
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleRelease assembleDebug --stacktrace
 
-      - name: Upload Debug APK Artifact
+      - name: Upload Signed Release APK (Recommended)
         uses: actions/upload-artifact@v4
         with:
-          name: SIM-BIM-Purwokerto-debug
-          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          name: SIM-BIM-Purwokerto-Release
+          path: frontend/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SIM-BIM-Purwokerto-Debug
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: warn
+          retention-days: 14
+
