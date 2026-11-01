@@ -29,10 +29,10 @@ const api: AxiosInstance = axios.create({
   timeout: 30000,
 });
 
-// Request interceptor: lampirkan Bearer token jika ada
+// Request interceptor: lampirkan Bearer token jika ada (kecuali rute login publik)
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('simbim_token');
-  if (token && config.headers) {
+  if (token && config.headers && !config.url?.includes('/auth/login')) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   if (config.data instanceof FormData && config.headers) {

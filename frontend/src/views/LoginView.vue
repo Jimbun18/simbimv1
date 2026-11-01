@@ -210,12 +210,17 @@
             <button
               type="button"
               @click="handleBiometricLogin"
-              class="w-full py-3.5 px-4 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 border-2 border-emerald-600 text-emerald-800 font-bold rounded-2xl shadow-xs transition flex items-center justify-center gap-2.5 text-sm cursor-pointer"
+              :disabled="auth.loading"
+              class="w-full py-3.5 px-4 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 disabled:opacity-60 disabled:cursor-not-allowed border-2 border-emerald-600 text-emerald-800 font-bold rounded-2xl shadow-xs transition flex items-center justify-center gap-2.5 text-sm cursor-pointer"
             >
-              <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg v-if="auth.loading" class="animate-spin h-5 w-5 text-emerald-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <svg v-else class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 004 11a7.96 7.96 0 00.99 3.868m15.42 2.404a11.97 11.97 0 01-2.41 3.728" />
               </svg>
-              <span>Masuk dengan Sidik Jari</span>
+              <span>{{ auth.loading ? 'Memverifikasi...' : 'Masuk dengan Sidik Jari' }}</span>
             </button>
             <p v-if="savedBiometricUser" class="text-center text-[11px] text-gray-500 mt-1.5 font-medium">
               Tersimpan untuk: <span class="font-bold text-gray-700">{{ savedBiometricUser.nama }}</span>
@@ -289,6 +294,8 @@ const handleLogin = async () => {
 };
 
 const handleBiometricLogin = async () => {
+  if (auth.loading) return;
+
   const payload = biometricService.getSavedPayload();
   if (!payload || !payload.user) {
     canUseBiometric.value = false;
@@ -312,8 +319,22 @@ const handleBiometricLogin = async () => {
 
   const authenticated = await biometricService.authenticate('Scan sidik jari untuk masuk ke SIM-BIM');
   if (authenticated) {
+    // Jeda 350ms agar dialog native Android selesai ditutup dan socket WebView aktif kembali
+    await new Promise(r => setTimeout(r, 350));
+
     const rawPassword = biometricService.decodeSecret(payload.secret);
-    const success = await auth.login(payload.identifier, rawPassword);
+    // Isi field form agar siap pakai
+    identifier.value = payload.identifier;
+    password.value = rawPassword;
+
+    let success = await auth.login(payload.identifier, rawPassword);
+
+    // Auto-retry 1x jika koneksi seluler HP mengalami glitch sesaat setelah dialog native
+    if (!success && auth.error && (auth.error.includes('Koneksi gagal') || auth.error.includes('Network Error'))) {
+      await new Promise(r => setTimeout(r, 600));
+      success = await auth.login(payload.identifier, rawPassword);
+    }
+
     if (success) {
       // Perbarui token sesi terbaru
       biometricService.enableBiometric(auth.user, auth.token, payload.identifier, rawPassword);
