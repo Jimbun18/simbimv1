@@ -5,12 +5,33 @@ const STORAGE_KEY_ENABLED = 'simbim_biometric_enabled';
 const STORAGE_KEY_AUTH_PAYLOAD = 'simbim_biometric_payload';
 
 export interface BiometricAuthPayload {
-  token: string;
+  token?: string;
   user: any;
+  identifier?: string;
+  secret?: string; // Encoded password untuk re-autentikasi otomatis
   savedAt: string;
 }
 
+export function encodeSecret(str: string): string {
+  try {
+    return btoa(encodeURIComponent(str));
+  } catch {
+    return str;
+  }
+}
+
+export function decodeSecret(str: string): string {
+  try {
+    return decodeURIComponent(atob(str));
+  } catch {
+    return str;
+  }
+}
+
 export const biometricService = {
+  encodeSecret,
+  decodeSecret,
+
   /**
    * Mengecek apakah perangkat mendukung sensor biometrik (sidik jari / wajah)
    * dan user sedang berada di aplikasi native (Capacitor).
@@ -47,12 +68,14 @@ export const biometricService = {
   },
 
   /**
-   * Mengaktifkan login biometrik dan menyimpan token sesi saat ini
+   * Mengaktifkan login biometrik dan menyimpan data kredensial terenkripsi
    */
-  enableBiometric(user: any, token: string): void {
+  enableBiometric(user: any, token?: string | null, identifier?: string, password?: string): void {
     const payload: BiometricAuthPayload = {
-      token,
+      token: token || undefined,
       user,
+      identifier: identifier || user?.username,
+      secret: password ? encodeSecret(password) : undefined,
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(STORAGE_KEY_ENABLED, 'true');
@@ -60,7 +83,7 @@ export const biometricService = {
   },
 
   /**
-   * Menonaktifkan login biometrik
+   * Menonaktifkan fitur login biometrik
    */
   disableBiometric(): void {
     localStorage.removeItem(STORAGE_KEY_ENABLED);
@@ -68,24 +91,24 @@ export const biometricService = {
   },
 
   /**
-   * Menjalankan dialog sensor sidik jari bawaan Android (BiometricPrompt)
+   * Meminta autentikasi sidik jari dari sistem operasi Android/iOS
    */
-  async authenticate(reason = 'Tempelkan sidik jari Anda untuk masuk ke SIM-BIM Purwokerto'): Promise<boolean> {
+  async authenticate(reason: string = 'Scan sidik jari untuk verifikasi akun'): Promise<boolean> {
+    if (!Capacitor.isNativePlatform()) {
+      return false;
+    }
     try {
       await BiometricAuth.authenticate({
         reason,
-        cancelTitle: 'Gunakan Kata Sandi',
+        cancelTitle: 'Batal',
         allowDeviceCredential: true,
-        androidTitle: 'Masuk dengan Sidik Jari',
-        androidSubtitle: 'SDI Bina Insan Mandiri Purwokerto',
+        iosFallbackTitle: 'Gunakan Kata Sandi',
       });
       return true;
     } catch (err: any) {
-      console.warn('Biometric authentication failed or cancelled:', err);
       return false;
     }
   },
 };
 
 export default biometricService;
-

@@ -234,7 +234,7 @@ import { useRouter } from 'vue-router';
 import { Capacitor } from '@capacitor/core';
 import { useAuthStore } from '../stores/auth';
 import biometricService from '../services/biometric';
-import { showConfirm } from '../services/swal';
+import { showConfirm, showInfo, showError } from '../services/swal';
 import loginBg from '../assets/login.jpeg';
 
 const router = useRouter();
@@ -256,22 +256,30 @@ const navigateToRoleDashboard = () => {
 };
 
 const handleLogin = async () => {
-  const success = await auth.login(identifier.value, password.value);
+  const currentIdentifier = identifier.value;
+  const currentPassword = password.value;
+  const success = await auth.login(currentIdentifier, currentPassword);
+
   if (success) {
-    // Tawarkan aktivasi sidik jari jika di HP Android dan belum aktif
-    if (isNative.value && !biometricService.isEnabled()) {
-      const isAvailable = await biometricService.isAvailable();
-      if (isAvailable) {
-        const wantsBiometric = await showConfirm(
-          'Aktifkan Sidik Jari?',
-          'Apakah Anda ingin mengaktifkan login cepat dengan Sidik Jari untuk kemudahan login berikutnya di HP ini?',
-          'Ya, Aktifkan',
-          'Nanti Saja'
-        );
-        if (wantsBiometric) {
-          const authSuccess = await biometricService.authenticate('Konfirmasi sidik jari untuk mengaktifkan');
-          if (authSuccess && auth.token && auth.user) {
-            biometricService.enableBiometric(auth.user, auth.token);
+    if (isNative.value) {
+      if (biometricService.isEnabled()) {
+        // Otomatis sinkronkan kredensial sidik jari agar sesi selalu fresh
+        biometricService.enableBiometric(auth.user, auth.token, currentIdentifier, currentPassword);
+      } else {
+        // Tawarkan aktivasi sidik jari jika di HP Android dan belum aktif
+        const isAvailable = await biometricService.isAvailable();
+        if (isAvailable) {
+          const wantsBiometric = await showConfirm(
+            'Aktifkan Sidik Jari?',
+            'Apakah Anda ingin mengaktifkan login cepat dengan Sidik Jari untuk kemudahan login berikutnya di HP ini?',
+            'Ya, Aktifkan',
+            'Nanti Saja'
+          );
+          if (wantsBiometric) {
+            const authSuccess = await biometricService.authenticate('Konfirmasi sidik jari untuk mengaktifkan');
+            if (authSuccess && auth.user) {
+              biometricService.enableBiometric(auth.user, auth.token, currentIdentifier, currentPassword);
+            }
           }
         }
       }
@@ -282,16 +290,40 @@ const handleLogin = async () => {
 
 const handleBiometricLogin = async () => {
   const payload = biometricService.getSavedPayload();
-  if (!payload || !payload.token || !payload.user) {
+  if (!payload || !payload.user) {
     canUseBiometric.value = false;
     return;
   }
 
-  const authenticated = await biometricService.authenticate();
+  // Jika payload belum memiliki secret (dari versi build sebelumnya)
+  if (!payload.secret || !payload.identifier) {
+    const authenticated = await biometricService.authenticate('Scan sidik jari Anda');
+    if (authenticated) {
+      if (payload.user?.username) {
+        identifier.value = payload.user.username;
+      }
+      showInfo(
+        'Sinkronisasi Keamanan',
+        'Silakan masukkan kata sandi Anda 1x untuk memperbarui sistem sidik jari dengan token backend terbaru.'
+      );
+    }
+    return;
+  }
+
+  const authenticated = await biometricService.authenticate('Scan sidik jari untuk masuk ke SIM-BIM');
   if (authenticated) {
-    auth.loginWithToken(payload.token, payload.user);
-    auth.fetchProfile();
-    navigateToRoleDashboard();
+    const rawPassword = biometricService.decodeSecret(payload.secret);
+    const success = await auth.login(payload.identifier, rawPassword);
+    if (success) {
+      // Perbarui token sesi terbaru
+      biometricService.enableBiometric(auth.user, auth.token, payload.identifier, rawPassword);
+      navigateToRoleDashboard();
+    } else {
+      showError(
+        'Gagal Masuk',
+        auth.error || 'Autentikasi sidik jari gagal memvalidasi akun. Silakan masukkan kata sandi secara manual.'
+      );
+    }
   }
 };
 
@@ -300,7 +332,7 @@ onMounted(async () => {
     const isAvailable = await biometricService.isAvailable();
     if (isAvailable && biometricService.isEnabled()) {
       const payload = biometricService.getSavedPayload();
-      if (payload && payload.token && payload.user) {
+      if (payload && payload.user) {
         canUseBiometric.value = true;
         savedBiometricUser.value = payload.user;
       }

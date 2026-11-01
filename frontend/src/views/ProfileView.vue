@@ -447,6 +447,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import Swal from 'sweetalert2';
 import { useAuthStore } from '../stores/auth';
 import api from '../services/api';
 import { showConfirm } from '../services/swal';
@@ -471,9 +472,49 @@ const toggleBiometricSetting = async () => {
       showNotification('Perangkat Anda tidak mendukung atau belum mengaktifkan sidik jari di pengaturan HP.', false);
       return;
     }
+
+    // Minta kata sandi untuk verifikasi & disimpan aman untuk login otomatis
+    const { value: password } = await Swal.fire({
+      title: 'Konfirmasi Kata Sandi',
+      text: 'Masukkan kata sandi akun Anda untuk mengaktifkan login sidik jari:',
+      input: 'password',
+      inputPlaceholder: 'Kata sandi akun Anda',
+      showCancelButton: true,
+      confirmButtonText: 'Lanjutkan',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#059669',
+      customClass: {
+        popup: 'rounded-3xl shadow-xl font-sans',
+        input: 'rounded-xl border-gray-300',
+        confirmButton: 'rounded-xl px-5 py-2.5 font-bold',
+        cancelButton: 'rounded-xl px-5 py-2.5 font-semibold',
+      },
+      inputValidator: (val) => {
+        if (!val) return 'Kata sandi wajib diisi!';
+        return null;
+      },
+    });
+
+    if (!password) return;
+
+    // Verifikasi kata sandi ke backend
+    try {
+      const verifyRes = await api.post('/auth/login', {
+        login: auth.user.username,
+        password: password,
+      });
+      if (!verifyRes.data.success) {
+        showNotification('Kata sandi salah!', false);
+        return;
+      }
+    } catch (err: any) {
+      showNotification(err.response?.data?.message || 'Kata sandi tidak sesuai.', false);
+      return;
+    }
+
     const confirmed = await biometricService.authenticate('Konfirmasi sidik jari Anda');
-    if (confirmed && auth.user && auth.token) {
-      biometricService.enableBiometric(auth.user, auth.token);
+    if (confirmed && auth.user) {
+      biometricService.enableBiometric(auth.user, auth.token, auth.user.username, password);
       isBiometricActive.value = true;
       showNotification('Login dengan Sidik Jari berhasil diaktifkan!');
     }
@@ -639,6 +680,9 @@ const changePassword = async () => {
   try {
     const res = await api.put('/me/password', passwordForm.value);
     if (res.data.success) {
+      if (biometricService.isEnabled() && auth.user) {
+        biometricService.enableBiometric(auth.user, auth.token, auth.user.username, passwordForm.value.new_password);
+      }
       showNotification('Kata sandi berhasil diperbarui!');
       passwordForm.value = {
         current_password: '',
