@@ -3,7 +3,15 @@
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    $indexPath = public_path('index.html');
+    if (file_exists($indexPath)) {
+        return response()->file($indexPath);
+    }
+    $cpanelIndexPath = base_path('../public_html/index.html');
+    if (file_exists($cpanelIndexPath)) {
+        return response()->file($cpanelIndexPath);
+    }
+    return redirect('/index.html');
 });
 
 /**
@@ -22,3 +30,14 @@ Route::get('storage/{path}', function ($path) {
     return response()->file($filePath);
 })->where('path', '.*');
 
+Route::fallback(function () {
+    $indexPath = public_path('index.html');
+    if (file_exists($indexPath)) {
+        return response()->file($indexPath);
+    }
+    $cpanelIndexPath = base_path('../public_html/index.html');
+    if (file_exists($cpanelIndexPath)) {
+        return response()->file($cpanelIndexPath);
+    }
+    return redirect('/index.html');
+});
