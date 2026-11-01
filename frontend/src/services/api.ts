@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
+import { Capacitor } from '@capacitor/core';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -8,8 +9,19 @@ export interface ApiResponse<T = any> {
   summary?: any;
 }
 
+const getApiBaseUrl = (): string => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  // Di aplikasi native Android Capacitor, arahkan langsung ke domain live
+  if (Capacitor.isNativePlatform()) {
+    return 'https://sdislambims.my.id/api/v1';
+  }
+  return '/api/v1';
+};
+
 const api: AxiosInstance = axios.create({
-  baseURL: '/api/v1',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',

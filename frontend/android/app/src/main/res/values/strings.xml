@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SIM-BIM Purwokerto</string>
+    <string name="title_activity_main">SIM-BIM Purwokerto</string>
+    <string name="package_name">id.my.sdislambims</string>
+    <string name="custom_url_scheme">id.my.sdislambims</string>
+</resources>

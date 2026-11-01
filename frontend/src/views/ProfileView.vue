@@ -429,6 +429,7 @@ import { ref, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import api from '../services/api';
 import { showConfirm } from '../services/swal';
+import { getStorageUrl as resolveStorageUrl } from '../utils/storage';
 
 const auth = useAuthStore();
 const activeTab = ref<'biodata' | 'kepegawaian' | 'wali' | 'security'>('biodata');
@@ -468,15 +469,7 @@ const showNotification = (text: string, success = true) => {
   }, 5000);
 };
 
-const getStorageUrl = (path: string | null) => {
-  if (!path) return '';
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  if (cleanPath.startsWith('storage/')) {
-    return `/${cleanPath}`;
-  }
-  return `/storage/${cleanPath}`;
-};
+const getStorageUrl = (path: string | null) => resolveStorageUrl(path);
 
 const triggerAvatarInput = () => {
   avatarInputRef.value?.click();

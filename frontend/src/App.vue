@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import api from './services/api'
 import { showConfirm } from './services/swal'
+import { getStorageUrl } from './utils/storage'
 import NotificationBell from './components/NotificationBell.vue'
 
 const auth = useAuthStore()
@@ -1192,7 +1193,7 @@ const handleLogout = async () => {
               <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center border border-emerald-300 shadow-xs shrink-0 overflow-hidden">
                 <img 
                   v-if="auth.user?.foto_path" 
-                  :src="auth.user.foto_path.startsWith('http') ? auth.user.foto_path : `/storage/${auth.user.foto_path.replace(/^\/?(storage\/)?/, '')}`" 
+                  :src="getStorageUrl(auth.user.foto_path)" 
                   alt="Avatar" 
                   class="w-full h-full object-cover" 
                 />

@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.0",
     "@tailwindcss/vite": "^4.3.3",
     "@vite-pwa/assets-generator": "^1.0.4",
     "tailwindcss": "^4.3.3",
@@ -21,6 +22,13 @@
     "vue-tsc": "^3.3.13"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/camera": "^8.2.6",
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/geolocation": "^8.2.4",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4",
     "@types/leaflet": "^1.9.22",
     "@vitejs/plugin-vue": "^6.0.9",
     "axios": "^1.20.0",
