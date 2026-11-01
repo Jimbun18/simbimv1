@@ -19,11 +19,22 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => array_filter(
-        array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000')))
-    ),
+    'allowed_origins' => array_values(array_unique(array_merge(
+        array_filter(array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS', '')))),
+        [
+            'https://localhost',
+            'capacitor://localhost',
+            'http://localhost',
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'https://sdislambims.my.id',
+        ]
+    ))),
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '#^https?://localhost(:[0-9]+)?$#',
+        '#^capacitor://localhost$#',
+    ],
 
     'allowed_headers' => ['*'],
 
@@ -34,4 +45,3 @@ return [
     'supports_credentials' => true,
 
 ];
-

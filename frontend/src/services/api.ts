@@ -10,12 +10,12 @@ export interface ApiResponse<T = any> {
 }
 
 const getApiBaseUrl = (): string => {
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
-  }
   // Di aplikasi native Android Capacitor, arahkan langsung ke domain live
   if (Capacitor.isNativePlatform()) {
     return 'https://sdislambims.my.id/api/v1';
+  }
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
   }
   return '/api/v1';
 };

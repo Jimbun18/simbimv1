@@ -85,7 +85,13 @@ export const useAuthStore = defineStore('auth', {
         this.error = response.data.message || 'Login gagal';
         return false;
       } catch (err: any) {
-        this.error = err.response?.data?.message || 'Terjadi kesalahan saat login.';
+        if (err.response?.data?.message) {
+          this.error = err.response.data.message;
+        } else if (err.message) {
+          this.error = `Koneksi gagal: ${err.message}. Pastikan internet aktif.`;
+        } else {
+          this.error = 'Terjadi kesalahan saat login.';
+        }
         return false;
       } finally {
         this.loading = false;
