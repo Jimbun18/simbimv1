@@ -86,9 +86,10 @@
 
       <!-- RIGHT PANEL / MAIN LOGIN FORM (Mobile, Tablet, and Desktop Monitor) -->
       <div class="lg:col-span-7 p-6 sm:p-8 md:p-10 flex flex-col justify-center relative">
-        <!-- Back to Landing Link -->
+        <!-- Back to Landing Link (Desktop/Web) / Mobile Badge -->
         <div class="mb-4 flex justify-between items-center">
           <router-link 
+            v-if="!isNative"
             to="/" 
             class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 hover:text-emerald-950 transition-colors"
           >
@@ -97,6 +98,10 @@
             </svg>
             <span>Halaman Utama</span>
           </router-link>
+          <div v-else class="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>SIM-BIM Mobile App</span>
+          </div>
           <span class="text-[11px] text-slate-400 font-medium">SIM-BIM Purwokerto</span>
         </div>
 
@@ -193,6 +198,29 @@
             </svg>
             <span>{{ auth.loading ? 'Memverifikasi...' : 'Masuk ke Aplikasi' }}</span>
           </button>
+
+          <!-- BIOMETRIC / SIDIK JARI QUICK LOGIN (App Mobile) -->
+          <div v-if="canUseBiometric" class="pt-2">
+            <div class="relative flex py-2 items-center">
+              <div class="grow border-t border-gray-200"></div>
+              <span class="shrink mx-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Atau Masuk Cepat</span>
+              <div class="grow border-t border-gray-200"></div>
+            </div>
+
+            <button
+              type="button"
+              @click="handleBiometricLogin"
+              class="w-full py-3.5 px-4 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 border-2 border-emerald-600 text-emerald-800 font-bold rounded-2xl shadow-xs transition flex items-center justify-center gap-2.5 text-sm cursor-pointer"
+            >
+              <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 004 11a7.96 7.96 0 00.99 3.868m15.42 2.404a11.97 11.97 0 01-2.41 3.728" />
+              </svg>
+              <span>Masuk dengan Sidik Jari</span>
+            </button>
+            <p v-if="savedBiometricUser" class="text-center text-[11px] text-gray-500 mt-1.5 font-medium">
+              Tersimpan untuk: <span class="font-bold text-gray-700">{{ savedBiometricUser.nama }}</span>
+            </p>
+          </div>
         </form>
       </div>
 
@@ -201,25 +229,82 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { Capacitor } from '@capacitor/core';
 import { useAuthStore } from '../stores/auth';
+import biometricService from '../services/biometric';
+import { showConfirm } from '../services/swal';
 import loginBg from '../assets/login.jpeg';
 
 const router = useRouter();
 const auth = useAuthStore();
 
+const isNative = ref(Capacitor.isNativePlatform());
+const canUseBiometric = ref(false);
+const savedBiometricUser = ref<any>(null);
+
 const identifier = ref('');
 const password = ref('');
 const showPassword = ref(false);
 
+const navigateToRoleDashboard = () => {
+  if (auth.isAdmin) router.push('/dashboard');
+  else if (auth.isGuru) router.push('/presensi');
+  else if (auth.isWali) router.push('/portal-wali');
+  else router.push('/dashboard');
+};
+
 const handleLogin = async () => {
   const success = await auth.login(identifier.value, password.value);
   if (success) {
-    if (auth.isAdmin) router.push('/dashboard');
-    else if (auth.isGuru) router.push('/presensi');
-    else if (auth.isWali) router.push('/portal-wali');
-    else router.push('/dashboard');
+    // Tawarkan aktivasi sidik jari jika di HP Android dan belum aktif
+    if (isNative.value && !biometricService.isEnabled()) {
+      const isAvailable = await biometricService.isAvailable();
+      if (isAvailable) {
+        const wantsBiometric = await showConfirm(
+          'Aktifkan Sidik Jari?',
+          'Apakah Anda ingin mengaktifkan login cepat dengan Sidik Jari untuk kemudahan login berikutnya di HP ini?',
+          'Ya, Aktifkan',
+          'Nanti Saja'
+        );
+        if (wantsBiometric) {
+          const authSuccess = await biometricService.authenticate('Konfirmasi sidik jari untuk mengaktifkan');
+          if (authSuccess && auth.token && auth.user) {
+            biometricService.enableBiometric(auth.user, auth.token);
+          }
+        }
+      }
+    }
+    navigateToRoleDashboard();
   }
 };
+
+const handleBiometricLogin = async () => {
+  const payload = biometricService.getSavedPayload();
+  if (!payload || !payload.token || !payload.user) {
+    canUseBiometric.value = false;
+    return;
+  }
+
+  const authenticated = await biometricService.authenticate();
+  if (authenticated) {
+    auth.loginWithToken(payload.token, payload.user);
+    auth.fetchProfile();
+    navigateToRoleDashboard();
+  }
+};
+
+onMounted(async () => {
+  if (isNative.value) {
+    const isAvailable = await biometricService.isAvailable();
+    if (isAvailable && biometricService.isEnabled()) {
+      const payload = biometricService.getSavedPayload();
+      if (payload && payload.token && payload.user) {
+        canUseBiometric.value = true;
+        savedBiometricUser.value = payload.user;
+      }
+    }
+  }
+});
 </script>

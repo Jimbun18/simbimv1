@@ -420,6 +420,27 @@
           </button>
         </div>
       </form>
+
+      <!-- Biometric Login Management (App Mobile) -->
+      <div v-if="isNativeApp" class="pt-6 border-t border-slate-100">
+        <div class="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 004 11a7.96 7.96 0 00.99 3.868m15.42 2.404a11.97 11.97 0 01-2.41 3.728" />
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-slate-800">Login dengan Sidik Jari</h4>
+              <p class="text-xs text-slate-500">Gunakan sensor biometrik perangkat untuk masuk ke aplikasi tanpa mengetik kata sandi</p>
+            </div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer shrink-0">
+            <input type="checkbox" :checked="isBiometricActive" @change="toggleBiometricSetting" class="sr-only peer" />
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+          </label>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -429,10 +450,35 @@ import { ref, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import api from '../services/api';
 import { showConfirm } from '../services/swal';
+import { Capacitor } from '@capacitor/core';
+import biometricService from '../services/biometric';
 import { getStorageUrl as resolveStorageUrl } from '../utils/storage';
 
 const auth = useAuthStore();
 const activeTab = ref<'biodata' | 'kepegawaian' | 'wali' | 'security'>('biodata');
+
+const isNativeApp = ref(Capacitor.isNativePlatform());
+const isBiometricActive = ref(biometricService.isEnabled());
+
+const toggleBiometricSetting = async () => {
+  if (isBiometricActive.value) {
+    biometricService.disableBiometric();
+    isBiometricActive.value = false;
+    showNotification('Login dengan Sidik Jari dinonaktifkan.');
+  } else {
+    const isAvail = await biometricService.isAvailable();
+    if (!isAvail) {
+      showNotification('Perangkat Anda tidak mendukung atau belum mengaktifkan sidik jari di pengaturan HP.', false);
+      return;
+    }
+    const confirmed = await biometricService.authenticate('Konfirmasi sidik jari Anda');
+    if (confirmed && auth.user && auth.token) {
+      biometricService.enableBiometric(auth.user, auth.token);
+      isBiometricActive.value = true;
+      showNotification('Login dengan Sidik Jari berhasil diaktifkan!');
+    }
+  }
+};
 
 const profileData = ref<any>({});
 const teacherDetail = ref<any>(null);

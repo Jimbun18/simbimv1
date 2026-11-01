@@ -92,6 +92,13 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    loginWithToken(token: string, user: any): void {
+      this.token = token;
+      this.user = user;
+      localStorage.setItem('simbim_token', token);
+      localStorage.setItem('simbim_user', JSON.stringify(user));
+    },
+
     async fetchProfile(): Promise<void> {
       if (!this.token) return;
       try {

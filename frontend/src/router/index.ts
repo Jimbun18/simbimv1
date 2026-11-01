@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
+import { Capacitor } from '@capacitor/core';
 import { useAuthStore } from '../stores/auth';
 
 const routes: RouteRecordRaw[] = [
@@ -241,6 +242,17 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   const auth = useAuthStore();
+
+  // Khusus aplikasi mobile APK (Capacitor): lewati landing page publik dan langsung arahkan ke login atau dashboard
+  if (Capacitor.isNativePlatform() && to.path === '/') {
+    if (auth.isAuthenticated) {
+      if (auth.isAdmin) return next({ name: 'dashboard' });
+      if (auth.isGuru) return next({ name: 'presensi' });
+      if (auth.isWali) return next({ name: 'portal-wali' });
+      return next({ name: 'dashboard' });
+    }
+    return next({ name: 'login' });
+  }
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return next({ name: 'login' });
