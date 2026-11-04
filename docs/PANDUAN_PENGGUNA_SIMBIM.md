@@ -312,3 +312,4 @@ Portal Wali Murid dirancang sederhana, bersih, dan informatif agar orang tua dap
 ---
 
 *(Buku Panduan ini diterbitkan secara resmi untuk keluarga besar SDI Bina Insan Mandiri Purwokerto)*
+

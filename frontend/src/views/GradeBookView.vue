@@ -48,6 +48,7 @@ const uhColumnsCount = ref<number>(3);
 
 // Data State
 const students = ref<any[]>([]);
+const rawStudentsData = ref<any[]>([]);
 const loading = ref(false);
 const saving = ref(false);
 const notification = ref<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
@@ -155,7 +156,75 @@ const fetchMasterData = async () => {
   }
 };
 
-// Load Grade Book for selected class, semester, subject
+// Simpan perubahan form saat ini ke memori cache rawStudentsData sebelum pindah mapel
+const syncCurrentSubjectToRaw = (subjName?: string) => {
+  const targetSubj = subjName || selectedSubjectName.value;
+  if (!targetSubj || !rawStudentsData.value || rawStudentsData.value.length === 0) return;
+  students.value.forEach((st) => {
+    const rawSt = rawStudentsData.value.find((r: any) => r.student_id === st.student_id);
+    if (rawSt) {
+      if (!rawSt.grades) rawSt.grades = {};
+      rawSt.grades[targetSubj] = {
+        nilai_uh: Array.isArray(st.nilai_uh) ? [...st.nilai_uh] : [],
+        rata_uh: st.rata_uh,
+        nilai_sas: st.nilai_sas,
+        nilai_akhir: st.nilai_akhir,
+        predikat: st.predikat,
+        capaian_kompetensi: st.capaian_kompetensi,
+      };
+    }
+  });
+};
+
+// Render daftar murid & nilai untuk mapel yang sedang aktif secara instan dari cache data
+const renderActiveSubjectGrades = () => {
+  if (!selectedSubjectName.value && defaultSubjects.value.length > 0) {
+    selectedSubjectName.value = defaultSubjects.value[0].nama;
+  }
+
+  const rawStudents = rawStudentsData.value || [];
+
+  // Cari jumlah UH terbanyak yang pernah disimpan untuk mapel terpilih (minimal 3 sesuai default)
+  let maxSavedUH = 3;
+  rawStudents.forEach((st: any) => {
+    const eg = st.grades?.[selectedSubjectName.value];
+    if (eg && Array.isArray(eg.nilai_uh)) {
+      maxSavedUH = Math.max(maxSavedUH, eg.nilai_uh.length);
+    }
+  });
+  uhColumnsCount.value = Math.max(3, maxSavedUH);
+
+  students.value = rawStudents.map((st: any) => {
+    const existingGrade = st.grades?.[selectedSubjectName.value] || {};
+    const uhList = Array.isArray(existingGrade.nilai_uh) && existingGrade.nilai_uh.length > 0
+      ? [...existingGrade.nilai_uh]
+      : [];
+
+    // Pastikan terisi minimal sebanyak uhColumnsCount
+    while (uhList.length < uhColumnsCount.value) {
+      uhList.push(null);
+    }
+
+    const row = {
+      student_id: st.student_id,
+      nama_lengkap: st.nama_lengkap,
+      nis: st.nis,
+      nisn: st.nisn,
+      report_card_id: st.report_card_id,
+      nilai_uh: uhList,
+      rata_uh: existingGrade.rata_uh ?? null,
+      nilai_sas: existingGrade.nilai_sas ?? null,
+      nilai_akhir: existingGrade.nilai_akhir ?? null,
+      predikat: existingGrade.predikat ?? null,
+      capaian_kompetensi: existingGrade.capaian_kompetensi ?? '',
+    };
+
+    calculateStudentGrade(row);
+    return row;
+  });
+};
+
+// Load Grade Book for selected class & semester dari server
 const loadGradeBook = async () => {
   if (!selectedClassId.value) return;
   loading.value = true;
@@ -177,51 +246,17 @@ const loadGradeBook = async () => {
       assignedSubjects.value = res.data.data.assigned_subjects || [];
       subjectOverview.value = res.data.data.subject_overview || {};
 
-      // Jika guru mapel belum memilih mapel yang dia ampu, otomatis arahkan ke mapel pertamanya jika ada
-      if (!isWaliKelas.value && assignedSubjects.value.length > 0 && !assignedSubjects.value.includes(selectedSubjectName.value)) {
-        selectedSubjectName.value = assignedSubjects.value[0];
+      // Jika belum ada mapel yang dipilih, pilih mapel pertama yang diampu atau default
+      if (!selectedSubjectName.value) {
+        if (!isWaliKelas.value && assignedSubjects.value.length > 0) {
+          selectedSubjectName.value = assignedSubjects.value[0];
+        } else if (defaultSubjects.value.length > 0) {
+          selectedSubjectName.value = defaultSubjects.value[0].nama;
+        }
       }
 
-      const rawStudents = res.data.data.students || [];
-
-      // Cari jumlah UH terbanyak yang pernah disimpan untuk mapel terpilih (minimal 3 sesuai default)
-      let maxSavedUH = 3;
-      rawStudents.forEach((st: any) => {
-        const eg = st.grades?.[selectedSubjectName.value];
-        if (eg && Array.isArray(eg.nilai_uh)) {
-          maxSavedUH = Math.max(maxSavedUH, eg.nilai_uh.length);
-        }
-      });
-      uhColumnsCount.value = Math.max(3, maxSavedUH);
-
-      students.value = rawStudents.map((st: any) => {
-        const existingGrade = st.grades?.[selectedSubjectName.value] || {};
-        const uhList = Array.isArray(existingGrade.nilai_uh) && existingGrade.nilai_uh.length > 0
-          ? [...existingGrade.nilai_uh]
-          : [];
-
-        // Pastikan terisi minimal sebanyak uhColumnsCount
-        while (uhList.length < uhColumnsCount.value) {
-          uhList.push(null);
-        }
-
-        const row = {
-          student_id: st.student_id,
-          nama_lengkap: st.nama_lengkap,
-          nis: st.nis,
-          nisn: st.nisn,
-          report_card_id: st.report_card_id,
-          nilai_uh: uhList,
-          rata_uh: existingGrade.rata_uh ?? null,
-          nilai_sas: existingGrade.nilai_sas ?? null,
-          nilai_akhir: existingGrade.nilai_akhir ?? null,
-          predikat: existingGrade.predikat ?? null,
-          capaian_kompetensi: existingGrade.capaian_kompetensi ?? '',
-        };
-
-        calculateStudentGrade(row);
-        return row;
-      });
+      rawStudentsData.value = res.data.data.students || [];
+      renderActiveSubjectGrades();
     }
   } catch (err: any) {
     showNotification('Gagal memuat buku catatan nilai: ' + (err.response?.data?.message || err.message), 'error');
@@ -371,8 +406,13 @@ watch([selectedClassId, selectedAcademicYearId, selectedSemester], () => {
   loadGradeBook();
 });
 
-watch(selectedSubjectName, () => {
-  loadGradeBook();
+watch(selectedSubjectName, (newSubj, oldSubj) => {
+  if (oldSubj && rawStudentsData.value.length > 0) {
+    syncCurrentSubjectToRaw(oldSubj);
+  }
+  if (newSubj && rawStudentsData.value.length > 0) {
+    renderActiveSubjectGrades();
+  }
 });
 
 onMounted(() => {
