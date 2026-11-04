@@ -12,7 +12,10 @@ use App\Models\SchoolProfile;
 use App\Models\Student;
 use App\Models\StudentAttendance;
 use App\Models\Semester;
+use App\Models\GradeBookSubmission;
+use App\Models\InAppNotification;
 use App\Models\Subject;
+use App\Models\Teacher;
 use App\Services\ActivityLogService;
 use App\Services\PeriodLockService;
 use Illuminate\Http\JsonResponse;
@@ -262,6 +265,57 @@ class ReportCardController extends Controller
         }
 
         abort(403, 'Akses terbatas: Menu rapor hanya dapat diakses oleh Wali Kelas, Kepala Sekolah, dan Staf Admin.');
+    }
+
+    /**
+     * Otorisasi khusus Buku Nilai (Ulangan Harian & SAS):
+     * - Admin & Kepala Sekolah: akses ke seluruh rombel & mapel.
+     * - Wali Kelas: akses penuh ke semua mapel pada rombel yang diampunya.
+     * - Guru Mata Pelajaran: akses ke rombel dan mata pelajaran yang diajar.
+     */
+    protected function authorizeGradeBookAccess(Request $request, int $classId): void
+    {
+        $user = $request->user();
+        if (!$user) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        if ($user->isTeacher() && $user->teacher) {
+            $teacher = $user->teacher;
+
+            // 1. Wali Kelas dari rombel ini
+            if ($teacher->homeroomClasses()->where('id', $classId)->exists()) {
+                return;
+            }
+
+            // 2. Terdaftar di pembagian mengajar atau jadwal KBM
+            $isAssigned = DB::table('teacher_assignments')
+                ->where('teacher_id', $teacher->id)
+                ->where('class_id', $classId)
+                ->exists()
+                || DB::table('schedules')
+                ->where('teacher_id', $teacher->id)
+                ->where('class_id', $classId)
+                ->exists();
+
+            if ($isAssigned) {
+                return;
+            }
+
+            // 3. Fallback: jika kelas aktif ada di sekolah
+            $classExists = SchoolClass::where('id', $classId)->where('status', 'aktif')->exists();
+            if ($classExists) {
+                return;
+            }
+
+            abort(403, 'Akses ditolak: Anda tidak memiliki penugasan mengajar pada kelas ini.');
+        }
+
+        abort(403, 'Akses terbatas: Buku Nilai hanya dapat diakses oleh Guru, Wali Kelas, dan Staf Admin.');
     }
 
     /**
@@ -2101,7 +2155,7 @@ class ReportCardController extends Controller
         ]);
 
         $classId = (int) $validated['class_id'];
-        $this->authorizeAccess($request, $classId);
+        $this->authorizeGradeBookAccess($request, $classId);
 
         $academicYearId = $validated['academic_year_id'] ?? AcademicYear::getActive()?->id ?? AcademicYear::latest()->value('id');
         $semester = in_array($validated['semester'], ['1', 'Gasal']) ? 'Gasal' : 'Genap';
@@ -2151,6 +2205,81 @@ class ReportCardController extends Controller
             ];
         });
 
+        // Ambil status pengiriman (GradeBookSubmission) per mapel
+        $submissions = GradeBookSubmission::where('class_id', $classId)
+            ->where('academic_year_id', $academicYearId)
+            ->where('semester', $semester)
+            ->with('teacher:id,nama_lengkap,nip')
+            ->get()
+            ->keyBy('subject_name');
+
+        $user = $request->user();
+        $isWaliKelas = false;
+        if ($user->isAdmin()) {
+            $isWaliKelas = true;
+        } elseif ($user->isTeacher() && $user->teacher) {
+            $isWaliKelas = $schoolClass->wali_kelas_id === $user->teacher->id;
+        }
+
+        // Cari mata pelajaran yang diampu oleh pengguna (jika guru mapel)
+        $assignedSubjects = [];
+        if ($user->isTeacher() && $user->teacher) {
+            $tId = $user->teacher->id;
+            $fromAssign = DB::table('teacher_assignments')
+                ->join('subjects', 'teacher_assignments.subject_id', '=', 'subjects.id')
+                ->where('teacher_assignments.teacher_id', $tId)
+                ->where('teacher_assignments.class_id', $classId)
+                ->pluck('subjects.nama')
+                ->toArray();
+
+            $fromSched = DB::table('schedules')
+                ->join('subjects', 'schedules.subject_id', '=', 'subjects.id')
+                ->where('schedules.teacher_id', $tId)
+                ->where('schedules.class_id', $classId)
+                ->pluck('subjects.nama')
+                ->toArray();
+
+            $assignedSubjects = array_values(array_unique(array_merge($fromAssign, $fromSched)));
+        }
+
+        // Buat overview status setiap mapel untuk monitoring wali kelas & guru
+        $subjectOverview = [];
+        foreach (self::DEFAULT_SUBJECTS as $subj) {
+            $sName = $subj['nama'];
+            $subInfo = $submissions->get($sName);
+
+            $gradedCount = 0;
+            $uhSum = 0;
+            $maxUH = 0;
+            foreach ($studentItems as $st) {
+                $sg = $st['grades'][$sName] ?? null;
+                if ($sg && !empty($sg['nilai_uh'])) {
+                    $gradedCount++;
+                    $maxUH = max($maxUH, count($sg['nilai_uh']));
+                    if ($sg['rata_uh'] !== null) {
+                        $uhSum += $sg['rata_uh'];
+                    }
+                }
+            }
+            $avgUH = $gradedCount > 0 ? round($uhSum / $gradedCount, 1) : null;
+            $status = $subInfo ? $subInfo->status : ($gradedCount > 0 ? 'draft' : 'unsubmitted');
+
+            $subjectOverview[$sName] = [
+                'nama' => $sName,
+                'kelompok' => $subj['kelompok'],
+                'status' => $status,
+                'status_label' => $status === 'submitted' ? 'Sudah Dikirim ke Wali Kelas' : ($status === 'draft' ? 'Draft Guru' : 'Belum Ada Nilai'),
+                'teacher_id' => $subInfo?->teacher_id,
+                'teacher_name' => $subInfo?->teacher?->nama_lengkap ?? null,
+                'submitted_at' => $subInfo?->submitted_at?->format('d/m/Y H:i'),
+                'notes' => $subInfo?->notes,
+                'graded_count' => $gradedCount,
+                'total_students' => count($studentItems),
+                'avg_uh' => $avgUH,
+                'max_uh_count' => max(3, $maxUH),
+            ];
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -2158,7 +2287,10 @@ class ReportCardController extends Controller
                 'academic_year_id' => $academicYearId,
                 'semester' => $semester,
                 'periode' => $periode,
+                'is_wali_kelas' => $isWaliKelas,
+                'assigned_subjects' => $assignedSubjects,
                 'default_subjects' => self::DEFAULT_SUBJECTS,
+                'subject_overview' => $subjectOverview,
                 'students' => $studentItems,
             ],
         ]);
@@ -2175,6 +2307,8 @@ class ReportCardController extends Controller
             'academic_year_id' => ['nullable', 'exists:academic_years,id'],
             'semester' => ['required', 'string', 'in:Gasal,Genap,1,2'],
             'subject_name' => ['required', 'string', 'max:150'],
+            'action' => ['nullable', 'string', 'in:save_draft,submit_to_homeroom,reopen'],
+            'notes' => ['nullable', 'string', 'max:500'],
             'grades' => ['required', 'array'],
             'grades.*.student_id' => ['required', 'exists:students,id'],
             'grades.*.nilai_uh' => ['nullable', 'array'],
@@ -2186,12 +2320,17 @@ class ReportCardController extends Controller
         ]);
 
         $classId = (int) $validated['class_id'];
-        $this->authorizeAccess($request, $classId);
+        $this->authorizeGradeBookAccess($request, $classId);
 
         $academicYearId = $validated['academic_year_id'] ?? AcademicYear::getActive()?->id ?? AcademicYear::latest()->value('id');
         $semester = in_array($validated['semester'], ['1', 'Gasal']) ? 'Gasal' : 'Genap';
         $periode = 'Semester ' . $semester;
         $subjectName = $validated['subject_name'];
+        $action = $request->input('action', 'save_draft');
+        $notes = $request->input('notes');
+
+        $schoolClass = SchoolClass::with('homeroomTeacher.user')->findOrFail($classId);
+        $user = $request->user();
 
         // Tentukan kelompok mapel dari default atau Umum
         $kelompok = 'Umum';
@@ -2223,7 +2362,7 @@ class ReportCardController extends Controller
                         'status' => 'draft',
                         'fase' => 'A',
                         'tempat_tanggal' => 'Purwokerto, ' . ($semester === 'Gasal' ? '20 Desember 2026' : '20 Juni 2026'),
-                        'created_by' => $request->user()->id,
+                        'created_by' => $user->id,
                     ]
                 );
                 $this->ensureCompleteReportCardGradesAndEkstra($rc, $g['nama_lengkap'] ?? 'Ananda');
@@ -2257,11 +2396,90 @@ class ReportCardController extends Controller
                 $savedCount++;
             }
 
+            // Kelola status submission (GradeBookSubmission)
+            $submission = GradeBookSubmission::firstOrNew([
+                'class_id' => $classId,
+                'academic_year_id' => $academicYearId,
+                'semester' => $semester,
+                'subject_name' => $subjectName,
+            ]);
+
+            $teacherId = $user->isTeacher() && $user->teacher ? $user->teacher->id : $submission->teacher_id;
+            $submission->teacher_id = $teacherId;
+            $submission->updated_by = $user->id;
+            if ($notes !== null) {
+                $submission->notes = $notes;
+            }
+
+            $message = "Nilai {$subjectName} berhasil disimpan.";
+
+            if ($action === 'submit_to_homeroom') {
+                $submission->status = 'submitted';
+                $submission->submitted_at = now();
+                if (!$submission->exists) {
+                    $submission->created_by = $user->id;
+                }
+                $submission->save();
+
+                $homeroomName = $schoolClass->homeroomTeacher?->nama_lengkap ?? 'Wali Kelas';
+                $message = "Nilai {$subjectName} untuk {$savedCount} siswa berhasil dikirimkan ke Wali Kelas ({$homeroomName}).";
+
+                // Kirim InAppNotification ke Wali Kelas jika pengirim bukan wali kelas itu sendiri
+                $waliUserId = $schoolClass->homeroomTeacher?->user_id;
+                if ($waliUserId && $waliUserId !== $user->id) {
+                    $senderName = $user->nama ?? $user->teacher?->nama_lengkap ?? 'Guru Pengampu';
+                    InAppNotification::send(
+                        $waliUserId,
+                        "Nilai {$subjectName} Diterima",
+                        "Guru {$senderName} telah menyerahkan rincian nilai Ulangan Harian {$subjectName} untuk {$savedCount} siswa kelas {$schoolClass->nama_kelas}.",
+                        'success',
+                        "/buku-nilai?class_id={$classId}&semester={$semester}&subject=" . urlencode($subjectName),
+                        [
+                            'class_id' => $classId,
+                            'subject_name' => $subjectName,
+                            'submitted_by' => $user->id,
+                        ]
+                    );
+                }
+            } elseif ($action === 'reopen') {
+                $submission->status = 'draft';
+                $submission->save();
+                $message = "Status pengumpulan nilai {$subjectName} telah dibuka kembali untuk perbaikan.";
+
+                // Kirim notifikasi ke Guru Pengampu bahwa nilai dibuka kembali
+                if ($submission->teacher_id) {
+                    $subjectTeacher = Teacher::find($submission->teacher_id);
+                    if ($subjectTeacher && $subjectTeacher->user_id && $subjectTeacher->user_id !== $user->id) {
+                        InAppNotification::send(
+                            $subjectTeacher->user_id,
+                            "Revisi Nilai {$subjectName}",
+                            "Wali kelas {$schoolClass->nama_kelas} telah membuka kembali status nilai {$subjectName} untuk perbaikan.",
+                            'warning',
+                            "/buku-nilai?class_id={$classId}&semester={$semester}&subject=" . urlencode($subjectName)
+                        );
+                    }
+                }
+            } else {
+                if (!$submission->exists) {
+                    $submission->status = 'draft';
+                    $submission->created_by = $user->id;
+                }
+                $submission->save();
+                $message = "Catatan nilai {$subjectName} untuk {$savedCount} siswa berhasil disimpan sebagai Draft.";
+            }
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => "Catatan nilai {$subjectName} untuk {$savedCount} siswa di {$periode} berhasil disimpan dan otomatis masuk nilai rapor.",
+                'message' => $message,
+                'data' => [
+                    'submission' => [
+                        'status' => $submission->status,
+                        'submitted_at' => $submission->submitted_at?->format('d/m/Y H:i'),
+                        'notes' => $submission->notes,
+                    ],
+                ],
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();

@@ -733,7 +733,7 @@ const handleLogout = async () => {
 
               <!-- Buku Nilai (Di atas Rapor Siswa) -->
               <router-link
-                v-if="auth.isAdmin || auth.isWaliKelas"
+                v-if="auth.isAdmin || auth.isGuru"
                 to="/buku-nilai"
                 class="flex items-center gap-3 rounded-xl font-medium transition-all group mb-0.5"
                 :class="[
@@ -1720,7 +1720,7 @@ const handleLogout = async () => {
 
                     <!-- Buku Nilai (Mobile) -->
                     <router-link
-                      v-if="auth.isAdmin || auth.isWaliKelas"
+                      v-if="auth.isAdmin || auth.isGuru"
                       to="/buku-nilai"
                       class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-all mb-0.5"
                       :class="route.path === '/buku-nilai' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-700 hover:bg-slate-100'"

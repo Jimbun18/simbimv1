@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import api from '../services/api';
 import { useAuthStore } from '../stores/auth';
+import { showConfirm } from '../services/swal';
 
 const auth = useAuthStore();
 
@@ -36,6 +37,12 @@ const selectedSemester = ref<'Gasal' | 'Genap'>('Gasal');
 const defaultSubjects = ref<any[]>([...FALLBACK_SUBJECTS]);
 const selectedSubjectName = ref<string>('Matematika');
 
+// Status & Role Access State
+const isWaliKelas = ref<boolean>(false);
+const assignedSubjects = ref<string[]>([]);
+const subjectOverview = ref<Record<string, any>>({});
+const showOverviewPanel = ref<boolean>(true);
+
 // Dynamic UH Columns (Default 3 sesuai permintaan user)
 const uhColumnsCount = ref<number>(3);
 
@@ -49,8 +56,13 @@ const showNotification = (message: string, type: 'success' | 'error' | 'warning'
   notification.value = { message, type };
   setTimeout(() => {
     notification.value = null;
-  }, 4000);
+  }, 4500);
 };
+
+// Current Subject Submission Info
+const currentSubjectSubmission = computed(() => {
+  return subjectOverview.value[selectedSubjectName.value] || null;
+});
 
 // Predicate calculation
 const calculatePredicate = (score?: number | null): string => {
@@ -103,7 +115,7 @@ const fetchMasterData = async () => {
 
     classes.value = clsRes.data.data || [];
     academicYears.value = ayRes.data.data || [];
-    
+
     // Ekstraksi daftar mata pelajaran dari API atau fallback
     const rawSubj = subRes.data?.data;
     if (Array.isArray(rawSubj) && rawSubj.length > 0) {
@@ -145,6 +157,7 @@ const loadGradeBook = async () => {
         class_id: selectedClassId.value,
         academic_year_id: selectedAcademicYearId.value || undefined,
         semester: selectedSemester.value,
+        subject_name: selectedSubjectName.value,
       },
     });
 
@@ -152,9 +165,18 @@ const loadGradeBook = async () => {
       if (res.data.data.default_subjects && Array.isArray(res.data.data.default_subjects) && res.data.data.default_subjects.length > 0) {
         defaultSubjects.value = res.data.data.default_subjects;
       }
+      isWaliKelas.value = Boolean(res.data.data.is_wali_kelas);
+      assignedSubjects.value = res.data.data.assigned_subjects || [];
+      subjectOverview.value = res.data.data.subject_overview || {};
+
+      // Jika guru mapel belum memilih mapel yang dia ampu, otomatis arahkan ke mapel pertamanya jika ada
+      if (!isWaliKelas.value && assignedSubjects.value.length > 0 && !assignedSubjects.value.includes(selectedSubjectName.value)) {
+        selectedSubjectName.value = assignedSubjects.value[0];
+      }
+
       const rawStudents = res.data.data.students || [];
 
-      // Cari jumlah UH terbanyak yang pernah disimpan (minimal 3 sesuai default)
+      // Cari jumlah UH terbanyak yang pernah disimpan untuk mapel terpilih (minimal 3 sesuai default)
       let maxSavedUH = 3;
       rawStudents.forEach((st: any) => {
         const eg = st.grades?.[selectedSubjectName.value];
@@ -200,6 +222,11 @@ const loadGradeBook = async () => {
   }
 };
 
+// Select Subject Helper
+const selectSubject = (subjName: string) => {
+  selectedSubjectName.value = subjName;
+};
+
 // Dynamic UH column controls
 const addUHColumn = () => {
   uhColumnsCount.value++;
@@ -225,9 +252,28 @@ const removeUHColumn = () => {
   showNotification(`Kolom UH dikurangi menjadi ${uhColumnsCount.value} kolom.`, 'success');
 };
 
-// Save Grade Book to Database
-const saveGradeBook = async () => {
+// Save Grade Book to Database (save_draft | submit_to_homeroom | reopen)
+const saveGradeBook = async (action: 'save_draft' | 'submit_to_homeroom' | 'reopen' = 'save_draft') => {
   if (!selectedClassId.value) return;
+
+  if (action === 'submit_to_homeroom') {
+    const homeroomName = currentClass.value?.homeroom_teacher?.nama_lengkap || 'Wali Kelas';
+    const confirmed = await showConfirm(
+      'Kirim Nilai ke Wali Kelas',
+      `Kirimkan seluruh rincian nilai ulangan harian mata pelajaran "${selectedSubjectName.value}" (${students.value.length} siswa) ke Wali Kelas (${homeroomName})? Nilai akan resmi diserahkan.`,
+      'Ya, Kirim ke Wali Kelas'
+    );
+    if (!confirmed) return;
+  } else if (action === 'reopen') {
+    const confirmed = await showConfirm(
+      'Buka Kunci / Minta Revisi',
+      `Buka kembali status pengumpulan nilai "${selectedSubjectName.value}" agar guru pengampu dapat memperbarui rincian nilai?`,
+      'Ya, Buka Kunci',
+      'warning'
+    );
+    if (!confirmed) return;
+  }
+
   saving.value = true;
   try {
     const payload = {
@@ -235,6 +281,7 @@ const saveGradeBook = async () => {
       academic_year_id: selectedAcademicYearId.value || undefined,
       semester: selectedSemester.value,
       subject_name: selectedSubjectName.value,
+      action,
       grades: students.value.map((st) => ({
         student_id: st.student_id,
         nilai_uh: st.nilai_uh.filter((v: any) => v !== null && v !== undefined && v !== ''),
@@ -248,7 +295,7 @@ const saveGradeBook = async () => {
 
     const res = await api.post('/report-cards/class-grade-book', payload);
     if (res.data.success) {
-      showNotification(res.data.message, 'success');
+      showNotification(res.data.message, action === 'reopen' ? 'warning' : 'success');
       await loadGradeBook();
     }
   } catch (err: any) {
@@ -276,9 +323,35 @@ const classStats = computed(() => {
   return { avg, max, min, passed, total: students.value.length };
 });
 
+const currentClass = computed(() => {
+  return classes.value.find((cl: any) => String(cl.id) === String(selectedClassId.value));
+});
+
 const currentClassName = computed(() => {
-  const c = classes.value.find((cl: any) => String(cl.id) === String(selectedClassId.value));
+  const c = currentClass.value;
   return c ? c.nama_kelas || c.nama : 'Kelas';
+});
+
+// Overview Counting
+const overviewCounts = computed(() => {
+  let submitted = 0;
+  let draft = 0;
+  let unsubmitted = 0;
+
+  defaultSubjects.value.forEach((s) => {
+    const info = subjectOverview.value[s.nama];
+    const status = info?.status || 'unsubmitted';
+    if (status === 'submitted') submitted++;
+    else if (status === 'draft') draft++;
+    else unsubmitted++;
+  });
+
+  return {
+    submitted,
+    draft,
+    unsubmitted,
+    total: defaultSubjects.value.length,
+  };
 });
 
 // Watchers for filter change
@@ -315,7 +388,7 @@ onMounted(() => {
           'bg-amber-500/90 text-white border-amber-400': notification.type === 'warning',
         }"
       >
-        <span>{{ notification.type === 'success' ? '✓' : '⚠️' }}</span>
+        <span>{{ notification.type === 'success' ? '✓' : (notification.type === 'warning' ? 'ℹ️' : '⚠️') }}</span>
         <span>{{ notification.message }}</span>
       </div>
     </transition>
@@ -331,12 +404,23 @@ onMounted(() => {
             <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
               Buku Nilai Siswa
             </h1>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-800 border border-indigo-200">
-              Formatif (UH) &amp; Sumatif (SAS)
+            <span
+              v-if="isWaliKelas"
+              class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200"
+            >
+              👑 Mode Wali Kelas
+            </span>
+            <span
+              v-else
+              class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-sky-100 text-sky-800 border border-sky-200"
+            >
+              👨‍🏫 Mode Guru Mata Pelajaran
             </span>
           </div>
           <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Catatan ulangan harian otomatis terhitung rata-ratanya (RUH) dan diakumulasi dengan SAS menghasilkan Nilai Rapor (NR).
+            {{ isWaliKelas 
+              ? 'Wali Kelas dapat memantau status pengumpulan nilai dari seluruh Guru Mapel dan melihat rincian nilai tiap murid.' 
+              : 'Guru Mapel menginput nilai ulangan harian siswa dan mengirimkannya langsung ke Wali Kelas.' }}
           </p>
         </div>
       </div>
@@ -368,7 +452,7 @@ onMounted(() => {
           </select>
         </div>
 
-        <!-- 2. PEMISAH SEMESTER 1 / SEMESTER 2 (Sesuai Permintaan User) -->
+        <!-- 2. PEMISAH SEMESTER 1 / SEMESTER 2 -->
         <div>
           <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
             Pilihan Semester
@@ -395,17 +479,17 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 3. PILIH MATA PELAJARAN (18 Mapel Kurikulum Merdeka) -->
+        <!-- 3. PILIH MATA PELAJARAN -->
         <div>
           <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-            Mata Pelajaran
+            Mata Pelajaran Aktif
           </label>
           <select
             v-model="selectedSubjectName"
             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs"
           >
             <option v-for="s in defaultSubjects" :key="s.nama" :value="s.nama">
-              {{ s.nama }} ({{ s.kelompok }})
+              {{ s.nama }} ({{ s.kelompok }}) {{ assignedSubjects.includes(s.nama) ? '★ Mapel Anda' : '' }}
             </option>
           </select>
         </div>
@@ -426,13 +510,13 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- ACTION ROW: DYNAMIC UH COLUMNS CONTROL & SAVE BUTTON -->
+      <!-- ACTION ROW: DYNAMIC UH COLUMNS & SAVE/SUBMIT BUTTONS -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-slate-100">
-        <!-- UH Column Controller: Default UH 1-3, user can add more -->
+        <!-- UH Column Controller -->
         <div class="flex items-center gap-2 flex-wrap">
           <span class="text-xs font-bold text-slate-700">Kolom Ulangan Harian:</span>
           <span class="px-2 py-0.5 rounded-md font-mono font-black text-xs bg-amber-100 text-amber-900 border border-amber-300">
-            UH 1 s/d UH {{ uhColumnsCount }} (Default 3)
+            UH 1 s/d UH {{ uhColumnsCount }}
           </span>
 
           <div class="inline-flex items-center gap-1.5 ml-1">
@@ -459,22 +543,183 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- SAVE BUTTON -->
-        <div class="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+        <!-- SAVE & SUBMISSION BUTTONS -->
+        <div class="flex items-center gap-2 flex-wrap shrink-0 self-end sm:self-auto">
+          <!-- Buka Kunci / Minta Revisi (Hanya jika status submitted) -->
+          <button
+            v-if="currentSubjectSubmission?.status === 'submitted'"
+            type="button"
+            @click="saveGradeBook('reopen')"
+            :disabled="saving || loading"
+            class="px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
+            title="Buka kembali kunci agar nilai dapat diperbaiki guru"
+          >
+            <span>🔄</span>
+            <span>Minta Revisi / Buka Kunci</span>
+          </button>
+
+          <!-- Simpan Draft -->
           <button
             type="button"
-            @click="saveGradeBook"
+            @click="saveGradeBook('save_draft')"
             :disabled="saving || loading || students.length === 0"
-            class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs"
+            title="Simpan perubahan tanpa mengubah status pengiriman"
+          >
+            <span>💾</span>
+            <span>Simpan Draft</span>
+          </button>
+
+          <!-- Kirim ke Wali Kelas (Khusus Guru Pengampu atau Konfirmasi) -->
+          <button
+            type="button"
+            @click="saveGradeBook('submit_to_homeroom')"
+            :disabled="saving || loading || students.length === 0"
+            class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-all shadow-md shadow-emerald-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <svg v-if="saving" class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span v-else>💾</span>
-            <span>{{ saving ? 'Menyimpan ke Rapor...' : 'Simpan Nilai ke Rapor Siswa' }}</span>
+            <span v-else>🚀</span>
+            <span>{{ isWaliKelas ? 'Kirim / Sahkan Nilai' : 'Kirim ke Wali Kelas' }}</span>
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- MONITORING PENGUMPULAN NILAI 18 MAPEL (STATUS TERKUMPUL DI WALI KELAS) -->
+    <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs space-y-3.5">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">📊</span>
+          <h2 class="text-sm font-black text-slate-900 tracking-tight">
+            Status Pengumpulan Nilai per Mata Pelajaran (Kelas {{ currentClassName }})
+          </h2>
+        </div>
+        <div class="flex items-center gap-2">
+          <!-- Summary Chips -->
+          <span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200">
+            🟢 {{ overviewCounts.submitted }} Terkumpul
+          </span>
+          <span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-50 text-amber-800 border border-amber-200">
+            🟡 {{ overviewCounts.draft }} Draft
+          </span>
+          <span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-slate-100 text-slate-700 border border-slate-200">
+            ⚪ {{ overviewCounts.unsubmitted }} Belum Ada
+          </span>
+          <button
+            type="button"
+            @click="showOverviewPanel = !showOverviewPanel"
+            class="text-xs text-indigo-600 hover:text-indigo-800 font-bold ml-1 cursor-pointer"
+          >
+            {{ showOverviewPanel ? 'Sembunyikan ▲' : 'Tampilkan ▼' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Subject Cards Grid -->
+      <transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0 -translate-y-2"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 -translate-y-2"
+      >
+        <div v-show="showOverviewPanel" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 pt-2 border-t border-slate-100">
+          <button
+            v-for="subj in defaultSubjects"
+            :key="'ov-' + subj.nama"
+            type="button"
+            @click="selectSubject(subj.nama)"
+            class="p-2.5 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col justify-between"
+            :class="[
+              selectedSubjectName === subj.nama
+                ? 'bg-indigo-50/80 border-indigo-400 ring-2 ring-indigo-400/30 shadow-xs'
+                : 'bg-slate-50/70 hover:bg-white border-slate-200 hover:border-slate-300'
+            ]"
+          >
+            <!-- Top: Subject Name & Star if assigned -->
+            <div>
+              <div class="flex items-start justify-between gap-1">
+                <span class="font-extrabold text-[11px] text-slate-900 leading-snug line-clamp-1" :title="subj.nama">
+                  {{ subj.nama }}
+                </span>
+                <span
+                  v-if="assignedSubjects.includes(subj.nama)"
+                  class="text-[9px] font-black text-amber-700 bg-amber-100 px-1 rounded"
+                  title="Mata Pelajaran yang Anda Ampu"
+                >
+                  Anda
+                </span>
+              </div>
+              <div class="text-[9px] text-slate-400 font-medium">
+                {{ subj.kelompok }}
+              </div>
+            </div>
+
+            <!-- Bottom: Status Badge & Graded Count -->
+            <div class="mt-2 pt-1.5 border-t border-slate-200/50 flex items-center justify-between">
+              <span
+                class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider"
+                :class="{
+                  'bg-emerald-100 text-emerald-800 border border-emerald-300': subjectOverview[subj.nama]?.status === 'submitted',
+                  'bg-amber-100 text-amber-800 border border-amber-300': subjectOverview[subj.nama]?.status === 'draft',
+                  'bg-slate-200/70 text-slate-600': !subjectOverview[subj.nama] || subjectOverview[subj.nama]?.status === 'unsubmitted',
+                }"
+              >
+                {{ subjectOverview[subj.nama]?.status === 'submitted' ? '✓ Terkumpul' : (subjectOverview[subj.nama]?.status === 'draft' ? '⏳ Draft' : '⚪ Kosong') }}
+              </span>
+
+              <span class="text-[9px] font-mono font-bold text-slate-500">
+                {{ subjectOverview[subj.nama]?.graded_count || 0 }}/{{ students.length }}
+              </span>
+            </div>
+          </button>
+        </div>
+      </transition>
+    </div>
+
+    <!-- STATUS BANNER UNTUK MAPEL TERPILIH -->
+    <div
+      class="p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+      :class="{
+        'bg-emerald-50/90 border-emerald-200 text-emerald-900': currentSubjectSubmission?.status === 'submitted',
+        'bg-amber-50/90 border-amber-200 text-amber-900': currentSubjectSubmission?.status === 'draft',
+        'bg-slate-50 border-slate-200 text-slate-700': !currentSubjectSubmission || currentSubjectSubmission?.status === 'unsubmitted',
+      }"
+    >
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">
+          {{ currentSubjectSubmission?.status === 'submitted' ? '✅' : (currentSubjectSubmission?.status === 'draft' ? '⏳' : 'ℹ️') }}
+        </span>
+        <div>
+          <div class="font-black text-sm">
+            Status Nilai {{ selectedSubjectName }}:
+            <span class="uppercase">
+              {{ currentSubjectSubmission?.status === 'submitted' ? 'Sudah Terkumpul di Wali Kelas' : (currentSubjectSubmission?.status === 'draft' ? 'Draft Guru (Belum Dikirim)' : 'Belum Ada Nilai') }}
+            </span>
+          </div>
+          <p class="text-xs mt-0.5 opacity-90">
+            <template v-if="currentSubjectSubmission?.status === 'submitted'">
+              Diserahkan oleh <strong>{{ currentSubjectSubmission.teacher_name || 'Guru Pengampu' }}</strong> pada <strong>{{ currentSubjectSubmission.submitted_at || '-' }}</strong>. Rincian nilai setiap murid ditampilkan di bawah.
+            </template>
+            <template v-else-if="currentSubjectSubmission?.status === 'draft'">
+              Nilai telah disimpan sebagai draft oleh guru. Klik <strong>"Kirim ke Wali Kelas"</strong> jika penginputan nilai sudah selesai.
+            </template>
+            <template v-else>
+              Guru belum menginput nilai ulangan harian untuk mata pelajaran ini. Silakan input nilai pada tabel di bawah ini.
+            </template>
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Action if Submitted -->
+      <div v-if="currentSubjectSubmission?.status === 'submitted'" class="shrink-0 flex items-center gap-2">
+        <span class="px-2.5 py-1 bg-white text-emerald-800 font-black rounded-lg border border-emerald-200 text-[10px] uppercase shadow-2xs">
+          Status: Terverifikasi
+        </span>
       </div>
     </div>
 
@@ -497,17 +742,17 @@ onMounted(() => {
         <span class="text-xl font-black text-indigo-600 tracking-tight">{{ classStats.passed }} / {{ classStats.total }}</span>
       </div>
       <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs col-span-2 sm:col-span-1">
-        <span class="text-slate-400 font-bold block text-[10px] uppercase">Mata Pelajaran</span>
+        <span class="text-slate-400 font-bold block text-[10px] uppercase">Mata Pelajaran Aktif</span>
         <span class="text-sm font-extrabold text-slate-900 truncate block">{{ selectedSubjectName }}</span>
       </div>
     </div>
 
-    <!-- MAIN GRADE BOOK TABLE -->
+    <!-- MAIN GRADE BOOK TABLE: RINCIAN NILAI SETIAP SISWA (BUKAN CUMA RATA-RATA) -->
     <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
       <!-- Loading State -->
       <div v-if="loading" class="py-24 text-center text-slate-400 space-y-3">
         <div class="animate-spin w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full mx-auto"></div>
-        <p class="text-xs font-bold text-slate-600">Memuat data buku nilai {{ selectedSubjectName }}...</p>
+        <p class="text-xs font-bold text-slate-600">Memuat rincian nilai siswa {{ selectedSubjectName }}...</p>
       </div>
 
       <!-- Empty State -->
@@ -517,7 +762,7 @@ onMounted(() => {
         <p class="text-xs text-slate-400">Pilih kelas yang memiliki data siswa aktif.</p>
       </div>
 
-      <!-- Table Content -->
+      <!-- Table Content: FULL STUDENT DETAILS -->
       <div v-else class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-xs min-w-[950px]">
           <thead>
@@ -667,17 +912,25 @@ onMounted(() => {
           <span>Mata Pelajaran: <strong>{{ selectedSubjectName }}</strong></span>
         </div>
 
-        <button
-          type="button"
-          @click="saveGradeBook"
-          :disabled="saving || loading || students.length === 0"
-          class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-50 self-end sm:self-auto"
-        >
-          <span>💾</span>
-          <span>{{ saving ? 'Menyimpan...' : 'Simpan Nilai ke Rapor' }}</span>
-        </button>
+        <div class="flex items-center gap-2 self-end sm:self-auto">
+          <button
+            type="button"
+            @click="saveGradeBook('save_draft')"
+            :disabled="saving || loading || students.length === 0"
+            class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+          >
+            <span>Simpan Draft</span>
+          </button>
+          <button
+            type="button"
+            @click="saveGradeBook('submit_to_homeroom')"
+            :disabled="saving || loading || students.length === 0"
+            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            <span>{{ isWaliKelas ? 'Sahkan Nilai' : 'Kirim ke Wali Kelas' }}</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
-
