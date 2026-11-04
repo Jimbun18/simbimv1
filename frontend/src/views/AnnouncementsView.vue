@@ -44,12 +44,12 @@
         </svg>
         <span>{{ message.text }}</span>
       </div>
-      <button @click="message = null" class="text-slate-400 hover:text-slate-600">&times;</button>
+      <button @click="message = null" class="text-slate-400 hover:text-slate-600 cursor-pointer">&times;</button>
     </div>
 
-    <!-- Filter & Pencarian -->
-    <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-3 text-sm">
-      <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+    <!-- Filter & Pencarian (Hapus Filter Target/Kategori, Ganti Sudah/Belum Dibaca) -->
+    <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-sm">
+      <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
         <!-- Search Box -->
         <div class="relative w-full sm:w-64">
           <input 
@@ -64,35 +64,60 @@
           </svg>
         </div>
 
-        <!-- Filter Target Role -->
-        <select 
-          v-model="filterTarget" 
-          @change="filterAnnouncements"
-          class="border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 text-slate-700 outline-none"
-        >
-          <option value="">Semua Target Pembaca</option>
-          <option value="semua">Target: Semua</option>
-          <option value="guru">Target: Khusus Guru</option>
-          <option value="wali">Target: Khusus Wali</option>
-        </select>
+        <!-- Filter Status Baca (Semua, Belum Dibaca, Sudah Dibaca) -->
+        <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+          <button
+            type="button"
+            @click="setFilterStatus('all')"
+            class="px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+            :class="filterReadStatus === 'all' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'"
+          >
+            <span>Semua</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded-full" :class="filterReadStatus === 'all' ? 'bg-slate-100 text-slate-800' : 'bg-slate-200 text-slate-600'">
+              {{ announcementsList.length }}
+            </span>
+          </button>
 
-        <!-- Filter Kategori -->
-        <select 
-          v-model="filterCategory" 
-          @change="filterAnnouncements"
-          class="border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 text-slate-700 outline-none"
-        >
-          <option value="">Semua Kategori</option>
-          <option value="akademik">Akademik</option>
-          <option value="kegiatan">Kegiatan</option>
-          <option value="keuangan">Keuangan / SPP</option>
-          <option value="libur">Hari Libur</option>
-          <option value="umum">Umum</option>
-        </select>
+          <button
+            type="button"
+            @click="setFilterStatus('unread')"
+            class="px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+            :class="filterReadStatus === 'unread' ? 'bg-blue-600 text-white shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'"
+          >
+            <span class="w-2 h-2 rounded-full" :class="filterReadStatus === 'unread' ? 'bg-white' : 'bg-blue-500'"></span>
+            <span>Belum Dibaca</span>
+            <span v-if="unreadCount > 0" class="text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold" :class="filterReadStatus === 'unread' ? 'bg-blue-700 text-white' : 'bg-blue-100 text-blue-800'">
+              {{ unreadCount }}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            @click="setFilterStatus('read')"
+            class="px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+            :class="filterReadStatus === 'read' ? 'bg-emerald-600 text-white shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'"
+          >
+            <span>✓ Sudah Dibaca</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold" :class="filterReadStatus === 'read' ? 'bg-emerald-700 text-white' : 'bg-emerald-100 text-emerald-800'">
+              {{ readCount }}
+            </span>
+          </button>
+        </div>
       </div>
 
-      <div class="text-xs text-slate-400 font-semibold">
-        Total: {{ filteredList.length }} Pengumuman
+      <!-- Action: Tandai Semua Dibaca & Total Counter -->
+      <div class="flex items-center gap-3 self-end md:self-auto">
+        <button
+          v-if="unreadCount > 0"
+          type="button"
+          @click="markAllAnnouncementsRead"
+          class="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer flex items-center gap-1"
+        >
+          <span>✓ Tandai Semua Dibaca</span>
+        </button>
+        <div class="text-xs text-slate-400 font-semibold">
+          Total: {{ filteredList.length }} Pengumuman
+        </div>
       </div>
     </div>
 
@@ -112,9 +137,11 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
         </svg>
       </div>
-      <h3 class="text-base font-bold text-slate-800">Belum Ada Pengumuman</h3>
+      <h3 class="text-base font-bold text-slate-800">
+        {{ filterReadStatus === 'unread' ? 'Tidak Ada Pengumuman Belum Dibaca' : (filterReadStatus === 'read' ? 'Belum Ada Pengumuman yang Dibaca' : 'Belum Ada Pengumuman') }}
+      </h3>
       <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-        Tidak ada pengumuman yang sesuai dengan filter pencarian Anda saat ini.
+        {{ filterReadStatus === 'unread' ? 'Seluruh pengumuman telah Anda baca.' : 'Tidak ada pengumuman yang sesuai dengan filter pencarian Anda saat ini.' }}
       </p>
     </div>
 
@@ -129,6 +156,22 @@
         <!-- Top Metadata Bar -->
         <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
           <div class="flex flex-wrap items-center gap-2">
+            <!-- Status Baca Badge -->
+            <span 
+              v-if="!anc.is_read"
+              class="bg-blue-100 text-blue-900 border border-blue-300 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs"
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+              BELUM DIBACA
+            </span>
+            <span 
+              v-else
+              class="bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"
+            >
+              <span class="text-emerald-600 font-black">✓</span>
+              SUDAH DIBACA
+            </span>
+
             <!-- Pinned Badge -->
             <span v-if="anc.is_pinned" class="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
               📌 DISEMATKAN
@@ -150,11 +193,21 @@
             <span>📅 {{ formatDate(anc.tgl_terbit) }}</span>
             <span>• Oleh: <strong class="text-slate-600">{{ anc.creator?.nama || 'Kepala Sekolah / Admin' }}</strong></span>
             
+            <!-- Tombol Tandai Sudah Dibaca (Jika belum dibaca) -->
+            <button
+              v-if="!anc.is_read"
+              @click="markAnnouncementRead(anc)"
+              class="ml-2 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-2xs"
+              title="Tandai pengumuman ini sudah dibaca"
+            >
+              <span>✓ Tandai Dibaca</span>
+            </button>
+
             <!-- Tombol Aksi Admin (Edit & Hapus) -->
             <div v-if="auth.isAdmin" class="flex items-center gap-1 ml-2">
               <button 
                 @click="openEditModal(anc)"
-                class="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
+                class="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition cursor-pointer"
                 title="Edit Pengumuman"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,7 +216,7 @@
               </button>
               <button 
                 @click="deleteAnnouncement(anc)"
-                class="p-1.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
+                class="p-1.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition cursor-pointer"
                 title="Hapus Pengumuman"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,11 +303,11 @@
               <select 
                 v-model="form.target_role" 
                 required
-                class="w-full border border-slate-300 rounded-2xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                class="w-full border border-slate-300 rounded-2xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-semibold"
               >
-                <option value="semua">Semua (Guru, Staf, & Wali)</option>
-                <option value="guru">Khusus Dewan Guru</option>
-                <option value="wali">Khusus Wali Murid</option>
+                <option value="guru">Khusus Dewan Guru (Hanya Guru)</option>
+                <option value="wali">Khusus Wali Murid (Hanya Wali Murid)</option>
+                <option value="semua">Semua Civitas (Guru, Staf, & Wali)</option>
                 <option value="staf_admin">Khusus Staf Administrasi</option>
                 <option value="kepala_sekolah">Khusus Kepala Sekolah</option>
               </select>
@@ -274,6 +327,26 @@
                 <option value="libur">Hari Libur / Cuti Bersama</option>
                 <option value="umum">Umum</option>
               </select>
+            </div>
+          </div>
+
+          <!-- Alert Panduan Sasaran Notifikasi -->
+          <div class="p-3 bg-blue-50 border border-blue-200 rounded-2xl text-xs text-blue-900 leading-relaxed flex items-start gap-2.5">
+            <span class="text-base shrink-0">🎯</span>
+            <div>
+              <strong class="font-extrabold block">Ketentuan Target Sasaran:</strong>
+              <span v-if="form.target_role === 'guru'">
+                Pengumuman dan notifikasi lonceng/email <strong>HANYA</strong> akan dikirimkan kepada <strong>Dewan Guru</strong>. Wali murid <strong>tidak akan</strong> menerima notifikasi maupun melihat pengumuman ini.
+              </span>
+              <span v-else-if="form.target_role === 'wali'">
+                Pengumuman dan notifikasi lonceng/email <strong>HANYA</strong> akan dikirimkan kepada <strong>Wali Murid</strong> di portal wali. Guru tidak akan menerima notifikasi ini.
+              </span>
+              <span v-else-if="form.target_role === 'semua'">
+                Pengumuman akan disebarkan ke <strong>seluruh civitas</strong>: Dewan Guru, Wali Murid, dan Staf Sekolah.
+              </span>
+              <span v-else>
+                Pengumuman hanya akan dikirimkan khusus kepada internal staf terkait.
+              </span>
             </div>
           </div>
 
@@ -348,7 +421,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../services/api'
 import { showConfirm } from '../services/swal'
@@ -366,8 +439,7 @@ const existingLampiran = ref<string | null>(null)
 const selectedFile = ref<File | null>(null)
 
 const searchQuery = ref('')
-const filterTarget = ref('')
-const filterCategory = ref('')
+const filterReadStatus = ref<'all' | 'unread' | 'read'>('all')
 
 const message = ref<{ text: string; type: 'success' | 'error' } | null>(null)
 
@@ -375,9 +447,22 @@ const form = ref({
   judul: '',
   isi: '',
   kategori: 'umum',
-  target_role: 'semua',
+  target_role: 'guru',
   is_pinned: false,
 })
+
+const unreadCount = computed(() => {
+  return announcementsList.value.filter(a => !a.is_read).length
+})
+
+const readCount = computed(() => {
+  return announcementsList.value.filter(a => a.is_read).length
+})
+
+const setFilterStatus = (status: 'all' | 'unread' | 'read') => {
+  filterReadStatus.value = status
+  filterAnnouncements()
+}
 
 const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
   message.value = { text, type }
@@ -415,12 +500,10 @@ const filterAnnouncements = () => {
     )
   }
 
-  if (filterTarget.value) {
-    list = list.filter((a) => a.target_role === filterTarget.value)
-  }
-
-  if (filterCategory.value) {
-    list = list.filter((a) => (a.kategori || 'umum') === filterCategory.value)
+  if (filterReadStatus.value === 'unread') {
+    list = list.filter((a) => !a.is_read)
+  } else if (filterReadStatus.value === 'read') {
+    list = list.filter((a) => a.is_read)
   }
 
   // Sort pinned first, then newest
@@ -433,6 +516,28 @@ const filterAnnouncements = () => {
   filteredList.value = list
 }
 
+const markAnnouncementRead = async (anc: any) => {
+  if (anc.is_read) return
+  try {
+    await api.post(`/announcements/${anc.id}/read`)
+    anc.is_read = true
+    filterAnnouncements()
+  } catch (err: any) {
+    console.error('Gagal menandai dibaca:', err)
+  }
+}
+
+const markAllAnnouncementsRead = async () => {
+  try {
+    await api.post('/announcements/mark-all-read')
+    announcementsList.value.forEach(a => { a.is_read = true })
+    filterAnnouncements()
+    showMessage('Semua pengumuman telah ditandai sudah dibaca.')
+  } catch (err: any) {
+    showMessage('Gagal menandai semua pengumuman dibaca.', 'error')
+  }
+}
+
 const openCreateModal = () => {
   isEditing.value = false
   editingId.value = null
@@ -442,7 +547,7 @@ const openCreateModal = () => {
     judul: '',
     isi: '',
     kategori: 'umum',
-    target_role: 'semua',
+    target_role: 'guru',
     is_pinned: false,
   }
   showModal.value = true
@@ -457,7 +562,7 @@ const openEditModal = (anc: any) => {
     judul: anc.judul,
     isi: anc.isi || anc.konten || '',
     kategori: anc.kategori || 'umum',
-    target_role: anc.target_role || 'semua',
+    target_role: anc.target_role || 'guru',
     is_pinned: Boolean(anc.is_pinned),
   }
   showModal.value = true
@@ -495,7 +600,7 @@ const submitAnnouncement = async () => {
       await api.post('/announcements', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
-      showMessage('Pengumuman resmi berhasil diterbitkan serta disebarkan melalui notifikasi dashboard & email!')
+      showMessage('Pengumuman resmi berhasil diterbitkan serta disebarkan sesuai target sasaran!')
     }
 
     showModal.value = false
@@ -576,4 +681,3 @@ onMounted(() => {
   fetchAnnouncements()
 })
 </script>
-

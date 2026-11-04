@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
+use App\Models\AnnouncementRead;
 use App\Models\InAppNotification;
 use App\Models\Role;
 use App\Models\User;
@@ -20,7 +21,10 @@ class AnnouncementController extends Controller
         $user = $request->user();
         $isAdmin = $user->isAdmin();
 
-        $query = Announcement::with('creator:id,nama');
+        $query = Announcement::with('creator:id,nama')
+            ->withExists(['reads as is_read' => function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            }]);
 
         if (!$isAdmin) {
             $userRole = $user->role?->nama;
@@ -36,24 +40,44 @@ class AnnouncementController extends Controller
                 });
         }
 
-        if ($request->filled('kategori')) {
-            $query->where('kategori', $request->query('kategori'));
+        // Search query
+        if ($request->filled('search')) {
+            $search = $request->query('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('judul', 'like', "%{$search}%")
+                  ->orWhere('isi', 'like', "%{$search}%");
+            });
         }
 
-        $perPage = min((int) $request->query('per_page', 15), 50);
+        // Filter status baca: 'all', 'unread', 'read'
+        $statusBaca = $request->query('status_baca');
+        if ($statusBaca === 'unread' || $statusBaca === 'belum_dibaca') {
+            $query->whereDoesntHave('reads', fn($q) => $q->where('user_id', $user->id));
+        } elseif ($statusBaca === 'read' || $statusBaca === 'sudah_dibaca') {
+            $query->whereHas('reads', fn($q) => $q->where('user_id', $user->id));
+        }
+
+        // Hitung total pengumuman yang belum dibaca oleh user saat ini
+        $baseQuery = clone $query;
+        $unreadCount = (clone $query)->whereDoesntHave('reads', fn($q) => $q->where('user_id', $user->id))->count();
+
+        $perPage = min((int) $request->query('per_page', 25), 100);
         $announcements = $query->orderBy('is_pinned', 'desc')
             ->orderBy('tgl_terbit', 'desc')
+            ->orderBy('id', 'desc')
             ->paginate($perPage);
 
         return response()->json([
             'success' => true,
             'message' => 'Daftar pengumuman berhasil diambil.',
             'data' => $announcements->items(),
+            'unread_count' => $unreadCount,
             'meta' => [
                 'current_page' => $announcements->currentPage(),
                 'last_page' => $announcements->lastPage(),
                 'per_page' => $announcements->perPage(),
                 'total' => $announcements->total(),
+                'unread_count' => $unreadCount,
             ],
         ]);
     }
@@ -222,6 +246,65 @@ class AnnouncementController extends Controller
             'success' => true,
             'message' => 'Pengumuman berhasil dihapus.',
             'data' => null,
+        ]);
+    }
+
+    public function markAsRead(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+        $announcement = Announcement::findOrFail($id);
+
+        AnnouncementRead::firstOrCreate(
+            ['announcement_id' => $announcement->id, 'user_id' => $user->id],
+            ['read_at' => now()]
+        );
+
+        // Sinkronkan juga notifikasi in-app jika ada yang sesuai
+        InAppNotification::where('user_id', $user->id)
+            ->where('dibaca', false)
+            ->where(function ($q) use ($announcement) {
+                $q->where('target_url', 'like', '%announcements%')
+                  ->orWhere('judul', 'like', "%{$announcement->judul}%");
+            })
+            ->update(['dibaca' => true, 'dibaca_pada' => now()]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengumuman telah ditandai sudah dibaca.',
+        ]);
+    }
+
+    public function markAllAsRead(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $isAdmin = $user->isAdmin();
+
+        $query = Announcement::where('is_aktif', true);
+        if (!$isAdmin) {
+            $userRole = $user->role?->nama;
+            $query->where(function ($q) use ($userRole) {
+                $q->where('target_role', 'semua')
+                  ->orWhere('target_role', $userRole);
+            });
+        }
+
+        $announcementIds = $query->pluck('id');
+        $now = now();
+        foreach ($announcementIds as $annId) {
+            AnnouncementRead::firstOrCreate(
+                ['announcement_id' => $annId, 'user_id' => $user->id],
+                ['read_at' => $now]
+            );
+        }
+
+        InAppNotification::where('user_id', $user->id)
+            ->where('dibaca', false)
+            ->where('target_url', 'like', '%announcements%')
+            ->update(['dibaca' => true, 'dibaca_pada' => $now]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Seluruh pengumuman berhasil ditandai sudah dibaca.',
         ]);
     }
 }

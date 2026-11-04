@@ -237,12 +237,14 @@ class NotificationService
         $targetRole = $announcement->target_role;
         $excerpt = Str::limit(strip_tags($announcement->isi), 120);
 
-        // 1. Kirim ke GURU (jika target adalah 'semua' atau 'guru')
+        // 1. Kirim ke GURU (HANYA jika target adalah 'semua' atau 'guru')
         if (in_array($targetRole, ['semua', 'guru'])) {
+            $notifiedTeacherUserIds = [];
             $teachers = Teacher::where('status', 'aktif')->with('user')->get();
             foreach ($teachers as $teacher) {
                 // Notifikasi Dashboard Guru
-                if ($teacher->user_id && $teacher->user_id !== $announcement->created_by) {
+                if ($teacher->user_id && $teacher->user_id !== $announcement->created_by && !in_array($teacher->user_id, $notifiedTeacherUserIds)) {
+                    $notifiedTeacherUserIds[] = $teacher->user_id;
                     try {
                         InAppNotification::send(
                             userId: $teacher->user_id,
@@ -275,14 +277,37 @@ class NotificationService
                     }
                 }
             }
+
+            // Pastikan user dengan role 'guru' yang belum masuk di list di atas juga menerima in-app notification
+            $otherGuruUsers = User::whereHas('role', fn($r) => $r->where('nama', Role::GURU))
+                ->where('status', 'aktif')
+                ->where('id', '!=', $announcement->created_by)
+                ->whereNotIn('id', $notifiedTeacherUserIds)
+                ->get();
+
+            foreach ($otherGuruUsers as $gu) {
+                try {
+                    InAppNotification::send(
+                        userId: $gu->id,
+                        judul: "Pengumuman: {$announcement->judul}",
+                        isi: $excerpt,
+                        tipe: 'info',
+                        targetUrl: '/announcements'
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning("Gagal kirim in-app announcement ke guru user ID {$gu->id}: " . $e->getMessage());
+                }
+            }
         }
 
-        // 2. Kirim ke WALI MURID (jika target adalah 'semua' atau 'wali')
+        // 2. Kirim ke WALI MURID (HANYA jika target adalah 'semua' atau 'wali')
         if (in_array($targetRole, ['semua', 'wali'])) {
+            $notifiedUserIds = [];
             $guardians = Guardian::with('user')->get();
             foreach ($guardians as $guardian) {
                 // Notifikasi Dashboard Portal Wali
-                if ($guardian->user_id && $guardian->user_id !== $announcement->created_by) {
+                if ($guardian->user_id && $guardian->user_id !== $announcement->created_by && !in_array($guardian->user_id, $notifiedUserIds)) {
+                    $notifiedUserIds[] = $guardian->user_id;
                     try {
                         InAppNotification::send(
                             userId: $guardian->user_id,
@@ -313,6 +338,27 @@ class NotificationService
                     } catch (\Throwable $e) {
                         Log::error("Gagal kirim email pengumuman ke wali ({$targetEmail}): " . $e->getMessage());
                     }
+                }
+            }
+
+            // Notifikasi ke user akun wali yang belum ada di objek guardians
+            $waliUsers = User::whereHas('role', fn($q) => $q->where('nama', Role::WALI))
+                ->where('status', 'aktif')
+                ->where('id', '!=', $announcement->created_by)
+                ->whereNotIn('id', $notifiedUserIds)
+                ->get();
+
+            foreach ($waliUsers as $wu) {
+                try {
+                    InAppNotification::send(
+                        userId: $wu->id,
+                        judul: "Pengumuman: {$announcement->judul}",
+                        isi: $excerpt,
+                        tipe: 'info',
+                        targetUrl: '/portal-wali?tab=announcements'
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning("Gagal kirim in-app announcement ke user wali ID {$wu->id}: " . $e->getMessage());
                 }
             }
         }

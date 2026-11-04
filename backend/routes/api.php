@@ -135,7 +135,9 @@ Route::prefix('v1')->group(function () {
 
         // Announcements (Read: All matching target_role)
         Route::get('/announcements', [AnnouncementController::class, 'index']);
+        Route::post('/announcements/mark-all-read', [AnnouncementController::class, 'markAllAsRead']);
         Route::get('/announcements/{id}', [AnnouncementController::class, 'show']);
+        Route::post('/announcements/{id}/read', [AnnouncementController::class, 'markAsRead']);
 
         // Catatan Observasi Perilaku Siswa (Bisa Diakses Semua Guru)
         Route::get('/observations/students', [StudentObservationController::class, 'studentsSummary']);
