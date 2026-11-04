@@ -2332,6 +2332,36 @@ class ReportCardController extends Controller
         $schoolClass = SchoolClass::with('homeroomTeacher.user')->findOrFail($classId);
         $user = $request->user();
 
+        $isHomeroom = false;
+        if ($user->isAdmin()) {
+            $isHomeroom = true;
+        } elseif ($user->isTeacher() && $user->teacher) {
+            $isHomeroom = $schoolClass->wali_kelas_id === $user->teacher->id;
+        }
+
+        // Cek submission yang sudah ada untuk penguncian data
+        $existingSubmission = GradeBookSubmission::where('class_id', $classId)
+            ->where('academic_year_id', $academicYearId)
+            ->where('semester', $semester)
+            ->where('subject_name', $subjectName)
+            ->first();
+
+        // Jika bukan Wali Kelas / Admin, dan nilai sudah berstatus 'submitted', tolak perubahan (terkunci)
+        if (!$isHomeroom && $existingSubmission && $existingSubmission->status === 'submitted') {
+            return response()->json([
+                'success' => false,
+                'message' => "Nilai ulangan harian mata pelajaran {$subjectName} sudah diserahkan ke Wali Kelas dan dalam status terkunci. Hubungi Wali Kelas jika memerlukan perbaikan data.",
+            ], 422);
+        }
+
+        // Action 'reopen' hanya boleh dilakukan oleh Wali Kelas atau Admin
+        if ($action === 'reopen' && !$isHomeroom) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Wali Kelas atau Admin yang berhak membuka kunci perbaikan nilai.',
+            ], 403);
+        }
+
         // Tentukan kelompok mapel dari default atau Umum
         $kelompok = 'Umum';
         $urutan = 99;
@@ -2381,6 +2411,14 @@ class ReportCardController extends Controller
                     'report_card_id' => $rc->id,
                     'nama_mapel' => $subjectName,
                 ]);
+
+                // Jika guru mapel biasa (bukan wali kelas) tidak mengisi PSAS, pertahankan nilai_sas yang sudah ada di database
+                if (!$isHomeroom && $nilaiSas === null && $grade->exists) {
+                    $nilaiSas = $grade->nilai_sas;
+                    $nr = ReportCardGrade::calculateNR($rataUh, $nilaiSas);
+                    $nilaiAkhir = $nr ?? $grade->nilai_akhir;
+                    $predikat = $nilaiAkhir !== null ? $this->getPredicateFromScore($nilaiAkhir) : $grade->predikat;
+                }
 
                 $grade->kelompok = $kelompok;
                 $grade->urutan = $grade->urutan ?: $urutan;

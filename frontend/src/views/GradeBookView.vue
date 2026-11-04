@@ -64,6 +64,14 @@ const currentSubjectSubmission = computed(() => {
   return subjectOverview.value[selectedSubjectName.value] || null;
 });
 
+// Apakah formulir saat ini terkunci bagi guru yang sedang login
+const isLockedForCurrentTeacher = computed(() => {
+  // Jika Wali Kelas atau Admin, tidak pernah terkunci
+  if (isWaliKelas.value) return false;
+  // Jika Guru Mapel biasa dan nilai sudah berstatus 'submitted' -> otomatis TERKUNCI!
+  return currentSubjectSubmission.value?.status === 'submitted';
+});
+
 // Predicate calculation
 const calculatePredicate = (score?: number | null): string => {
   if (score === null || score === undefined || isNaN(score)) return '-';
@@ -229,6 +237,7 @@ const selectSubject = (subjName: string) => {
 
 // Dynamic UH column controls
 const addUHColumn = () => {
+  if (isLockedForCurrentTeacher.value) return;
   uhColumnsCount.value++;
   students.value.forEach((st) => {
     if (!st.nilai_uh) st.nilai_uh = [];
@@ -238,6 +247,7 @@ const addUHColumn = () => {
 };
 
 const removeUHColumn = () => {
+  if (isLockedForCurrentTeacher.value) return;
   if (uhColumnsCount.value <= 3) {
     showNotification('Default kolom Ulangan Harian minimal 3 (UH 1 s/d UH 3).', 'warning');
     return;
@@ -260,14 +270,14 @@ const saveGradeBook = async (action: 'save_draft' | 'submit_to_homeroom' | 'reop
     const homeroomName = currentClass.value?.homeroom_teacher?.nama_lengkap || 'Wali Kelas';
     const confirmed = await showConfirm(
       'Kirim Nilai ke Wali Kelas',
-      `Kirimkan seluruh rincian nilai ulangan harian mata pelajaran "${selectedSubjectName.value}" (${students.value.length} siswa) ke Wali Kelas (${homeroomName})? Nilai akan resmi diserahkan.`,
+      `Kirimkan rincian nilai ulangan harian mata pelajaran "${selectedSubjectName.value}" (${students.value.length} siswa) ke Wali Kelas (${homeroomName})? Setelah dikirim, nilai akan TERKUNCI untuk mencegah perubahan sepihak.`,
       'Ya, Kirim ke Wali Kelas'
     );
     if (!confirmed) return;
   } else if (action === 'reopen') {
     const confirmed = await showConfirm(
       'Buka Kunci / Minta Revisi',
-      `Buka kembali status pengumpulan nilai "${selectedSubjectName.value}" agar guru pengampu dapat memperbarui rincian nilai?`,
+      `Buka kembali kunci pengisian nilai "${selectedSubjectName.value}" agar guru pengampu dapat mengedit dan memperbarui nilai?`,
       'Ya, Buka Kunci',
       'warning'
     );
@@ -299,7 +309,7 @@ const saveGradeBook = async (action: 'save_draft' | 'submit_to_homeroom' | 'reop
       await loadGradeBook();
     }
   } catch (err: any) {
-    showNotification('Gagal menyimpan nilai: ' + (err.response?.data?.message || err.message), 'error');
+    showNotification(err.response?.data?.message || 'Gagal menyimpan nilai: ' + err.message, 'error');
   } finally {
     saving.value = false;
   }
@@ -307,18 +317,20 @@ const saveGradeBook = async (action: 'save_draft' | 'submit_to_homeroom' | 'reop
 
 // Summary Statistics
 const classStats = computed(() => {
-  const validNR = students.value
-    .map((s) => s.nilai_akhir)
+  // Jika Guru Mapel, evaluasi berdasarkan Rata-rata UH (RUH)
+  // Jika Wali Kelas, evaluasi berdasarkan Nilai Akhir Rapor (NR)
+  const validScores = students.value
+    .map((s) => (isWaliKelas.value ? s.nilai_akhir : s.rata_uh))
     .filter((v): v is number => typeof v === 'number' && !isNaN(v));
 
-  if (validNR.length === 0) {
+  if (validScores.length === 0) {
     return { avg: '-', max: '-', min: '-', passed: 0, total: students.value.length };
   }
 
-  const avg = Math.round((validNR.reduce((a, b) => a + b, 0) / validNR.length) * 10) / 10;
-  const max = Math.max(...validNR);
-  const min = Math.min(...validNR);
-  const passed = validNR.filter((v) => v >= 75).length;
+  const avg = Math.round((validScores.reduce((a, b) => a + b, 0) / validScores.length) * 10) / 10;
+  const max = Math.max(...validScores);
+  const min = Math.min(...validScores);
+  const passed = validScores.filter((v) => v >= 75).length;
 
   return { avg, max, min, passed, total: students.value.length };
 });
@@ -408,19 +420,19 @@ onMounted(() => {
               v-if="isWaliKelas"
               class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200"
             >
-              👑 Mode Wali Kelas
+              👑 Mode Wali Kelas (Lihat Seluruh Nilai Mapel)
             </span>
             <span
               v-else
               class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-sky-100 text-sky-800 border border-sky-200"
             >
-              👨‍🏫 Mode Guru Mata Pelajaran
+              👨‍🏫 Mode Guru Mapel (Input Nilai Ulangan Harian)
             </span>
           </div>
           <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
             {{ isWaliKelas 
-              ? 'Wali Kelas dapat memantau status pengumpulan nilai dari seluruh Guru Mapel dan melihat rincian nilai tiap murid.' 
-              : 'Guru Mapel menginput nilai ulangan harian siswa dan mengirimkannya langsung ke Wali Kelas.' }}
+              ? 'Wali Kelas memantau seluruh nilai Ulangan Harian (UH) yang dikirim oleh Guru Mapel, serta melengkapi nilai SAS/Rapor.' 
+              : 'Guru Mata Pelajaran bertugas menginput nilai Ulangan Harian (UH 1, UH 2, dst.), lalu mengirimkannya ke Wali Kelas.' }}
           </p>
         </div>
       </div>
@@ -514,12 +526,12 @@ onMounted(() => {
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-slate-100">
         <!-- UH Column Controller -->
         <div class="flex items-center gap-2 flex-wrap">
-          <span class="text-xs font-bold text-slate-700">Kolom Ulangan Harian:</span>
+          <span class="text-xs font-bold text-slate-700">Kolom Nilai Ulangan Harian:</span>
           <span class="px-2 py-0.5 rounded-md font-mono font-black text-xs bg-amber-100 text-amber-900 border border-amber-300">
             UH 1 s/d UH {{ uhColumnsCount }}
           </span>
 
-          <div class="inline-flex items-center gap-1.5 ml-1">
+          <div v-if="!isLockedForCurrentTeacher" class="inline-flex items-center gap-1.5 ml-1">
             <button
               type="button"
               @click="addUHColumn"
@@ -545,33 +557,44 @@ onMounted(() => {
 
         <!-- SAVE & SUBMISSION BUTTONS -->
         <div class="flex items-center gap-2 flex-wrap shrink-0 self-end sm:self-auto">
-          <!-- Buka Kunci / Minta Revisi (Hanya jika status submitted) -->
+          <!-- Buka Kunci / Minta Revisi (Hanya untuk Wali Kelas / Admin saat nilai berstatus submitted) -->
           <button
-            v-if="currentSubjectSubmission?.status === 'submitted'"
+            v-if="isWaliKelas && currentSubjectSubmission?.status === 'submitted'"
             type="button"
             @click="saveGradeBook('reopen')"
             :disabled="saving || loading"
             class="px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
-            title="Buka kembali kunci agar nilai dapat diperbaiki guru"
+            title="Buka kembali kunci agar nilai dapat diperbaiki oleh guru pengampu"
           >
             <span>🔄</span>
-            <span>Minta Revisi / Buka Kunci</span>
+            <span>Buka Kunci / Minta Revisi</span>
           </button>
 
-          <!-- Simpan Draft -->
+          <!-- Tampilan jika Guru Mapel sedang TERKUNCI -->
+          <div
+            v-if="isLockedForCurrentTeacher"
+            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold shadow-2xs"
+          >
+            <span class="text-sm">🔒</span>
+            <span>Nilai Terkunci (Sudah Terkirim)</span>
+          </div>
+
+          <!-- Tombol Simpan Draft (Jika tidak terkunci) -->
           <button
+            v-if="!isLockedForCurrentTeacher"
             type="button"
             @click="saveGradeBook('save_draft')"
             :disabled="saving || loading || students.length === 0"
             class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs"
-            title="Simpan perubahan tanpa mengubah status pengiriman"
+            title="Simpan perubahan nilai sementara (Bisa diedit kembali kapan saja)"
           >
             <span>💾</span>
             <span>Simpan Draft</span>
           </button>
 
-          <!-- Kirim ke Wali Kelas (Khusus Guru Pengampu atau Konfirmasi) -->
+          <!-- Tombol Kirim ke Wali Kelas / Sahkan Nilai (Jika tidak terkunci) -->
           <button
+            v-if="!isLockedForCurrentTeacher"
             type="button"
             @click="saveGradeBook('submit_to_homeroom')"
             :disabled="saving || loading || students.length === 0"
@@ -582,7 +605,7 @@ onMounted(() => {
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             <span v-else>🚀</span>
-            <span>{{ isWaliKelas ? 'Kirim / Sahkan Nilai' : 'Kirim ke Wali Kelas' }}</span>
+            <span>{{ isWaliKelas ? 'Sahkan Nilai ke Rapor' : 'Kirim ke Wali Kelas' }}</span>
           </button>
         </div>
       </div>
@@ -681,32 +704,45 @@ onMounted(() => {
       </transition>
     </div>
 
-    <!-- STATUS BANNER UNTUK MAPEL TERPILIH -->
+    <!-- STATUS BANNER UNTUK MAPEL TERPILIH (LENGKAP DENGAN INDIKATOR KUNCI) -->
     <div
       class="p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
       :class="{
-        'bg-emerald-50/90 border-emerald-200 text-emerald-900': currentSubjectSubmission?.status === 'submitted',
-        'bg-amber-50/90 border-amber-200 text-amber-900': currentSubjectSubmission?.status === 'draft',
+        'bg-emerald-50/90 border-emerald-300 text-emerald-950': currentSubjectSubmission?.status === 'submitted',
+        'bg-amber-50/90 border-amber-300 text-amber-950': currentSubjectSubmission?.status === 'draft',
         'bg-slate-50 border-slate-200 text-slate-700': !currentSubjectSubmission || currentSubjectSubmission?.status === 'unsubmitted',
       }"
     >
       <div class="flex items-center gap-3">
         <span class="text-2xl">
-          {{ currentSubjectSubmission?.status === 'submitted' ? '✅' : (currentSubjectSubmission?.status === 'draft' ? '⏳' : 'ℹ️') }}
+          {{ currentSubjectSubmission?.status === 'submitted' ? (isLockedForCurrentTeacher ? '🔒' : '✅') : (currentSubjectSubmission?.status === 'draft' ? '⏳' : 'ℹ️') }}
         </span>
         <div>
-          <div class="font-black text-sm">
-            Status Nilai {{ selectedSubjectName }}:
-            <span class="uppercase">
-              {{ currentSubjectSubmission?.status === 'submitted' ? 'Sudah Terkumpul di Wali Kelas' : (currentSubjectSubmission?.status === 'draft' ? 'Draft Guru (Belum Dikirim)' : 'Belum Ada Nilai') }}
+          <div class="font-black text-sm flex items-center gap-2 flex-wrap">
+            <span>Status Nilai {{ selectedSubjectName }}:</span>
+            <span
+              class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider"
+              :class="{
+                'bg-emerald-200 text-emerald-950': currentSubjectSubmission?.status === 'submitted',
+                'bg-amber-200 text-amber-950': currentSubjectSubmission?.status === 'draft',
+                'bg-slate-200 text-slate-800': !currentSubjectSubmission || currentSubjectSubmission?.status === 'unsubmitted',
+              }"
+            >
+              {{ currentSubjectSubmission?.status === 'submitted' ? 'Sudah Terkumpul di Wali Kelas' : (currentSubjectSubmission?.status === 'draft' ? 'Draft Guru (Bisa Diedit)' : 'Belum Ada Nilai') }}
             </span>
           </div>
-          <p class="text-xs mt-0.5 opacity-90">
+
+          <p class="text-xs mt-1 leading-relaxed opacity-90">
             <template v-if="currentSubjectSubmission?.status === 'submitted'">
-              Diserahkan oleh <strong>{{ currentSubjectSubmission.teacher_name || 'Guru Pengampu' }}</strong> pada <strong>{{ currentSubjectSubmission.submitted_at || '-' }}</strong>. Rincian nilai setiap murid ditampilkan di bawah.
+              <span v-if="isLockedForCurrentTeacher" class="text-emerald-900 font-semibold">
+                🔒 <strong>Nilai Terkunci:</strong> Nilai telah resmi diserahkan ke Wali Kelas pada <strong>{{ currentSubjectSubmission.submitted_at || '-' }}</strong> oleh <strong>{{ currentSubjectSubmission.teacher_name || 'Anda' }}</strong>. Formulir saat ini terkunci demi keamanan data. Jika ingin mengubah nilai, silakan hubungi Wali Kelas untuk membuka kunci perbaikan.
+              </span>
+              <span v-else>
+                Nilai Ulangan Harian telah diserahkan oleh <strong>{{ currentSubjectSubmission.teacher_name || 'Guru Pengampu' }}</strong> pada <strong>{{ currentSubjectSubmission.submitted_at || '-' }}</strong>. Rincian nilai setiap murid tercantum di bawah ini.
+              </span>
             </template>
             <template v-else-if="currentSubjectSubmission?.status === 'draft'">
-              Nilai telah disimpan sebagai draft oleh guru. Klik <strong>"Kirim ke Wali Kelas"</strong> jika penginputan nilai sudah selesai.
+              Nilai disimpan sebagai draft lokal. Guru <strong>masih bebas mengedit</strong> data kapan saja. Klik <strong>"Kirim ke Wali Kelas"</strong> jika pengisian nilai sudah final.
             </template>
             <template v-else>
               Guru belum menginput nilai ulangan harian untuk mata pelajaran ini. Silakan input nilai pada tabel di bawah ini.
@@ -715,18 +751,24 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Quick Action if Submitted -->
-      <div v-if="currentSubjectSubmission?.status === 'submitted'" class="shrink-0 flex items-center gap-2">
-        <span class="px-2.5 py-1 bg-white text-emerald-800 font-black rounded-lg border border-emerald-200 text-[10px] uppercase shadow-2xs">
-          Status: Terverifikasi
-        </span>
+      <!-- Quick Action if Submitted (Wali Kelas Only) -->
+      <div v-if="isWaliKelas && currentSubjectSubmission?.status === 'submitted'" class="shrink-0 flex items-center gap-2">
+        <button
+          type="button"
+          @click="saveGradeBook('reopen')"
+          :disabled="saving || loading"
+          class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs transition shadow-xs cursor-pointer flex items-center gap-1"
+        >
+          <span>🔄</span>
+          <span>Buka Kunci Perbaikan</span>
+        </button>
       </div>
     </div>
 
     <!-- STATS SUMMARY CARDS -->
     <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
       <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
-        <span class="text-slate-400 font-bold block text-[10px] uppercase">Rata-rata Kelas</span>
+        <span class="text-slate-400 font-bold block text-[10px] uppercase">Rata-rata {{ isWaliKelas ? 'Kelas' : 'RUH' }}</span>
         <span class="text-xl font-black text-slate-800 tracking-tight">{{ classStats.avg }}</span>
       </div>
       <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
@@ -747,7 +789,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- MAIN GRADE BOOK TABLE: RINCIAN NILAI SETIAP SISWA (BUKAN CUMA RATA-RATA) -->
+    <!-- MAIN GRADE BOOK TABLE: RINCIAN NILAI SETIAP SISWA -->
     <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
       <!-- Loading State -->
       <div v-if="loading" class="py-24 text-center text-slate-400 space-y-3">
@@ -784,18 +826,21 @@ onMounted(() => {
                 RUH
               </th>
 
-              <!-- PSAS (PENILAIAN SUMATIF AKHIR SEMESTER) -->
-              <th class="py-3 px-2 text-center w-24 border-r border-slate-200 bg-sky-50 text-sky-950 font-black" title="Penilaian Sumatif Akhir Semester">
-                PSAS
-              </th>
+              <!-- KOLOM KHUSUS WALI KELAS: PSAS, NR, PREDIKAT -->
+              <template v-if="isWaliKelas">
+                <!-- PSAS (PENILAIAN SUMATIF AKHIR SEMESTER) -->
+                <th class="py-3 px-2 text-center w-24 border-r border-slate-200 bg-sky-50 text-sky-950 font-black" title="Penilaian Sumatif Akhir Semester (Wali Kelas)">
+                  PSAS
+                </th>
 
-              <!-- NR (NILAI RAPOR OTOMATIS RUMUS) -->
-              <th class="py-3 px-2 text-center w-28 border-r border-slate-200 bg-emerald-50 text-emerald-950 font-black" title="Rumus: (3 * RUH + 2 * PSAS) / 5">
-                NR (Rapor)
-              </th>
+                <!-- NR (NILAI RAPOR OTOMATIS RUMUS) -->
+                <th class="py-3 px-2 text-center w-28 border-r border-slate-200 bg-emerald-50 text-emerald-950 font-black" title="Rumus: (3 * RUH + 2 * PSAS) / 5">
+                  NR (Rapor)
+                </th>
 
-              <!-- PREDIKAT -->
-              <th class="py-3 px-2 text-center w-16 border-r border-slate-200">Predikat</th>
+                <!-- PREDIKAT -->
+                <th class="py-3 px-2 text-center w-16 border-r border-slate-200">Predikat</th>
+              </template>
 
               <!-- CAPAIAN KOMPETENSI / CATATAN -->
               <th class="py-3 px-3">Catatan / Capaian Pembelajaran</th>
@@ -830,7 +875,13 @@ onMounted(() => {
                   type="number"
                   min="0"
                   max="100"
-                  class="w-14 text-center font-bold text-xs bg-white border border-slate-300 hover:border-amber-400 focus:border-amber-500 rounded-lg py-1 text-slate-900 focus:outline-none shadow-2xs transition-colors"
+                  :disabled="isLockedForCurrentTeacher"
+                  class="w-14 text-center font-bold text-xs rounded-lg py-1 focus:outline-none shadow-2xs transition-colors"
+                  :class="[
+                    isLockedForCurrentTeacher 
+                      ? 'bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed' 
+                      : 'bg-white border border-slate-300 hover:border-amber-400 focus:border-amber-500 text-slate-900'
+                  ]"
                   placeholder="-"
                 />
               </td>
@@ -845,54 +896,63 @@ onMounted(() => {
                 </span>
               </td>
 
-              <!-- Nilai Sumatif Akhir Semester (PSAS) -->
-              <td class="py-2 px-2 text-center border-r border-slate-200 bg-sky-50/30">
-                <input
-                  v-model.number="st.nilai_sas"
-                  @input="calculateStudentGrade(st)"
-                  type="number"
-                  min="0"
-                  max="100"
-                  class="w-16 text-center font-bold text-xs bg-white border border-slate-300 hover:border-sky-400 focus:border-sky-500 rounded-lg py-1 text-slate-900 focus:outline-none shadow-2xs transition-colors"
-                  placeholder="-"
-                />
-              </td>
+              <!-- KOLOM WALI KELAS: PSAS, NR, PREDIKAT -->
+              <template v-if="isWaliKelas">
+                <!-- Nilai Sumatif Akhir Semester (PSAS) -->
+                <td class="py-2 px-2 text-center border-r border-slate-200 bg-sky-50/30">
+                  <input
+                    v-model.number="st.nilai_sas"
+                    @input="calculateStudentGrade(st)"
+                    type="number"
+                    min="0"
+                    max="100"
+                    class="w-16 text-center font-bold text-xs bg-white border border-slate-300 hover:border-sky-400 focus:border-sky-500 rounded-lg py-1 text-slate-900 focus:outline-none shadow-2xs transition-colors"
+                    placeholder="-"
+                  />
+                </td>
 
-              <!-- Nilai Rapor (NR = 3RUH + 2PSAS : 5) Otomatis -->
-              <td class="py-2 px-2 text-center border-r border-slate-200 bg-emerald-50/40">
-                <span
-                  class="font-mono font-black text-xs px-2.5 py-1 rounded-lg inline-block"
-                  :class="st.nilai_akhir !== null ? 'bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-2xs' : 'text-slate-400'"
-                  :title="'NR = (3 * ' + (st.rata_uh || 0) + ' + 2 * ' + (st.nilai_sas || 0) + ') / 5'"
-                >
-                  {{ st.nilai_akhir !== null ? st.nilai_akhir : '-' }}
-                </span>
-              </td>
+                <!-- Nilai Rapor (NR = 3RUH + 2PSAS : 5) Otomatis -->
+                <td class="py-2 px-2 text-center border-r border-slate-200 bg-emerald-50/40">
+                  <span
+                    class="font-mono font-black text-xs px-2.5 py-1 rounded-lg inline-block"
+                    :class="st.nilai_akhir !== null ? 'bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-2xs' : 'text-slate-400'"
+                    :title="'NR = (3 * ' + (st.rata_uh || 0) + ' + 2 * ' + (st.nilai_sas || 0) + ') / 5'"
+                  >
+                    {{ st.nilai_akhir !== null ? st.nilai_akhir : '-' }}
+                  </span>
+                </td>
 
-              <!-- Predikat -->
-              <td class="py-2 px-2 text-center border-r border-slate-200">
-                <span
-                  v-if="st.predikat && st.predikat !== '-'"
-                  class="text-[10px] font-black px-2 py-0.5 rounded-md uppercase"
-                  :class="{
-                    'bg-emerald-100 text-emerald-800 border border-emerald-200': st.predikat === 'A',
-                    'bg-blue-100 text-blue-800 border border-blue-200': st.predikat === 'B',
-                    'bg-amber-100 text-amber-800 border border-amber-200': st.predikat === 'C',
-                    'bg-rose-100 text-rose-800 border border-rose-200': st.predikat === 'D',
-                  }"
-                >
-                  {{ st.predikat }}
-                </span>
-                <span v-else class="text-slate-300">-</span>
-              </td>
+                <!-- Predikat -->
+                <td class="py-2 px-2 text-center border-r border-slate-200">
+                  <span
+                    v-if="st.predikat && st.predikat !== '-'"
+                    class="text-[10px] font-black px-2 py-0.5 rounded-md uppercase"
+                    :class="{
+                      'bg-emerald-100 text-emerald-800 border border-emerald-200': st.predikat === 'A',
+                      'bg-blue-100 text-blue-800 border border-blue-200': st.predikat === 'B',
+                      'bg-amber-100 text-amber-800 border border-amber-200': st.predikat === 'C',
+                      'bg-rose-100 text-rose-800 border border-rose-200': st.predikat === 'D',
+                    }"
+                  >
+                    {{ st.predikat }}
+                  </span>
+                  <span v-else class="text-slate-300">-</span>
+                </td>
+              </template>
 
               <!-- Capaian Kompetensi -->
               <td class="py-1.5 px-2.5 align-middle">
                 <input
                   v-model="st.capaian_kompetensi"
                   type="text"
+                  :disabled="isLockedForCurrentTeacher"
                   placeholder="Deskripsi capaian kompetensi..."
-                  class="w-full text-xs bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors"
+                  class="w-full text-xs rounded-lg px-2.5 py-1 transition-colors focus:outline-none"
+                  :class="[
+                    isLockedForCurrentTeacher 
+                      ? 'bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed' 
+                      : 'bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200 text-slate-800 focus:ring-1 focus:ring-indigo-500'
+                  ]"
                 />
               </td>
             </tr>
@@ -900,7 +960,7 @@ onMounted(() => {
         </table>
       </div>
 
-      <!-- FOOTER TABLE INFO -->
+      <!-- FOOTER TABLE INFO & ACTION BUTTONS -->
       <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
         <div class="flex items-center gap-2 flex-wrap">
           <span>Menampilkan <strong>{{ students.length }} Siswa</strong> di <strong>{{ currentClassName }}</strong></span>
@@ -913,7 +973,17 @@ onMounted(() => {
         </div>
 
         <div class="flex items-center gap-2 self-end sm:self-auto">
+          <!-- Tampilan jika Guru Mapel sedang TERKUNCI -->
+          <div
+            v-if="isLockedForCurrentTeacher"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-200/80 text-slate-700 text-xs font-bold"
+          >
+            <span>🔒 Terkunci (Hubungi Wali Kelas untuk Revisi)</span>
+          </div>
+
+          <!-- Tombol Simpan Draft (Jika tidak terkunci) -->
           <button
+            v-if="!isLockedForCurrentTeacher"
             type="button"
             @click="saveGradeBook('save_draft')"
             :disabled="saving || loading || students.length === 0"
@@ -921,7 +991,10 @@ onMounted(() => {
           >
             <span>Simpan Draft</span>
           </button>
+
+          <!-- Tombol Kirim ke Wali Kelas / Sahkan Nilai (Jika tidak terkunci) -->
           <button
+            v-if="!isLockedForCurrentTeacher"
             type="button"
             @click="saveGradeBook('submit_to_homeroom')"
             :disabled="saving || loading || students.length === 0"
