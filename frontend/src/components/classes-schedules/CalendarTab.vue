@@ -34,11 +34,22 @@ const currentMonth = ref(new Date().getMonth() + 1) // 1-12
 
 // Modal Form State
 const showModal = ref(false)
+const showDetailModal = ref(false)
+const selectedDetailEvent = ref<CalendarEvent | null>(null)
 const isEditing = ref(false)
 const editingId = ref<number | null>(null)
 const submitting = ref(false)
 const seeding = ref(false)
 const notification = ref<{ text: string; type: 'success' | 'error' } | null>(null)
+
+const handleEventClick = (event: CalendarEvent) => {
+  if (auth.isAdmin) {
+    openEditModal(event)
+  } else {
+    selectedDetailEvent.value = event
+    showDetailModal.value = true
+  }
+}
 
 const form = ref({
   judul: '',
@@ -248,6 +259,7 @@ const monthStats = computed(() => {
 
 // Modal Actions
 const openCreateModal = (presetDate?: string) => {
+  if (!auth.isAdmin) return
   isEditing.value = false
   editingId.value = null
   const defaultDate = presetDate || `${currentYear.value}-${String(currentMonth.value).padStart(2, '0')}-01`
@@ -264,6 +276,7 @@ const openCreateModal = (presetDate?: string) => {
 }
 
 const openEditModal = (event: CalendarEvent) => {
+  if (!auth.isAdmin) return
   isEditing.value = true
   editingId.value = event.id
   form.value = {
@@ -329,6 +342,7 @@ const saveEvent = async () => {
 }
 
 const deleteEvent = async (event: CalendarEvent) => {
+  if (!auth.isAdmin) return
   const confirmed = await showConfirm(
     'Hapus Agenda Kalender',
     `Hapus agenda "${event.judul}" dari kalender?`,
@@ -349,6 +363,7 @@ const deleteEvent = async (event: CalendarEvent) => {
 
 // Seed Template
 const seedDefaultTemplate = async () => {
+  if (!auth.isAdmin) return
   const confirmed = await showConfirm(
     'Muat Agenda Standar',
     `Muat agenda standar & hari libur nasional untuk tahun ${currentYear.value}? Agenda yang sudah ada tidak akan diduplikasi.`,
@@ -603,9 +618,8 @@ defineExpose({
             <div
               v-for="ev in day.events"
               :key="ev.id"
-              @click="auth.isAdmin ? openEditModal(ev) : null"
-              class="px-1.5 py-0.5 rounded text-[9px] font-bold text-white truncate shadow-2xs transition hover:brightness-95 leading-tight"
-              :class="auth.isAdmin ? 'cursor-pointer' : 'cursor-default'"
+              @click="handleEventClick(ev)"
+              class="px-1.5 py-0.5 rounded text-[9px] font-bold text-white truncate shadow-2xs transition hover:brightness-95 leading-tight cursor-pointer"
               :style="{ backgroundColor: ev.warna || '#ef4444' }"
               :title="`${ev.judul} (${ev.is_libur ? 'Libur' : 'KBM'}): ${ev.deskripsi || '-'}`"
             >
@@ -703,9 +717,90 @@ defineExpose({
       </div>
     </div>
 
+    <!-- MODAL DETAIL AGENDA: READ-ONLY (Untuk Guru, Wali Murid & Pengunjung) -->
+    <div
+      v-if="showDetailModal && selectedDetailEvent"
+      class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+      @click.self="showDetailModal = false"
+    >
+      <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-slate-100 space-y-5 animate-in fade-in zoom-in-95 duration-200">
+        <!-- Header -->
+        <div class="flex items-start justify-between border-b border-slate-100 pb-3 gap-3">
+          <div class="flex items-center gap-2.5">
+            <span
+              class="w-4 h-4 rounded-full shrink-0 shadow-xs"
+              :style="{ backgroundColor: selectedDetailEvent.warna || '#ef4444' }"
+            ></span>
+            <h3 class="text-base font-black text-slate-900 leading-snug">
+              {{ selectedDetailEvent.judul }}
+            </h3>
+          </div>
+          <button
+            type="button"
+            @click="showDetailModal = false"
+            class="text-slate-400 hover:text-slate-600 text-lg p-1 rounded-lg cursor-pointer"
+          >
+            &times;
+          </button>
+        </div>
+
+        <!-- Detail Body -->
+        <div class="space-y-3.5 text-xs">
+          <!-- Status Kegiatan -->
+          <div class="flex items-center justify-between p-3 rounded-2xl border" :class="selectedDetailEvent.is_libur ? 'bg-rose-50/70 border-rose-200 text-rose-900' : 'bg-emerald-50/70 border-emerald-200 text-emerald-900'">
+            <span class="font-bold">Status Kehadiran / KBM:</span>
+            <span class="font-black px-2 py-0.5 rounded-lg text-[11px]" :class="selectedDetailEvent.is_libur ? 'bg-rose-200/80 text-rose-900' : 'bg-emerald-200/80 text-emerald-900'">
+              {{ selectedDetailEvent.is_libur ? '🔴 Libur Sekolah (Tutup)' : '🟢 Kegiatan Belajar (KBM)' }}
+            </span>
+          </div>
+
+          <!-- Tanggal Pelaksanaan -->
+          <div class="space-y-1">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tanggal Pelaksanaan</span>
+            <div class="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <span>📅</span>
+              <span>{{ formatEventDate(selectedDetailEvent.tanggal_mulai, selectedDetailEvent.tanggal_selesai) }}</span>
+            </div>
+          </div>
+
+          <!-- Kategori Agenda -->
+          <div class="space-y-1">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kategori Agenda</span>
+            <div>
+              <span
+                class="px-2.5 py-1 rounded-lg text-xs font-bold inline-block"
+                :class="getTypeBadgeClass(selectedDetailEvent.tipe)"
+              >
+                {{ formatTypeLabel(selectedDetailEvent.tipe) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Deskripsi / Keterangan -->
+          <div class="space-y-1">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Keterangan Tambahan</span>
+            <p class="text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-2xl border border-slate-100 whitespace-pre-line">
+              {{ selectedDetailEvent.deskripsi || 'Tidak ada catatan atau instruksi khusus untuk agenda ini.' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="pt-3 border-t border-slate-100 flex justify-end">
+          <button
+            type="button"
+            @click="showDetailModal = false"
+            class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- MODAL FORM: CREATE / EDIT AGENDA -->
     <div
-      v-if="showModal"
+      v-if="showModal && auth.isAdmin"
       class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
       @click.self="showModal = false"
     >

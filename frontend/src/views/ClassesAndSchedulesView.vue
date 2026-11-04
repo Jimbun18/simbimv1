@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 
 // Modular Child Components
 import ClassTab from '../components/classes-schedules/ClassTab.vue';
@@ -16,6 +17,7 @@ import AcademicYearTab from '../components/classes-schedules/AcademicYearTab.vue
 import CalendarTab from '../components/classes-schedules/CalendarTab.vue';
 
 const route = useRoute();
+const auth = useAuthStore();
 
 // View Mode: 'tabs' | 'form-class' | 'form-subject' | 'form-schedule'
 const viewMode = ref<'tabs' | 'form-class' | 'form-subject' | 'form-schedule'>('tabs');
@@ -77,6 +79,11 @@ const handleScheduleSaved = () => {
 watch(
   () => route.query.tab,
   (newTab) => {
+    if (!auth.isAdmin) {
+      activeTab.value = 'calendar';
+      viewMode.value = 'tabs';
+      return;
+    }
     const targetTab = typeof newTab === 'string' && newTab ? newTab : 'classes';
     activeTab.value = targetTab;
     viewMode.value = 'tabs';
@@ -85,7 +92,9 @@ watch(
 );
 
 onMounted(() => {
-  if (route.query.tab && typeof route.query.tab === 'string') {
+  if (!auth.isAdmin) {
+    activeTab.value = 'calendar';
+  } else if (route.query.tab && typeof route.query.tab === 'string') {
     activeTab.value = route.query.tab;
   }
 });
@@ -192,22 +201,28 @@ onMounted(() => {
             + Tambah Ruang Kelas
           </button>
           <template v-else-if="activeTab === 'calendar'">
-            <button
-              @click="calendarTabRef?.openSeedModal()"
-              class="inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-xl border border-indigo-200 transition cursor-pointer active:scale-95"
-              title="Generate Otomatis Hari Libur Nasional & Agenda Semester"
-            >
-              <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <span>Template Libur</span>
-            </button>
-            <button
-              @click="calendarTabRef?.openCreateModal()"
-              class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer active:scale-95"
-            >
-              + Tambah Agenda / Libur
-            </button>
+            <div v-if="!auth.isAdmin" class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold border border-slate-200">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Kalender Akademik Resmi (Mode Lihat)</span>
+            </div>
+            <template v-if="auth.isAdmin">
+              <button
+                @click="calendarTabRef?.openSeedModal()"
+                class="inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-xl border border-indigo-200 transition cursor-pointer active:scale-95"
+                title="Generate Otomatis Hari Libur Nasional & Agenda Semester"
+              >
+                <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Template Libur</span>
+              </button>
+              <button
+                @click="calendarTabRef?.openCreateModal()"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer active:scale-95"
+              >
+                + Tambah Agenda / Libur
+              </button>
+            </template>
           </template>
         </div>
       </div>

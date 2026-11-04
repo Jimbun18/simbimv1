@@ -245,6 +245,23 @@ const handleLogout = async () => {
                 <span v-show="isSidebarOpen" class="truncate">Portal Wali Murid</span>
               </router-link>
 
+              <!-- Kalender Akademik untuk Wali Murid -->
+              <router-link
+                v-if="auth.isWali"
+                to="/classes-schedules?tab=calendar"
+                class="flex items-center rounded-xl font-medium transition-all group"
+                :class="[
+                  isSidebarOpen ? 'gap-3 px-3 py-2.5' : 'justify-center py-2.5 px-0 w-11 h-11 mx-auto',
+                  route.path === '/classes-schedules' && route.query.tab === 'calendar' ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-emerald-50/70 hover:text-emerald-800'
+                ]"
+                title="Kalender Akademik & Hari Libur"
+              >
+                <svg class="w-5 h-5 shrink-0 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span v-show="isSidebarOpen" class="truncate">Kalender Akademik & Libur</span>
+              </router-link>
+
               <!-- Presensi Mandiri GPS Guru -->
               <router-link
                 v-if="!auth.isWali"
@@ -543,6 +560,23 @@ const handleLogout = async () => {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span v-show="isSidebarOpen" class="truncate">Jadwal Mengajar Guru</span>
+              </router-link>
+
+              <!-- Kalender Akademik & Hari Libur (Bisa dilihat Semua Guru) -->
+              <router-link
+                v-if="auth.isGuru"
+                to="/classes-schedules?tab=calendar"
+                class="flex items-center rounded-xl font-medium transition-all group"
+                :class="[
+                  isSidebarOpen ? 'gap-3 px-3 py-2' : 'justify-center py-2 px-0 w-11 h-10 mx-auto',
+                  route.path === '/classes-schedules' && route.query.tab === 'calendar' ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-emerald-50/70 hover:text-emerald-800'
+                ]"
+                title="Kalender Akademik & Libur"
+              >
+                <svg class="w-5 h-5 shrink-0 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span v-show="isSidebarOpen" class="truncate">Kalender Akademik & Libur</span>
               </router-link>
 
               <!-- Presensi Siswa Harian (Wali Kelas) -->
@@ -1300,6 +1334,19 @@ const handleLogout = async () => {
                     </router-link>
 
                     <router-link 
+                      v-if="auth.isWali" 
+                      to="/classes-schedules?tab=calendar" 
+                      class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all"
+                      :class="route.path === '/classes-schedules' && route.query.tab === 'calendar' ? 'bg-emerald-600 text-white font-bold shadow-sm' : 'text-slate-700 hover:bg-slate-100'"
+                      @click="isMobileDrawerOpen = false"
+                    >
+                      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>Kalender Akademik & Libur</span>
+                    </router-link>
+
+                    <router-link 
                       v-if="!auth.isWali"
                       to="/presensi" 
                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all"
@@ -1551,6 +1598,19 @@ const handleLogout = async () => {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span>Jadwal Mengajar Guru</span>
+                    </router-link>
+
+                    <router-link 
+                      v-if="auth.isGuru"
+                      to="/classes-schedules?tab=calendar" 
+                      class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-all"
+                      :class="route.path === '/classes-schedules' && route.query.tab === 'calendar' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-700 hover:bg-slate-100'"
+                      @click="isMobileDrawerOpen = false"
+                    >
+                      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>Kalender Akademik & Libur</span>
                     </router-link>
 
                     <router-link 

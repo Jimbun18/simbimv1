@@ -119,7 +119,15 @@ const routes: RouteRecordRaw[] = [
     path: '/classes-schedules',
     name: 'classes-schedules',
     component: () => import('../views/ClassesAndSchedulesView.vue'),
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru', 'wali'] },
+  },
+  {
+    path: '/calendar',
+    redirect: '/classes-schedules?tab=calendar',
+  },
+  {
+    path: '/kalender-akademik',
+    redirect: '/classes-schedules?tab=calendar',
   },
   {
     path: '/my-schedule',
