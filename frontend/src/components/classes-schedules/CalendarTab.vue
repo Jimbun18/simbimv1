@@ -131,6 +131,30 @@ interface DayCell {
   isHoliday: boolean
 }
 
+const formatLocalDate = (d: Date): string => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+const isEventActiveOnDay = (e: CalendarEvent, dateStr: string, isSunday: boolean): boolean => {
+  const start = e.tanggal_mulai.substring(0, 10)
+  const end = e.tanggal_selesai.substring(0, 10)
+  if (dateStr < start || dateStr > end) return false
+
+  // Jika hari Minggu dan agenda bukan hari libur (e.g. KBM Khusus / PSAS / Ujian),
+  // lewati hari Minggu karena hari Minggu merupakan hari libur mingguan (sekolah/KBM tutup).
+  if (isSunday && !e.is_libur) {
+    const isSpecialWeekend = /kemah|persami|sabtu[- ]minggu|weekend/i.test(e.judul)
+    if (!isSpecialWeekend) {
+      return false
+    }
+  }
+
+  return true
+}
+
 const calendarDays = computed(() => {
   const days: DayCell[] = []
   const year = currentYear.value
@@ -138,7 +162,7 @@ const calendarDays = computed(() => {
 
   const firstDayOfMonth = new Date(year, month, 1)
   const lastDayOfMonth = new Date(year, month + 1, 0)
-  const todayStr = new Date().toISOString().substring(0, 10)
+  const todayStr = formatLocalDate(new Date())
 
   // Start on Monday: dayOfWeek 0 is Sunday, so Monday is 1
   let firstDayIndex = firstDayOfMonth.getDay() // 0 = Sun, 1 = Mon, ..., 6 = Sat
@@ -148,42 +172,36 @@ const calendarDays = computed(() => {
   const prevMonthLastDate = new Date(year, month, 0).getDate()
   for (let i = leadingDays - 1; i >= 0; i--) {
     const d = new Date(year, month - 1, prevMonthLastDate - i)
-    const dateStr = d.toISOString().substring(0, 10)
-    const dayEvents = events.value.filter(e => {
-      const start = e.tanggal_mulai.substring(0, 10)
-      const end = e.tanggal_selesai.substring(0, 10)
-      return dateStr >= start && dateStr <= end
-    })
+    const dateStr = formatLocalDate(d)
+    const isSunday = d.getDay() === 0
+    const dayEvents = events.value.filter(e => isEventActiveOnDay(e, dateStr, isSunday))
     days.push({
       date: d,
       dateString: dateStr,
       dayNumber: d.getDate(),
       isCurrentMonth: false,
       isToday: dateStr === todayStr,
-      isSunday: d.getDay() === 0,
+      isSunday,
       events: dayEvents,
-      isHoliday: d.getDay() === 0 || dayEvents.some(e => e.is_libur),
+      isHoliday: isSunday || dayEvents.some(e => e.is_libur),
     })
   }
 
   // Days of current month
   for (let i = 1; i <= lastDayOfMonth.getDate(); i++) {
     const d = new Date(year, month, i)
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
-    const dayEvents = events.value.filter(e => {
-      const start = e.tanggal_mulai.substring(0, 10)
-      const end = e.tanggal_selesai.substring(0, 10)
-      return dateStr >= start && dateStr <= end
-    })
+    const dateStr = formatLocalDate(d)
+    const isSunday = d.getDay() === 0
+    const dayEvents = events.value.filter(e => isEventActiveOnDay(e, dateStr, isSunday))
     days.push({
       date: d,
       dateString: dateStr,
       dayNumber: i,
       isCurrentMonth: true,
       isToday: dateStr === todayStr,
-      isSunday: d.getDay() === 0,
+      isSunday,
       events: dayEvents,
-      isHoliday: d.getDay() === 0 || dayEvents.some(e => e.is_libur),
+      isHoliday: isSunday || dayEvents.some(e => e.is_libur),
     })
   }
 
@@ -192,21 +210,18 @@ const calendarDays = computed(() => {
   if (remaining < 7) {
     for (let i = 1; i <= remaining; i++) {
       const d = new Date(year, month + 1, i)
-      const dateStr = d.toISOString().substring(0, 10)
-      const dayEvents = events.value.filter(e => {
-        const start = e.tanggal_mulai.substring(0, 10)
-        const end = e.tanggal_selesai.substring(0, 10)
-        return dateStr >= start && dateStr <= end
-      })
+      const dateStr = formatLocalDate(d)
+      const isSunday = d.getDay() === 0
+      const dayEvents = events.value.filter(e => isEventActiveOnDay(e, dateStr, isSunday))
       days.push({
         date: d,
         dateString: dateStr,
         dayNumber: i,
         isCurrentMonth: false,
         isToday: dateStr === todayStr,
-        isSunday: d.getDay() === 0,
+        isSunday,
         events: dayEvents,
-        isHoliday: d.getDay() === 0 || dayEvents.some(e => e.is_libur),
+        isHoliday: isSunday || dayEvents.some(e => e.is_libur),
       })
     }
   }
