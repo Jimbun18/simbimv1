@@ -1348,7 +1348,7 @@ onMounted(async () => {
                       <div class="flex items-center gap-2">
                         <strong class="text-xs text-gray-900">{{ c.teacher?.nama_lengkap || c.user?.nama || 'Pengguna' }}</strong>
                         <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white border border-slate-200 text-slate-600">
-                          {{ c.teacher?.jabatan || c.user?.role || 'Guru' }}
+                          {{ c.teacher?.jabatan || c.user?.role?.nama || 'Guru' }}
                         </span>
                       </div>
                       <span class="text-[10px] text-gray-400">

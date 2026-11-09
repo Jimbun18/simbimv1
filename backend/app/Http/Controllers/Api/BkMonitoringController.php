@@ -15,6 +15,7 @@ use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -242,7 +243,11 @@ class BkMonitoringController extends Controller
             'schoolClass:id,nama,tingkat',
             'homeroomTeacher:id,nama_lengkap,jabatan',
             'bkTeacher:id,nama_lengkap,jabatan',
-        ])->withCount('logs')->withCount('comments');
+        ])->withCount('logs');
+
+        if (Schema::hasTable('bk_case_comments')) {
+            $query->withCount('comments');
+        }
 
         if ($activeYear) {
             $query->where('academic_year_id', $activeYear->id);
@@ -386,7 +391,7 @@ class BkMonitoringController extends Controller
             }
         }
 
-        $counselingCase->load([
+        $relations = [
             'student.currentClass',
             'student.guardians',
             'schoolClass.homeroomTeacher',
@@ -395,9 +400,20 @@ class BkMonitoringController extends Controller
             'logs' => function ($q) {
                 $q->orderBy('tanggal', 'desc')->orderBy('id', 'desc');
             },
-            'comments.user:id,nama,role',
-            'comments.teacher:id,nama_lengkap,jabatan',
-        ]);
+        ];
+
+        if (Schema::hasTable('bk_case_comments')) {
+            $relations['comments.user'] = function ($q) {
+                $q->select('id', 'nama', 'role_id')->with('role:id,nama');
+            };
+            $relations[] = 'comments.teacher:id,nama_lengkap,jabatan';
+        }
+
+        $counselingCase->load($relations);
+
+        if (!Schema::hasTable('bk_case_comments')) {
+            $counselingCase->setRelation('comments', collect([]));
+        }
 
         return response()->json([
             'success' => true,
@@ -647,7 +663,12 @@ class BkMonitoringController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Komentar berhasil ditambahkan.',
-            'data' => $comment->load(['user:id,nama,role', 'teacher:id,nama_lengkap,jabatan']),
+            'data' => $comment->load([
+                'user' => function ($q) {
+                    $q->select('id', 'nama', 'role_id')->with('role:id,nama');
+                },
+                'teacher:id,nama_lengkap,jabatan',
+            ]),
         ], 201);
     }
 

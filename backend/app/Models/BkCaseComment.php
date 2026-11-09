@@ -32,3 +32,4 @@ class BkCaseComment extends Model
         return $this->belongsTo(Teacher::class);
     }
 }
+
