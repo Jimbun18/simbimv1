@@ -245,8 +245,12 @@ class BkMonitoringController extends Controller
             'bkTeacher:id,nama_lengkap,jabatan',
         ])->withCount('logs');
 
-        if (Schema::hasTable('bk_case_comments')) {
-            $query->withCount('comments');
+        try {
+            if (Schema::hasTable('bk_case_comments')) {
+                $query->withCount('comments');
+            }
+        } catch (\Throwable) {
+            // Abaikan jika tabel komentar belum ada
         }
 
         if ($activeYear) {
@@ -378,51 +382,64 @@ class BkMonitoringController extends Controller
      */
     public function showCase(Request $request, BkCounselingCase $counselingCase): JsonResponse
     {
-        if ($res = $this->checkMonitoringAccess($request)) return $res;
+        try {
+            if ($res = $this->checkMonitoringAccess($request)) return $res;
 
-        $access = $this->getBkAccessInfo($request);
-        // Jika Wali Kelas, pastikan siswa adalah binaan di kelasnya
-        if (!$access['is_bk'] && $access['is_wali_kelas']) {
-            if (!in_array($counselingCase->class_id, $access['homeroom_class_ids'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Akses Terbatas: Anda hanya dapat memantau siswa di rombel kelas binaan Anda.',
-                ], 403);
+            $access = $this->getBkAccessInfo($request);
+            // Jika Wali Kelas, pastikan siswa adalah binaan di kelasnya
+            if (!$access['is_bk'] && $access['is_wali_kelas']) {
+                if (!in_array($counselingCase->class_id, $access['homeroom_class_ids'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Akses Terbatas: Anda hanya dapat memantau siswa di rombel kelas binaan Anda.',
+                    ], 403);
+                }
             }
+
+            $counselingCase->load([
+                'student.currentClass',
+                'student.guardians',
+                'schoolClass.homeroomTeacher',
+                'homeroomTeacher',
+                'bkTeacher',
+                'logs' => function ($q) {
+                    $q->orderBy('tanggal', 'desc')->orderBy('id', 'desc');
+                },
+            ]);
+
+            // Load komentar secara terisolasi agar jika tabel/model belum siap tidak merusak halaman utama
+            $commentsLoaded = false;
+            try {
+                if (Schema::hasTable('bk_case_comments')) {
+                    $counselingCase->load([
+                        'comments' => function ($q) {
+                            $q->with(['user.role', 'teacher'])->orderBy('created_at', 'asc');
+                        },
+                    ]);
+                    $commentsLoaded = true;
+                }
+            } catch (\Throwable $eComment) {
+                // Jangan gagalkan halaman utama jika komentar bermasalah
+            }
+
+            if (!$commentsLoaded) {
+                $counselingCase->setRelation('comments', collect([]));
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Detail lembar pemantauan BK berhasil diambil.',
+                'data' => $counselingCase,
+                'meta' => [
+                    'can_edit' => $access['is_bk'], // True jika Guru BK, False jika Wali Kelas
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Detail kasus gagal dimuat: ' . $e->getMessage(),
+            ], 422);
         }
-
-        $relations = [
-            'student.currentClass',
-            'student.guardians',
-            'schoolClass.homeroomTeacher',
-            'homeroomTeacher',
-            'bkTeacher',
-            'logs' => function ($q) {
-                $q->orderBy('tanggal', 'desc')->orderBy('id', 'desc');
-            },
-        ];
-
-        if (Schema::hasTable('bk_case_comments')) {
-            $relations['comments.user'] = function ($q) {
-                $q->select('id', 'nama', 'role_id')->with('role:id,nama');
-            };
-            $relations[] = 'comments.teacher:id,nama_lengkap,jabatan';
-        }
-
-        $counselingCase->load($relations);
-
-        if (!Schema::hasTable('bk_case_comments')) {
-            $counselingCase->setRelation('comments', collect([]));
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Detail lembar pemantauan BK berhasil diambil.',
-            'data' => $counselingCase,
-            'meta' => [
-                'can_edit' => $access['is_bk'], // True jika Guru BK, False jika Wali Kelas
-            ],
-        ]);
     }
 
     /**
