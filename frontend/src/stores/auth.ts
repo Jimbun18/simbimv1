@@ -41,6 +41,19 @@ export const useAuthStore = defineStore('auth', {
       }
       return false;
     },
+    canAccessBkMonitoring: (state) => {
+      if (state.user?.role === 'guru') {
+        const jabatan = (state.user?.profile_detail?.jabatan || '').toLowerCase();
+        const tugas = (state.user?.profile_detail?.tugas_tambahan || '').toLowerCase();
+        const isBk = jabatan.includes('bk') || jabatan.includes('bimbingan') || tugas.includes('bk') || tugas.includes('bimbingan');
+        if (isBk) return true;
+
+        // Wali kelas juga berhak mengakses (read-only tracking & komentar)
+        const homerooms = state.user?.profile_detail?.homeroom_classes;
+        return Array.isArray(homerooms) && homerooms.length > 0;
+      }
+      return false;
+    },
     userName: (state) => state.user?.nama ?? 'Pengguna',
     teacherProfile: (state) =>
       state.user?.profile_detail && (state.user?.role === 'guru' || state.user?.role === 'kepala_sekolah')

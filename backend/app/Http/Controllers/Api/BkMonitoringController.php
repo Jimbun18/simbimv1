@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AcademicYear;
+use App\Models\BkCaseComment;
 use App\Models\BkCaseLog;
 use App\Models\BkCounselingCase;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Services\ActivityLogService;
+use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,13 +25,14 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 class BkMonitoringController extends Controller
 {
     /**
-     * Memastikan akses KHUSUS untuk Guru Bimbingan Konseling (Guru BK).
+     * Memastikan akses untuk Guru BK atau Wali Kelas binaan.
+     * Mengembalikan data otorisasi pengguna.
      */
-    protected function checkGuruBk(Request $request): ?JsonResponse
+    protected function getBkAccessInfo(Request $request): array
     {
         $user = $request->user();
         if (!$user) {
-            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+            return ['allowed' => false, 'is_bk' => false, 'is_wali_kelas' => false, 'homeroom_class_ids' => []];
         }
 
         $teacher = $user->teacher;
@@ -43,10 +46,55 @@ class BkMonitoringController extends Controller
             str_contains($tugas, 'bimbingan')
         );
 
-        if (!$isBk) {
+        $homeroomClassIds = $teacher
+            ? SchoolClass::where('wali_kelas_id', $teacher->id)->pluck('id')->toArray()
+            : [];
+
+        $isWaliKelas = !empty($homeroomClassIds);
+
+        return [
+            'allowed' => $isBk || $isWaliKelas,
+            'is_bk' => $isBk,
+            'is_wali_kelas' => $isWaliKelas,
+            'teacher' => $teacher,
+            'homeroom_class_ids' => $homeroomClassIds,
+        ];
+    }
+
+    /**
+     * Memastikan akses KHUSUS untuk Guru Bimbingan Konseling (Guru BK).
+     */
+    protected function checkGuruBk(Request $request): ?JsonResponse
+    {
+        $access = $this->getBkAccessInfo($request);
+        if (!$request->user()) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if (!$access['is_bk']) {
             return response()->json([
                 'success' => false,
-                'message' => 'Akses Terbatas: Menu Analisis & Monitoring BK hanya dapat diakses oleh Guru Bimbingan Konseling (BK).',
+                'message' => 'Akses Terbatas: Tindakan ini hanya dapat dilakukan oleh Guru Bimbingan Konseling (BK).',
+            ], 403);
+        }
+
+        return null;
+    }
+
+    /**
+     * Memastikan akses monitoring (Guru BK atau Wali Kelas).
+     */
+    protected function checkMonitoringAccess(Request $request): ?JsonResponse
+    {
+        $access = $this->getBkAccessInfo($request);
+        if (!$request->user()) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if (!$access['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses Terbatas: Menu Analisis & Monitoring BK hanya dapat diakses oleh Guru BK dan Wali Kelas.',
             ], 403);
         }
 
@@ -58,12 +106,18 @@ class BkMonitoringController extends Controller
      */
     public function dashboard(Request $request): JsonResponse
     {
-        if ($res = $this->checkGuruBk($request)) return $res;
+        if ($res = $this->checkMonitoringAccess($request)) return $res;
 
+        $access = $this->getBkAccessInfo($request);
         $activeYear = AcademicYear::getActive() ?? AcademicYear::first();
         $baseQuery = BkCounselingCase::query();
         if ($activeYear) {
             $baseQuery->where('academic_year_id', $activeYear->id);
+        }
+
+        // Jika Wali Kelas (bukan Guru BK), batasi hanya kasus di kelas binaannya
+        if (!$access['is_bk'] && $access['is_wali_kelas']) {
+            $baseQuery->whereIn('class_id', $access['homeroom_class_ids']);
         }
 
         $totalCases = (clone $baseQuery)->count();
@@ -178,8 +232,9 @@ class BkMonitoringController extends Controller
      */
     public function indexCases(Request $request): JsonResponse
     {
-        if ($res = $this->checkGuruBk($request)) return $res;
+        if ($res = $this->checkMonitoringAccess($request)) return $res;
 
+        $access = $this->getBkAccessInfo($request);
         $activeYear = AcademicYear::getActive() ?? AcademicYear::first();
 
         $query = BkCounselingCase::with([
@@ -187,10 +242,15 @@ class BkMonitoringController extends Controller
             'schoolClass:id,nama,tingkat',
             'homeroomTeacher:id,nama_lengkap,jabatan',
             'bkTeacher:id,nama_lengkap,jabatan',
-        ])->withCount('logs');
+        ])->withCount('logs')->withCount('comments');
 
         if ($activeYear) {
             $query->where('academic_year_id', $activeYear->id);
+        }
+
+        // Jika Wali Kelas (bukan Guru BK), batasi hanya kasus di kelas binaannya
+        if (!$access['is_bk'] && $access['is_wali_kelas']) {
+            $query->whereIn('class_id', $access['homeroom_class_ids']);
         }
 
         if ($request->filled('class_id')) {
@@ -281,6 +341,26 @@ class BkMonitoringController extends Controller
             keterangan: "Menambahkan siswa {$student->nama_lengkap} ke dalam Sistem Analisis & Monitoring BK."
         );
 
+        // Notifikasi ke Wali Kelas bahwa siswa binaannya masuk catatan pemantauan BK
+        if ($case->wali_kelas_id && (!$user->teacher || $user->teacher->id !== $case->wali_kelas_id)) {
+            $namaKelas = $case->schoolClass?->nama ?? 'Kelas';
+            NotificationService::notifyTeacher(
+                teacher: $case->wali_kelas_id,
+                title: "Siswa Binaan Masuk Pemantauan BK: {$student->nama_lengkap}",
+                message: "Siswa binaan Anda, {$student->nama_lengkap} ({$namaKelas}), telah dicatat dalam Analisis & Monitoring BK dengan fokus: {$case->fokus_pemantauan}. Anda dapat memantau perkembangan dan memberikan masukan di menu Monitoring & BK.",
+                type: 'info',
+                targetUrl: "/bk-monitoring",
+                sendEmail: true,
+                extraDetails: [
+                    'Nama Siswa' => $student->nama_lengkap,
+                    'Kelas' => $namaKelas,
+                    'Fokus Pemantauan' => $case->fokus_pemantauan,
+                    'Status Awal' => $case->status_saat_ini,
+                    'Sumber Awal' => $case->sumber_awal,
+                ]
+            );
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Kasus pemantauan BK berhasil dibuat.',
@@ -293,7 +373,18 @@ class BkMonitoringController extends Controller
      */
     public function showCase(Request $request, BkCounselingCase $counselingCase): JsonResponse
     {
-        if ($res = $this->checkGuruBk($request)) return $res;
+        if ($res = $this->checkMonitoringAccess($request)) return $res;
+
+        $access = $this->getBkAccessInfo($request);
+        // Jika Wali Kelas, pastikan siswa adalah binaan di kelasnya
+        if (!$access['is_bk'] && $access['is_wali_kelas']) {
+            if (!in_array($counselingCase->class_id, $access['homeroom_class_ids'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akses Terbatas: Anda hanya dapat memantau siswa di rombel kelas binaan Anda.',
+                ], 403);
+            }
+        }
 
         $counselingCase->load([
             'student.currentClass',
@@ -304,12 +395,17 @@ class BkMonitoringController extends Controller
             'logs' => function ($q) {
                 $q->orderBy('tanggal', 'desc')->orderBy('id', 'desc');
             },
+            'comments.user:id,nama,role',
+            'comments.teacher:id,nama_lengkap,jabatan',
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Detail lembar pemantauan BK berhasil diambil.',
             'data' => $counselingCase,
+            'meta' => [
+                'can_edit' => $access['is_bk'], // True jika Guru BK, False jika Wali Kelas
+            ],
         ]);
     }
 
@@ -480,6 +576,102 @@ class BkMonitoringController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Log pemantauan BK berhasil dihapus.',
+        ]);
+    }
+
+    /**
+     * Tambah Komentar / Catatan Wali Kelas pada Kasus BK.
+     */
+    public function storeComment(Request $request, BkCounselingCase $counselingCase): JsonResponse
+    {
+        if ($res = $this->checkMonitoringAccess($request)) return $res;
+
+        $access = $this->getBkAccessInfo($request);
+        if (!$access['is_bk'] && $access['is_wali_kelas']) {
+            if (!in_array($counselingCase->class_id, $access['homeroom_class_ids'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akses Terbatas: Anda hanya dapat memberi komentar pada siswa rombel kelas binaan Anda.',
+                ], 403);
+            }
+        }
+
+        $validated = $request->validate([
+            'komentar' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $user = $request->user();
+        $teacher = $user->teacher;
+
+        $comment = BkCaseComment::create([
+            'bk_counseling_case_id' => $counselingCase->id,
+            'user_id' => $user->id,
+            'teacher_id' => $teacher?->id,
+            'komentar' => $validated['komentar'],
+        ]);
+
+        // Kirim notifikasi jika yang berkomentar adalah Wali Kelas, beritahu Guru BK
+        $namaPengirim = $teacher?->nama_lengkap ?? $user->nama;
+        $student = $counselingCase->student;
+        $namaSiswa = $student?->nama_lengkap ?? 'Siswa';
+
+        if ($access['is_wali_kelas'] && !$access['is_bk']) {
+            NotificationService::notifyGuruBk(
+                title: "Komentar Baru Wali Kelas: {$namaSiswa}",
+                message: "Ustadz/ah {$namaPengirim} (Wali Kelas) memberikan tanggapan/komentar pada lembar pemantauan BK siswa {$namaSiswa}.",
+                targetUrl: "/bk-monitoring",
+                sendEmail: true,
+                extraDetails: [
+                    'Nama Siswa' => $namaSiswa,
+                    'Wali Kelas' => $namaPengirim,
+                    'Komentar' => $validated['komentar'],
+                ]
+            );
+        } elseif ($access['is_bk'] && $counselingCase->wali_kelas_id) {
+            // Jika Guru BK yang berkomentar, beritahu Wali Kelas
+            NotificationService::notifyTeacher(
+                teacher: $counselingCase->wali_kelas_id,
+                title: "Komentar Guru BK: {$namaSiswa}",
+                message: "Guru BK ({$namaPengirim}) menambahkan tanggapan pada kasus pemantauan siswa binaan Anda, {$namaSiswa}.",
+                type: 'info',
+                targetUrl: "/bk-monitoring",
+                sendEmail: true,
+                extraDetails: [
+                    'Nama Siswa' => $namaSiswa,
+                    'Pengirim' => $namaPengirim,
+                    'Komentar' => $validated['komentar'],
+                ]
+            );
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Komentar berhasil ditambahkan.',
+            'data' => $comment->load(['user:id,nama,role', 'teacher:id,nama_lengkap,jabatan']),
+        ], 201);
+    }
+
+    /**
+     * Hapus Komentar.
+     */
+    public function destroyComment(Request $request, BkCaseComment $comment): JsonResponse
+    {
+        $user = $request->user();
+        $access = $this->getBkAccessInfo($request);
+
+        // Hanya pembuat komentar atau Guru BK yang dapat menghapus komentar
+        if ($comment->user_id !== $user->id && !$access['is_bk']) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak untuk menghapus komentar ini.',
+            ], 403);
+        }
+
+        $comment->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Komentar berhasil dihapus.',
         ]);
     }
 

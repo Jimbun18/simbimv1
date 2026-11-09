@@ -886,9 +886,9 @@ const handleLogout = async () => {
                 <span v-show="isSidebarOpen" class="truncate">Catatan Observasi</span>
               </router-link>
 
-              <!-- Analisis & Monitoring BK (KHUSUS GURU BK - Kepala Sekolah jangan dulu) -->
+              <!-- Analisis & Monitoring BK (GURU BK & WALI KELAS) -->
               <router-link
-                v-if="auth.isGuruBk"
+                v-if="auth.canAccessBkMonitoring"
                 to="/bk-monitoring"
                 class="flex items-center gap-3 rounded-xl font-medium transition-all group mb-0.5"
                 :class="[
@@ -1883,9 +1883,9 @@ const handleLogout = async () => {
                       <span>Catatan Observasi</span>
                     </router-link>
 
-                    <!-- Monitoring & BK (Mobile - Khusus Guru BK) -->
+                    <!-- Monitoring & BK (Mobile - Guru BK & Wali Kelas) -->
                     <router-link
-                      v-if="auth.isGuruBk"
+                      v-if="auth.canAccessBkMonitoring"
                       to="/bk-monitoring"
                       class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium"
                       :class="route.path === '/bk-monitoring' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-700 hover:bg-slate-100'"

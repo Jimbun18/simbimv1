@@ -162,6 +162,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/cases/{counselingCase}/logs', [BkMonitoringController::class, 'storeLog']);
             Route::put('/logs/{log}', [BkMonitoringController::class, 'updateLog']);
             Route::delete('/logs/{log}', [BkMonitoringController::class, 'destroyLog']);
+            Route::post('/cases/{counselingCase}/comments', [BkMonitoringController::class, 'storeComment']);
+            Route::delete('/comments/{comment}', [BkMonitoringController::class, 'destroyComment']);
             Route::get('/export', [BkMonitoringController::class, 'exportExcel']);
         });
 

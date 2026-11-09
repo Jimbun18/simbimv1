@@ -199,7 +199,7 @@ const routes: RouteRecordRaw[] = [
     path: '/bk-monitoring',
     name: 'bk-monitoring',
     component: () => import('../views/BkMonitoringView.vue'),
-    meta: { requiresAuth: true, requiresGuruBk: true, role: ['guru'] },
+    meta: { requiresAuth: true, requiresBkAccess: true, role: ['guru'] },
   },
   {
     path: '/finance',
@@ -270,6 +270,12 @@ router.beforeEach((to, _from, next) => {
     if (auth.isAdmin) return next({ name: 'dashboard' });
     if (auth.isGuru) return next({ name: 'presensi' });
     if (auth.isWali) return next({ name: 'portal-wali' });
+    return next({ name: 'dashboard' });
+  }
+
+  if (to.meta.requiresBkAccess && !auth.canAccessBkMonitoring) {
+    if (auth.isAdmin) return next({ name: 'dashboard' });
+    if (auth.isGuru) return next({ name: 'observations' });
     return next({ name: 'dashboard' });
   }
 

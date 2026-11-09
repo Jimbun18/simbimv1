@@ -187,6 +187,10 @@ const reloadCaseDetail = async () => {
 
 // Open Forms
 const openNewCaseForm = () => {
+  if (!auth.isGuruBk) {
+    showError('Akses Ditolak', null, 'Hanya Guru BK yang dapat menambahkan kasus pemantauan baru.')
+    return
+  }
   const d = new Date()
   d.setDate(d.getDate() + 7)
   const next7Days = toInputDate(d)
@@ -228,6 +232,10 @@ const submitNewCase = async () => {
 }
 
 const openEditCaseModal = () => {
+  if (!auth.isGuruBk) {
+    showError('Akses Ditolak', null, 'Hanya Guru BK yang dapat mengedit data induk kasus.')
+    return
+  }
   if (!selectedCase.value) return
   editCaseForm.value = {
     fokus_pemantauan: selectedCase.value.fokus_pemantauan || 'Pribadi',
@@ -258,6 +266,10 @@ const submitEditCase = async () => {
 }
 
 const deleteCase = async (c: any) => {
+  if (!auth.isGuruBk) {
+    showError('Akses Ditolak', null, 'Hanya Guru BK yang berwenang menghapus lembar kasus pemantauan.')
+    return
+  }
   const confirmed = await showConfirm(
     'Hapus Kasus Pemantauan BK?',
     `Seluruh data pemantauan dan riwayat sesi BK untuk siswa ${c.student?.nama_lengkap || ''} akan dihapus.`,
@@ -283,6 +295,10 @@ const deleteCase = async (c: any) => {
 }
 
 const openNewLogForm = () => {
+  if (!auth.isGuruBk) {
+    showError('Akses Ditolak', null, 'Hanya Guru BK yang berwenang mencatat sesi intervensi atau tahapan BK.')
+    return
+  }
   isEditingLog.value = false
   editingLogId.value = null
   logForm.value = {
@@ -303,6 +319,10 @@ const openNewLogForm = () => {
 }
 
 const openEditLogForm = (log: any) => {
+  if (!auth.isGuruBk) {
+    showError('Akses Ditolak', null, 'Hanya Guru BK yang berwenang mengedit log pemantauan BK.')
+    return
+  }
   isEditingLog.value = true
   editingLogId.value = log.id
   logForm.value = {
@@ -466,8 +486,51 @@ const getClassName = (item: any) => {
          '-'
 }
 
+// State Komentar Kasus
+const newCommentText = ref('')
+const submittingComment = ref(false)
+
+const submitComment = async () => {
+  if (!newCommentText.value.trim() || !selectedCase.value?.id) return
+  submittingComment.value = true
+  try {
+    const res = await api.post(`/bk/cases/${selectedCase.value.id}/comments`, {
+      komentar: newCommentText.value.trim(),
+    })
+    if (res.data.success) {
+      showSuccess('Terkirim!', 'Komentar/catatan Anda berhasil ditambahkan.')
+      newCommentText.value = ''
+      reloadCaseDetail()
+    }
+  } catch (err: any) {
+    showError('Gagal Mengirim Komentar', err)
+  } finally {
+    submittingComment.value = false
+  }
+}
+
+const deleteComment = async (commentId: number) => {
+  const confirmed = await showConfirm(
+    'Hapus Komentar?',
+    'Komentar ini akan dihapus.',
+    'Ya, Hapus',
+    'warning'
+  )
+  if (!confirmed) return
+
+  try {
+    const res = await api.delete(`/bk/comments/${commentId}`)
+    if (res.data.success) {
+      showSuccess('Berhasil!', 'Komentar telah dihapus.')
+      reloadCaseDetail()
+    }
+  } catch (err: any) {
+    showError('Gagal Menghapus Komentar', err)
+  }
+}
+
 onMounted(async () => {
-  if (!auth.isGuruBk) return
+  if (!auth.canAccessBkMonitoring) return
 
   await Promise.all([
     fetchDashboard(),
@@ -484,8 +547,8 @@ onMounted(async () => {
 
 <template>
   <div class="space-y-6 animate-in fade-in duration-200">
-    <!-- Cek Otoritas Guru BK -->
-    <div v-if="!auth.isGuruBk" class="bg-rose-50 border border-rose-200 p-8 rounded-3xl text-center space-y-3">
+    <!-- Cek Otoritas Akses Monitoring BK (Guru BK atau Wali Kelas) -->
+    <div v-if="!auth.canAccessBkMonitoring" class="bg-rose-50 border border-rose-200 p-8 rounded-3xl text-center space-y-3">
       <div class="w-16 h-16 mx-auto bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center">
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -493,11 +556,11 @@ onMounted(async () => {
       </div>
       <h2 class="text-lg font-black text-rose-900">Akses Terbatas: Ruang Bimbingan & Konseling (BK)</h2>
       <p class="text-xs text-rose-700 max-w-md mx-auto leading-relaxed">
-        Sesuai asas kerahasiaan bimbingan konseling dan instruksi administrasi sekolah, menu Analisis & Monitoring BK hanya diperuntukkan bagi <strong>Guru Bimbingan Konseling (BK)</strong>.
+        Sesuai asas kerahasiaan bimbingan konseling dan instruksi administrasi sekolah, menu Analisis & Monitoring BK hanya diperuntukkan bagi <strong>Guru Bimbingan Konseling (BK)</strong> dan <strong>Wali Kelas Binaan</strong>.
       </p>
     </div>
 
-    <!-- MAIN VIEW GURU BK -->
+    <!-- MAIN VIEW GURU BK & WALI KELAS -->
     <template v-else>
       <!-- SUBVIEW 1: TAMPILAN UTAMA (DASHBOARD, DAFTAR SISWA, DETAIL SISWA, PANDUAN) -->
       <template v-if="currentSubView === 'main'">
@@ -512,7 +575,7 @@ onMounted(async () => {
           <div>
             <div class="flex items-center gap-2">
               <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Menu Eksklusif Guru BK
+                {{ auth.isGuruBk ? 'Menu Eksklusif Guru BK' : 'Portal Wali Kelas (Binaan)' }}
               </span>
               <span class="text-xs text-gray-400 font-mono">T.A. 2026/2027</span>
             </div>
@@ -527,6 +590,7 @@ onMounted(async () => {
 
         <div class="flex items-center gap-2.5 self-start md:self-auto">
           <button
+            v-if="auth.isGuruBk"
             @click="exportExcel"
             type="button"
             class="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
@@ -538,6 +602,7 @@ onMounted(async () => {
             <span>Ekspor Excel</span>
           </button>
           <button
+            v-if="auth.isGuruBk"
             @click="openNewCaseForm"
             type="button"
             class="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition active:scale-95 cursor-pointer"
@@ -930,6 +995,7 @@ onMounted(async () => {
                         <span>Buka Tab Siswa ({{ c.logs_count || 0 }})</span>
                       </button>
                       <button
+                        v-if="auth.isGuruBk"
                         @click="deleteCase(c)"
                         type="button"
                         class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
@@ -995,7 +1061,7 @@ onMounted(async () => {
               </div>
 
               <!-- Quick Action Bar Tab Siswa -->
-              <div class="flex flex-wrap items-center gap-2 self-start md:self-auto">
+              <div v-if="auth.isGuruBk" class="flex flex-wrap items-center gap-2 self-start md:self-auto">
                 <button
                   @click="openEditCaseModal"
                   type="button"
@@ -1050,14 +1116,20 @@ onMounted(async () => {
                 <strong class="text-emerald-700 font-mono">{{ selectedCase.review_berikutnya ? formatDateIndo(selectedCase.review_berikutnya) : '—' }}</strong>
               </div>
               <div class="p-3 bg-slate-50 rounded-2xl">
-                <span class="text-gray-400 text-[10px] block">Ubah Status Terkini:</span>
+                <span class="text-gray-400 text-[10px] block">Status Terkini:</span>
                 <select
+                  v-if="auth.isGuruBk"
                   :value="selectedCase.status_saat_ini"
                   @change="updateCaseStatus(($event.target as HTMLSelectElement).value)"
                   class="w-full mt-0.5 bg-white border border-slate-200 rounded-lg text-xs font-bold px-2 py-1 text-gray-800 focus:outline-none"
                 >
                   <option v-for="st in statusList" :key="st" :value="st">{{ st }}</option>
                 </select>
+                <div v-else class="mt-1">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border inline-block" :class="getStatusBadge(selectedCase.status_saat_ini)">
+                    {{ selectedCase.status_saat_ini }}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -1177,24 +1249,26 @@ onMounted(async () => {
                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border" :class="getStatusBadge(log.status)">
                       {{ log.status }}
                     </span>
-                    <button
-                      @click="openEditLogForm(log)"
-                      class="p-1 text-slate-400 hover:text-indigo-600 cursor-pointer"
-                      title="Edit"
-                    >
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </button>
-                    <button
-                      @click="deleteLog(log.id)"
-                      class="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
-                      title="Hapus"
-                    >
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                    <div v-if="auth.isGuruBk" class="flex items-center gap-1">
+                      <button
+                        @click="openEditLogForm(log)"
+                        class="p-1 text-slate-400 hover:text-indigo-600 cursor-pointer"
+                        title="Edit"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                      <button
+                        @click="deleteLog(log.id)"
+                        class="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
+                        title="Hapus"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -1231,6 +1305,110 @@ onMounted(async () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Ruang Diskusi & Komentar Kolaborasi BK - Wali Kelas -->
+          <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-gray-900 uppercase tracking-wider">
+                    Kolaborasi & Diskusi Catatan Kasus
+                  </h3>
+                  <p class="text-xs text-gray-400">Ruang komunikasi dan tanggapan berkala antara Guru BK dan Wali Kelas binaan</p>
+                </div>
+              </div>
+              <span class="px-3 py-1 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold font-mono">
+                {{ selectedCase.comments?.length || 0 }} Komentar
+              </span>
+            </div>
+
+            <!-- List Komentar -->
+            <div v-if="!selectedCase.comments || selectedCase.comments.length === 0" class="py-8 text-center text-xs text-gray-400 bg-slate-50/50 rounded-2xl border border-dashed border-gray-200">
+              Belum ada komentar atau tanggapan pada kasus ini. Wali Kelas atau Guru BK dapat memberikan respon di bawah.
+            </div>
+            <div v-else class="space-y-3">
+              <div
+                v-for="c in selectedCase.comments"
+                :key="c.id"
+                class="p-4 rounded-2xl border border-gray-100 bg-slate-50/60 space-y-2 hover:bg-white hover:border-teal-200 transition"
+              >
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-teal-100 text-teal-800 font-bold text-xs flex items-center justify-center shrink-0">
+                      {{ getInitials(c.teacher?.nama_lengkap || c.user?.nama) }}
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <strong class="text-xs text-gray-900">{{ c.teacher?.nama_lengkap || c.user?.nama || 'Pengguna' }}</strong>
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white border border-slate-200 text-slate-600">
+                          {{ c.teacher?.jabatan || c.user?.role || 'Guru' }}
+                        </span>
+                      </div>
+                      <span class="text-[10px] text-gray-400">
+                        {{ formatDateIndo(c.created_at) }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Tombol Hapus Komentar (hanya pemilik komentar atau Guru BK) -->
+                  <button
+                    v-if="auth.isGuruBk || c.user_id === auth.user?.id"
+                    @click="deleteComment(c.id)"
+                    type="button"
+                    class="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                    title="Hapus Komentar"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+
+                <p class="text-xs text-gray-800 leading-relaxed whitespace-pre-line pl-10">
+                  {{ c.komentar }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Form Tambah Komentar -->
+            <div class="pt-3 border-t border-gray-100 space-y-2">
+              <label class="block text-xs font-bold text-gray-700">
+                Berikan Masukan / Catatan Tambahan:
+              </label>
+              <div class="flex flex-col sm:flex-row gap-2">
+                <textarea
+                  v-model="newCommentText"
+                  rows="2"
+                  placeholder="Ketik komentar, tanggapan perkembangan siswa, atau rekomendasi tindak lanjut..."
+                  class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  :disabled="submittingComment"
+                ></textarea>
+                <button
+                  @click="submitComment"
+                  :disabled="!newCommentText.trim() || submittingComment"
+                  type="button"
+                  class="sm:self-end px-5 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/20 transition active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                >
+                  <svg v-if="submittingComment" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                  </svg>
+                  <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                  <span>{{ submittingComment ? 'Mengirim...' : 'Kirim Komentar' }}</span>
+                </button>
+              </div>
+              <p class="text-[11px] text-gray-400 italic">
+                * Komentar yang dikirim akan otomatis menotifikasi {{ auth.isGuruBk ? 'Wali Kelas siswa' : 'Guru BK' }} melalui notifikasi sistem & email.
+              </p>
             </div>
           </div>
         </template>
@@ -1329,7 +1507,7 @@ onMounted(async () => {
       <!-- ======================================================== -->
       <!-- SUBVIEW 2: FORM TAMBAH SISWA KE BK (FULL PAGE VIEW)       -->
       <!-- ======================================================== -->
-      <template v-else-if="currentSubView === 'form-case'">
+      <template v-else-if="currentSubView === 'form-case' && auth.isGuruBk">
         <div class="space-y-6 animate-in fade-in duration-200">
           <!-- Top Bar -->
           <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1518,7 +1696,7 @@ onMounted(async () => {
       <!-- ======================================================== -->
       <!-- SUBVIEW 3: FORM CATAT / EDIT LOG BK (FULL PAGE VIEW)     -->
       <!-- ======================================================== -->
-      <template v-else-if="currentSubView === 'form-log'">
+      <template v-else-if="currentSubView === 'form-log' && auth.isGuruBk">
         <div class="space-y-6 animate-in fade-in duration-200">
           <!-- Top Bar -->
           <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">

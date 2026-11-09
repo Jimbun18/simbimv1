@@ -63,5 +63,10 @@ class BkCounselingCase extends Model
     {
         return $this->hasMany(BkCaseLog::class, 'bk_counseling_case_id')->orderBy('tanggal', 'desc')->orderBy('id', 'desc');
     }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(BkCaseComment::class, 'bk_counseling_case_id')->orderBy('created_at', 'asc');
+    }
 }
 

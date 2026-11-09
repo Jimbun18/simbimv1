@@ -31,16 +31,26 @@ class StudentObservationController extends Controller
 
         $obsQuery = StudentObservation::query();
 
-        // Jika guru biasa, hanya hitung dan ambil observasi milik guru tersebut
+        // Guru BK dapat melihat seluruh observasi sekolah.
+        // Guru Kelas/Mapel melihat observasi yang dicatatnya sendiri ATAU observasi siswa binaan di kelasnya (sebagai Wali Kelas).
         if (!$isGuruBk) {
-            if ($teacher) {
-                $obsQuery->where(function ($q) use ($teacher, $user) {
+            $homeroomClassIds = $teacher ? DB::table('classes')->where('wali_kelas_id', $teacher->id)->pluck('id')->toArray() : [];
+
+            $obsQuery->where(function ($q) use ($teacher, $user, $homeroomClassIds) {
+                if ($teacher) {
                     $q->where('teacher_id', $teacher->id)
                       ->orWhere('created_by', $user?->id);
-                });
-            } else {
-                $obsQuery->where('created_by', $user?->id);
-            }
+                } else {
+                    $q->where('created_by', $user?->id);
+                }
+
+                if (!empty($homeroomClassIds)) {
+                    $q->orWhereIn('class_id', $homeroomClassIds)
+                      ->orWhereHas('student', function ($sq) use ($homeroomClassIds) {
+                          $sq->whereIn('class_id', $homeroomClassIds);
+                      });
+                }
+            });
         }
 
         if ($request->filled('class_id')) {
@@ -70,17 +80,24 @@ class StudentObservationController extends Controller
             ->whereIn('id', $studentIds)
             ->get();
 
-        $result = $students->map(function ($student) use ($isGuruBk, $teacher, $user) {
+        $homeroomClassIds = ($teacher && !$isGuruBk) ? DB::table('classes')->where('wali_kelas_id', $teacher->id)->pluck('id')->toArray() : [];
+
+        $result = $students->map(function ($student) use ($isGuruBk, $teacher, $user, $homeroomClassIds) {
             $studentObsQuery = StudentObservation::where('student_id', $student->id);
             if (!$isGuruBk) {
-                if ($teacher) {
-                    $studentObsQuery->where(function ($q) use ($teacher, $user) {
+                $studentObsQuery->where(function ($q) use ($teacher, $user, $homeroomClassIds, $student) {
+                    if ($teacher) {
                         $q->where('teacher_id', $teacher->id)
                           ->orWhere('created_by', $user?->id);
-                    });
-                } else {
-                    $studentObsQuery->where('created_by', $user?->id);
-                }
+                    } else {
+                        $q->where('created_by', $user?->id);
+                    }
+
+                    if (!empty($homeroomClassIds) && in_array($student->class_id, $homeroomClassIds)) {
+                        $q->orWhereIn('class_id', $homeroomClassIds)
+                          ->orWhere('student_id', $student->id);
+                    }
+                });
             }
 
             $allObs = (clone $studentObsQuery)
@@ -184,14 +201,21 @@ class StudentObservationController extends Controller
         ])->where('student_id', $student->id);
 
         if (!$isGuruBk) {
-            if ($teacher) {
-                $query->where(function ($q) use ($teacher, $user) {
+            $homeroomClassIds = $teacher ? DB::table('classes')->where('wali_kelas_id', $teacher->id)->pluck('id')->toArray() : [];
+
+            $query->where(function ($q) use ($teacher, $user, $homeroomClassIds, $student) {
+                if ($teacher) {
                     $q->where('teacher_id', $teacher->id)
                       ->orWhere('created_by', $user?->id);
-                });
-            } else {
-                $query->where('created_by', $user?->id);
-            }
+                } else {
+                    $q->where('created_by', $user?->id);
+                }
+
+                if (!empty($homeroomClassIds) && in_array($student->class_id, $homeroomClassIds)) {
+                    $q->orWhereIn('class_id', $homeroomClassIds)
+                      ->orWhere('student_id', $student->id);
+                }
+            });
         }
 
         $observations = $query->orderBy('tanggal', 'desc')->orderBy('id', 'desc')->get();
@@ -251,17 +275,26 @@ class StudentObservationController extends Controller
         ]);
 
         // Jika BUKAN Guru BK:
-        // Guru hanya melihat catatan observasi yang dicatat oleh dirinya sendiri
+        // Guru melihat observasi yang dicatat oleh dirinya sendiri ATAU siswa binaan di kelasnya (sebagai Wali Kelas)
         if (!$isGuruBk) {
             $teacher = $user?->teacher;
-            if ($teacher) {
-                $query->where(function ($q) use ($teacher, $user) {
+            $homeroomClassIds = $teacher ? DB::table('classes')->where('wali_kelas_id', $teacher->id)->pluck('id')->toArray() : [];
+
+            $query->where(function ($q) use ($teacher, $user, $homeroomClassIds) {
+                if ($teacher) {
                     $q->where('teacher_id', $teacher->id)
                       ->orWhere('created_by', $user?->id);
-                });
-            } else {
-                $query->where('created_by', $user?->id);
-            }
+                } else {
+                    $q->where('created_by', $user?->id);
+                }
+
+                if (!empty($homeroomClassIds)) {
+                    $q->orWhereIn('class_id', $homeroomClassIds)
+                      ->orWhereHas('student', function ($sq) use ($homeroomClassIds) {
+                          $sq->whereIn('class_id', $homeroomClassIds);
+                      });
+                }
+            });
         }
 
         if ($request->filled('class_id')) {
@@ -365,7 +398,7 @@ class StudentObservationController extends Controller
             keterangan: "Menambahkan catatan observasi perilaku untuk siswa: {$student->nama_lengkap}."
         );
 
-        // Notifikasi ke seluruh Guru BK (In-App Dashboard + Email via teachers.email)
+        // 1. Notifikasi ke seluruh Guru BK (In-App Dashboard + Email via teachers.email)
         $namaPelapor = $teacher?->nama_lengkap ?? $user->nama;
         NotificationService::notifyGuruBk(
             title: "Laporan Observasi Baru: {$student->nama_lengkap}",
@@ -381,6 +414,35 @@ class StudentObservationController extends Controller
                 'Perilaku Diamati' => $observation->perilaku_diamati,
             ]
         );
+
+        // 2. Notifikasi ke Wali Kelas Siswa (In-App Dashboard + Email)
+        $waliKelasId = null;
+        if ($observation->class_id) {
+            $waliKelasId = DB::table('classes')->where('id', $observation->class_id)->value('wali_kelas_id');
+        } elseif ($student->class_id) {
+            $waliKelasId = DB::table('classes')->where('id', $student->class_id)->value('wali_kelas_id');
+        }
+
+        // Jangan kirim ke wali kelas jika pelapornya adalah wali kelas itu sendiri
+        if ($waliKelasId && (!$teacher || $teacher->id !== $waliKelasId)) {
+            $namaKelas = $observation->schoolClass?->nama ?? $student->schoolClass?->nama ?? 'Kelas';
+            NotificationService::notifyTeacher(
+                teacher: $waliKelasId,
+                title: "Observasi Siswa Binaan: {$student->nama_lengkap} ({$namaKelas})",
+                message: "Ustadz/ah {$namaPelapor} melaporkan catatan observasi perilaku untuk siswa binaan Anda, {$student->nama_lengkap}. Anda dapat melihat rekam jejak ini di menu Catatan Observasi.",
+                type: 'info',
+                targetUrl: "/observations",
+                sendEmail: true,
+                extraDetails: [
+                    'Nama Siswa' => $student->nama_lengkap,
+                    'Kelas' => $namaKelas,
+                    'Guru Pelapor' => $namaPelapor,
+                    'Tanggal Kejadian' => Carbon::parse($observation->tanggal)->format('d/m/Y'),
+                    'Tempat / Waktu' => ($observation->tempat ?? '-') . ' (' . ($observation->waktu ?? '-') . ')',
+                    'Perilaku Diamati' => $observation->perilaku_diamati,
+                ]
+            );
+        }
 
         return response()->json([
             'success' => true,
