@@ -3,7 +3,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import api from '../services/api'
 import { useAuthStore } from '../stores/auth'
 import { showSuccess, showError, showConfirm } from '../services/swal'
-import { formatDateIndo } from '../utils/date'
+import { formatDateIndo, toInputDate, getTodayDate } from '../utils/date'
 
 const auth = useAuthStore()
 
@@ -38,10 +38,20 @@ const currentSubView = ref<'main' | 'form-case' | 'form-log'>('main')
 const submittingCase = ref(false)
 const caseForm = ref({
   student_id: '',
-  tanggal_masuk: new Date().toISOString().split('T')[0],
+  tanggal_masuk: getTodayDate(),
   sumber_awal: 'Wali Kelas',
   fokus_pemantauan: 'Emosi/Regulasi Diri',
   status_saat_ini: 'Dalam Pemantauan',
+  review_berikutnya: '',
+  catatan_umum: '',
+})
+
+// State Edit Kasus Induk
+const isEditingCase = ref(false)
+const submittingEditCase = ref(false)
+const editCaseForm = ref({
+  fokus_pemantauan: '',
+  sumber_awal: '',
   review_berikutnya: '',
   catatan_umum: '',
 })
@@ -51,7 +61,7 @@ const isEditingLog = ref(false)
 const editingLogId = ref<number | null>(null)
 const submittingLog = ref(false)
 const logForm = ref({
-  tanggal: new Date().toISOString().split('T')[0],
+  tanggal: getTodayDate(),
   tahap: 'Pemantauan',
   sumber_data: 'Guru BK',
   observasi_temuan: '',
@@ -177,13 +187,17 @@ const reloadCaseDetail = async () => {
 
 // Open Forms
 const openNewCaseForm = () => {
+  const d = new Date()
+  d.setDate(d.getDate() + 7)
+  const next7Days = toInputDate(d)
+
   caseForm.value = {
     student_id: '',
-    tanggal_masuk: new Date().toISOString().split('T')[0],
+    tanggal_masuk: getTodayDate(),
     sumber_awal: 'Wali Kelas',
     fokus_pemantauan: 'Emosi/Regulasi Diri',
     status_saat_ini: 'Dalam Pemantauan',
-    review_berikutnya: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split('T')[0],
+    review_berikutnya: next7Days,
     catatan_umum: '',
   }
   currentSubView.value = 'form-case'
@@ -213,11 +227,66 @@ const submitNewCase = async () => {
   }
 }
 
+const openEditCaseModal = () => {
+  if (!selectedCase.value) return
+  editCaseForm.value = {
+    fokus_pemantauan: selectedCase.value.fokus_pemantauan || 'Pribadi',
+    sumber_awal: selectedCase.value.sumber_awal || 'Wali Kelas',
+    review_berikutnya: toInputDate(selectedCase.value.review_berikutnya),
+    catatan_umum: selectedCase.value.catatan_umum || '',
+  }
+  isEditingCase.value = true
+}
+
+const submitEditCase = async () => {
+  if (!selectedCase.value?.id) return
+  submittingEditCase.value = true
+  try {
+    const res = await api.put(`/bk/cases/${selectedCase.value.id}`, editCaseForm.value)
+    if (res.data.success) {
+      showSuccess('Berhasil!', 'Informasi lembar pemantauan BK berhasil diperbarui.')
+      selectedCase.value = res.data.data
+      isEditingCase.value = false
+      fetchCases(caseCurrentPage.value)
+      fetchDashboard()
+    }
+  } catch (err: any) {
+    showError('Gagal Memperbarui Kasus', err)
+  } finally {
+    submittingEditCase.value = false
+  }
+}
+
+const deleteCase = async (c: any) => {
+  const confirmed = await showConfirm(
+    'Hapus Kasus Pemantauan BK?',
+    `Seluruh data pemantauan dan riwayat sesi BK untuk siswa ${c.student?.nama_lengkap || ''} akan dihapus.`,
+    'Ya, Hapus Kasus',
+    'warning'
+  )
+  if (!confirmed) return
+
+  try {
+    const res = await api.delete(`/bk/cases/${c.id}`)
+    if (res.data.success) {
+      showSuccess('Berhasil Dihapus!', 'Kasus pemantauan BK berhasil dihapus.')
+      if (selectedCase.value?.id === c.id) {
+        selectedCase.value = null
+        activeTab.value = 'cases'
+      }
+      fetchCases(caseCurrentPage.value)
+      fetchDashboard()
+    }
+  } catch (err: any) {
+    showError('Gagal Menghapus Kasus', err)
+  }
+}
+
 const openNewLogForm = () => {
   isEditingLog.value = false
   editingLogId.value = null
   logForm.value = {
-    tanggal: new Date().toISOString().split('T')[0],
+    tanggal: getTodayDate(),
     tahap: 'Pemantauan',
     sumber_data: 'Guru BK',
     observasi_temuan: '',
@@ -237,7 +306,7 @@ const openEditLogForm = (log: any) => {
   isEditingLog.value = true
   editingLogId.value = log.id
   logForm.value = {
-    tanggal: log.tanggal ? log.tanggal.substring(0, 10) : new Date().toISOString().split('T')[0],
+    tanggal: toInputDate(log.tanggal) || getTodayDate(),
     tahap: log.tahap || 'Pemantauan',
     sumber_data: log.sumber_data || 'Guru BK',
     observasi_temuan: log.observasi_temuan || '',
@@ -316,10 +385,10 @@ const updateCaseStatus = async (newStatus: string) => {
   try {
     const res = await api.put(`/bk/cases/${selectedCase.value.id}`, {
       status_saat_ini: newStatus,
-      review_terakhir: new Date().toISOString().split('T')[0],
+      review_terakhir: getTodayDate(),
     })
     if (res.data.success) {
-      selectedCase.value.status_saat_ini = newStatus
+      selectedCase.value = res.data.data
       showSuccess('Status Diperbarui', `Status pemantauan diubah menjadi: ${newStatus}`)
       fetchDashboard()
       fetchCases(caseCurrentPage.value)
@@ -335,7 +404,7 @@ const exportExcel = async () => {
     const url = window.URL.createObjectURL(new Blob([res.data]))
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `Rekap_Analisis_dan_Monitoring_BK_${new Date().toISOString().split('T')[0]}.xlsx`)
+    link.setAttribute('download', `Rekap_Analisis_dan_Monitoring_BK_${getTodayDate()}.xlsx`)
     document.body.appendChild(link)
     link.click()
     link.remove()
@@ -403,7 +472,7 @@ onMounted(async () => {
   await Promise.all([
     fetchDashboard(),
     fetchCases(1),
-    api.get('/students?per_page=150').then((res) => {
+    api.get('/students?per_page=500').then((res) => {
       if (res.data.success) students.value = res.data.data || []
     }),
     api.get('/classes').then((res) => {
@@ -848,17 +917,29 @@ onMounted(async () => {
                     {{ c.review_berikutnya ? formatDateIndo(c.review_berikutnya) : '—' }}
                   </td>
                   <td class="py-3.5 px-4 text-center">
-                    <button
-                      @click="selectCaseForDetail(c)"
-                      type="button"
-                      class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-200 transition cursor-pointer"
-                    >
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      <span>Buka Tab Siswa ({{ c.logs_count || 0 }})</span>
-                    </button>
+                    <div class="inline-flex items-center gap-1">
+                      <button
+                        @click="selectCaseForDetail(c)"
+                        type="button"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-200 transition cursor-pointer"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <span>Buka Tab Siswa ({{ c.logs_count || 0 }})</span>
+                      </button>
+                      <button
+                        @click="deleteCase(c)"
+                        type="button"
+                        class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                        title="Hapus Kasus Pemantauan BK"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -907,14 +988,36 @@ onMounted(async () => {
                   </div>
                   <div class="text-xs text-gray-500 mt-1 flex flex-wrap gap-x-4 gap-y-1">
                     <span>Kelas: <strong>{{ getClassName(selectedCase) }}</strong></span>
-                    <span>Wali Kelas: <strong>{{ selectedCase.homeroom_teacher?.nama_lengkap || 'Rasiti, S.Pd.' }}</strong></span>
-                    <span>Guru BK: <strong>{{ selectedCase.bk_teacher?.nama_lengkap || 'Nur Kafi Ramadhani, S.Psi.' }}</strong></span>
+                    <span>Wali Kelas: <strong>{{ selectedCase.homeroom_teacher?.nama_lengkap || selectedCase.school_class?.homeroom_teacher?.nama_lengkap || '-' }}</strong></span>
+                    <span>Guru BK: <strong>{{ selectedCase.bk_teacher?.nama_lengkap || '-' }}</strong></span>
                   </div>
                 </div>
               </div>
 
-              <!-- Quick Status Update Bar -->
+              <!-- Quick Action Bar Tab Siswa -->
               <div class="flex flex-wrap items-center gap-2 self-start md:self-auto">
+                <button
+                  @click="openEditCaseModal"
+                  type="button"
+                  class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                  title="Edit Fokus, Tanggal Review, dan Catatan Kasus"
+                >
+                  <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  <span>Edit Info Kasus</span>
+                </button>
+                <button
+                  @click="deleteCase(selectedCase)"
+                  type="button"
+                  class="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 transition cursor-pointer"
+                  title="Hapus Kasus Pemantauan BK"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  <span>Hapus</span>
+                </button>
                 <button
                   @click="openNewLogForm"
                   type="button"
@@ -929,7 +1032,7 @@ onMounted(async () => {
             </div>
 
             <!-- Detail Grid Informasi Pokok -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
               <div class="p-3 bg-slate-50 rounded-2xl">
                 <span class="text-gray-400 text-[10px] block">Tanggal Masuk:</span>
                 <strong class="text-gray-800">{{ formatDateIndo(selectedCase.tanggal_masuk) }}</strong>
@@ -943,6 +1046,10 @@ onMounted(async () => {
                 <strong class="text-indigo-700">{{ selectedCase.fokus_pemantauan }}</strong>
               </div>
               <div class="p-3 bg-slate-50 rounded-2xl">
+                <span class="text-gray-400 text-[10px] block">Review Berikutnya:</span>
+                <strong class="text-emerald-700 font-mono">{{ selectedCase.review_berikutnya ? formatDateIndo(selectedCase.review_berikutnya) : '—' }}</strong>
+              </div>
+              <div class="p-3 bg-slate-50 rounded-2xl">
                 <span class="text-gray-400 text-[10px] block">Ubah Status Terkini:</span>
                 <select
                   :value="selectedCase.status_saat_ini"
@@ -952,6 +1059,83 @@ onMounted(async () => {
                   <option v-for="st in statusList" :key="st" :value="st">{{ st }}</option>
                 </select>
               </div>
+            </div>
+
+            <div v-if="selectedCase.catatan_umum" class="p-3 bg-slate-50 rounded-2xl text-xs">
+              <span class="text-gray-400 text-[10px] font-bold uppercase tracking-wider block">Catatan Umum / Gambaran Kasus:</span>
+              <p class="text-gray-700 mt-1 italic">{{ selectedCase.catatan_umum }}</p>
+            </div>
+          </div>
+
+          <!-- Modal Edit Kasus Induk BK -->
+          <div v-if="isEditingCase" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
+            <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4 border border-gray-100">
+              <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h3 class="text-base font-black text-gray-900">Edit Informasi Kasus Pemantauan</h3>
+                <button @click="isEditingCase = false" class="text-gray-400 hover:text-gray-600 text-lg cursor-pointer">&times;</button>
+              </div>
+
+              <form @submit.prevent="submitEditCase" class="space-y-4 text-xs">
+                <div>
+                  <label class="block font-bold text-gray-700 mb-1">Fokus Pemantauan BK *</label>
+                  <select
+                    v-model="editCaseForm.fokus_pemantauan"
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:bg-white focus:outline-none"
+                    required
+                  >
+                    <option v-for="f in focusList" :key="f" :value="f">{{ f }}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block font-bold text-gray-700 mb-1">Sumber Awal *</label>
+                  <select
+                    v-model="editCaseForm.sumber_awal"
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:bg-white focus:outline-none"
+                  >
+                    <option value="Wali Kelas">Wali Kelas</option>
+                    <option value="Guru Tema">Guru Tema</option>
+                    <option value="Guru BK">Guru BK</option>
+                    <option value="Orang Tua">Orang Tua</option>
+                    <option value="Siswa">Siswa</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block font-bold text-gray-700 mb-1">Agenda Review / Evaluasi Berikutnya</label>
+                  <input
+                    v-model="editCaseForm.review_berikutnya"
+                    type="date"
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:bg-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label class="block font-bold text-gray-700 mb-1">Catatan Umum Kasus</label>
+                  <textarea
+                    v-model="editCaseForm.catatan_umum"
+                    rows="3"
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-gray-800 focus:bg-white focus:outline-none"
+                  ></textarea>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                  <button
+                    @click="isEditingCase = false"
+                    type="button"
+                    class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    :disabled="submittingEditCase"
+                    type="submit"
+                    class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition disabled:opacity-50 cursor-pointer"
+                  >
+                    {{ submittingEditCase ? 'Menyimpan...' : 'Simpan Perubahan' }}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
 

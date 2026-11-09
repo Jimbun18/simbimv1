@@ -29,9 +29,9 @@ class BkCounselingCase extends Model
     ];
 
     protected $casts = [
-        'tanggal_masuk' => 'date',
-        'review_terakhir' => 'date',
-        'review_berikutnya' => 'date',
+        'tanggal_masuk' => 'date:Y-m-d',
+        'review_terakhir' => 'date:Y-m-d',
+        'review_berikutnya' => 'date:Y-m-d',
     ];
 
     public function student(): BelongsTo

@@ -72,17 +72,20 @@ class BkMonitoringController extends Controller
         $sesuaiHarapan = (clone $baseQuery)->where('status_saat_ini', 'Sesuai Harapan')->count();
         $memerlukanPerhatian = (clone $baseQuery)->where('status_saat_ini', 'Memerlukan Perhatian')->count();
 
-        // 2. Agenda Review
+        // 2. Agenda Review (Hanya kasus yang masih aktif/belum selesai pemantauan)
         $today = Carbon::today()->format('Y-m-d');
         $sevenDaysLater = Carbon::today()->addDays(7)->format('Y-m-d');
 
-        $perluReview = (clone $baseQuery)->whereNotNull('review_berikutnya')->whereDate('review_berikutnya', '<=', $today)->count();
-        $reviewMingguIni = (clone $baseQuery)->whereNotNull('review_berikutnya')->whereBetween('review_berikutnya', [$today, $sevenDaysLater])->count();
-        $reviewBerikutnya = (clone $baseQuery)->whereNotNull('review_berikutnya')->whereDate('review_berikutnya', '>', $sevenDaysLater)->count();
-
-        $upcomingReviews = (clone $baseQuery)
-            ->with(['student:id,nis,nama_lengkap,foto_path', 'schoolClass:id,nama,tingkat'])
+        $activeReviewQuery = (clone $baseQuery)
             ->whereNotNull('review_berikutnya')
+            ->where('status_saat_ini', '!=', 'Sesuai Harapan');
+
+        $perluReview = (clone $activeReviewQuery)->whereDate('review_berikutnya', '<', $today)->count();
+        $reviewMingguIni = (clone $activeReviewQuery)->whereBetween('review_berikutnya', [$today, $sevenDaysLater])->count();
+        $reviewBerikutnya = (clone $activeReviewQuery)->whereDate('review_berikutnya', '>', $sevenDaysLater)->count();
+
+        $upcomingReviews = (clone $activeReviewQuery)
+            ->with(['student:id,nis,nama_lengkap,foto_path', 'schoolClass:id,nama,tingkat'])
             ->orderBy('review_berikutnya', 'asc')
             ->limit(8)
             ->get();
@@ -127,11 +130,22 @@ class BkMonitoringController extends Controller
         // 5. Distribusi Sumber Awal
         $sumberAwalList = ['Wali Kelas', 'Guru Tema', 'Guru BK', 'Orang Tua', 'Siswa'];
         $distribusiSumber = [];
+        $matchedCount = 0;
         foreach ($sumberAwalList as $sumber) {
             $count = (clone $baseQuery)->where('sumber_awal', 'like', "%{$sumber}%")->count();
+            $matchedCount += $count;
             $distribusiSumber[] = [
                 'sumber' => $sumber,
                 'jumlah' => $count,
+            ];
+        }
+
+        // Tangkap sumber rujukan observasi guru pelapor spesifik
+        $lainnyaCount = max(0, $totalCases - $matchedCount);
+        if ($lainnyaCount > 0) {
+            $distribusiSumber[] = [
+                'sumber' => 'Rujukan Observasi / Lainnya',
+                'jumlah' => $lainnyaCount,
             ];
         }
 
@@ -166,12 +180,18 @@ class BkMonitoringController extends Controller
     {
         if ($res = $this->checkGuruBk($request)) return $res;
 
+        $activeYear = AcademicYear::getActive() ?? AcademicYear::first();
+
         $query = BkCounselingCase::with([
             'student:id,nis,nama_lengkap,jenis_kelamin,foto_path,class_id',
             'schoolClass:id,nama,tingkat',
             'homeroomTeacher:id,nama_lengkap,jabatan',
             'bkTeacher:id,nama_lengkap,jabatan',
         ])->withCount('logs');
+
+        if ($activeYear) {
+            $query->where('academic_year_id', $activeYear->id);
+        }
 
         if ($request->filled('class_id')) {
             $query->where('class_id', $request->query('class_id'));
@@ -231,6 +251,18 @@ class BkMonitoringController extends Controller
         $student = Student::findOrFail($validated['student_id']);
         $activeYear = AcademicYear::getActive() ?? AcademicYear::first();
         $user = $request->user();
+
+        // Validasi duplikasi kasus aktif di tahun ajaran berjalan
+        $existing = BkCounselingCase::where('student_id', $student->id)
+            ->where('academic_year_id', $activeYear?->id)
+            ->first();
+        if ($existing) {
+            return response()->json([
+                'success' => false,
+                'message' => "Siswa {$student->nama_lengkap} sudah terdaftar di lembar pemantauan BK tahun ajaran aktif.",
+                'data' => $existing,
+            ], 422);
+        }
 
         $validated['academic_year_id'] = $activeYear?->id;
         $validated['class_id'] = $student->class_id;
@@ -405,6 +437,18 @@ class BkMonitoringController extends Controller
         $validated['updated_by'] = $request->user()->id;
         $log->update($validated);
 
+        // Sinkronkan status kasus induk jika log ini adalah log sesi terbaru
+        $counselingCase = $log->counselingCase;
+        if ($counselingCase) {
+            $latestLog = $counselingCase->logs()->orderBy('tanggal', 'desc')->orderBy('id', 'desc')->first();
+            if ($latestLog && $latestLog->id === $log->id) {
+                $counselingCase->update([
+                    'status_saat_ini' => $log->status,
+                    'review_terakhir' => $log->tanggal,
+                ]);
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Log pemantauan BK berhasil diperbarui.',
@@ -419,7 +463,19 @@ class BkMonitoringController extends Controller
     {
         if ($res = $this->checkGuruBk($request)) return $res;
 
+        $counselingCase = $log->counselingCase;
         $log->delete();
+
+        // Sinkronkan kembali status kasus induk ke log sebelumnya yang tersisa
+        if ($counselingCase) {
+            $latestRemainingLog = $counselingCase->logs()->orderBy('tanggal', 'desc')->orderBy('id', 'desc')->first();
+            if ($latestRemainingLog) {
+                $counselingCase->update([
+                    'status_saat_ini' => $latestRemainingLog->status,
+                    'review_terakhir' => $latestRemainingLog->tanggal,
+                ]);
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -430,8 +486,10 @@ class BkMonitoringController extends Controller
     /**
      * Ekspor Rekapitulasi Pemantauan BK ke Excel.
      */
-    public function exportExcel(Request $request): StreamedResponse
+    public function exportExcel(Request $request): StreamedResponse|JsonResponse
     {
+        if ($res = $this->checkGuruBk($request)) return $res;
+
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('DAFTAR PEMANTAUAN');
@@ -456,7 +514,12 @@ class BkMonitoringController extends Controller
         $sheet->getStyle('A1:I1')->applyFromArray($headerStyle);
         $sheet->getRowDimension(1)->setRowHeight(28);
 
-        $cases = BkCounselingCase::with(['student', 'schoolClass'])->orderBy('tanggal_masuk', 'desc')->get();
+        $activeYear = AcademicYear::getActive() ?? AcademicYear::first();
+        $query = BkCounselingCase::with(['student', 'schoolClass'])->orderBy('tanggal_masuk', 'desc');
+        if ($activeYear) {
+            $query->where('academic_year_id', $activeYear->id);
+        }
+        $cases = $query->get();
         $row = 2;
         foreach ($cases as $idx => $c) {
             $sheet->setCellValue('A' . $row, $idx + 1);

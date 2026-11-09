@@ -26,7 +26,8 @@ class ClassController extends Controller
             ->withCount(['enrollments', 'activeStudents']);
 
         // RBAC: Jika pengguna adalah Guru (bukan admin), batasi hanya rombel yang diampu (wali kelas / jadwal mengajar)
-        if ($user && $user->isTeacher() && !$user->isAdmin()) {
+        // Pengecualian: Guru BK dapat melihat seluruh kelas untuk distribusi asesmen BK
+        if ($user && $user->isTeacher() && !$user->isAdmin() && !$user->isGuruBk()) {
             $teacher = $user->teacher;
             if ($teacher) {
                 $homeroomIds = SchoolClass::where('wali_kelas_id', $teacher->id)->pluck('id');

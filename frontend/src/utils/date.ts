@@ -40,6 +40,17 @@ export const calculateTenure = (startDateStr: string | null | undefined, endDate
  */
 export const formatDateIndo = (dateStr: string | null | undefined): string => {
   if (!dateStr) return '-';
+  if (typeof dateStr === 'string') {
+    // Tangani format YYYY-MM-DD secara langsung sebagai tanggal lokal tanpa konversi zona waktu
+    const dateOnlyMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dateOnlyMatch) {
+      const year = parseInt(dateOnlyMatch[1], 10);
+      const month = parseInt(dateOnlyMatch[2], 10) - 1;
+      const day = parseInt(dateOnlyMatch[3], 10);
+      const d = new Date(year, month, day);
+      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+  }
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return '-';
   return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -58,6 +69,17 @@ export const formatDateTimeIndo = (dateStr: string | null | undefined): string =
 };
 
 /**
+ * Mengembalikan tanggal hari ini dalam format lokal 'YYYY-MM-DD' (bebas dari distorsi UTC).
+ */
+export const getTodayDate = (): string => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+/**
  * Mengonversi tanggal ke format 'YYYY-MM-DD' yang dibutuhkan oleh <input type="date">.
  * Menangani format string ISO (misal '2024-05-15T00:00:00Z'), 'YYYY-MM-DD', atau Date object tanpa pergeseran zona waktu.
  */
@@ -65,8 +87,14 @@ export const toInputDate = (val: any): string => {
   if (!val) return '';
   if (typeof val === 'string') {
     if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
-    const match = val.match(/^(\d{4}-\d{2}-\d{2})/);
-    if (match) return match[1];
+    // Jika format ISO string UTC/timestamp, parse ke tanggal lokal browser (WIB)
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
   }
   try {
     const d = new Date(val);

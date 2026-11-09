@@ -35,7 +35,8 @@ class StudentController extends Controller
         $user = $request->user();
 
         // RBAC Filter: Guru can only see students in classes they teach/homeroom (OQ-05 / PRD §7)
-        if ($user->isTeacher() && $user->teacher) {
+        // Pengecualian: Guru BK dapat mengakses data seluruh siswa untuk analisis konseling
+        if ($user->isTeacher() && $user->teacher && !$user->isGuruBk()) {
             $teacherId = $user->teacher->id;
             $classIds = DB::table('classes')->where('wali_kelas_id', $teacherId)->pluck('id')
                 ->merge(DB::table('teacher_assignments')->where('teacher_id', $teacherId)->pluck('class_id'))

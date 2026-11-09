@@ -35,7 +35,7 @@ class StudentObservation extends Model
     ];
 
     protected $casts = [
-        'tanggal' => 'date',
+        'tanggal' => 'date:Y-m-d',
         'rekomendasi_bk_at' => 'datetime',
         'dilihat_bk_at' => 'datetime',
         'is_escalated_to_bk' => 'boolean',
