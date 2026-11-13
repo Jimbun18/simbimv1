@@ -4,6 +4,7 @@ import api from '../services/api'
 import { useAuthStore } from '../stores/auth'
 import { showSuccess, showError, showConfirm } from '../services/swal'
 import { formatDateIndo, toInputDate, getTodayDate } from '../utils/date'
+import InfoTooltip from '../components/common/InfoTooltip.vue'
 
 const auth = useAuthStore()
 
@@ -579,12 +580,12 @@ onMounted(async () => {
               </span>
               <span class="text-xs text-gray-400 font-mono">T.A. 2026/2027</span>
             </div>
-            <h1 class="text-xl sm:text-2xl font-black text-gray-900 leading-tight mt-1">
-              Analisis & Monitoring Bimbingan Konseling (BK)
-            </h1>
-            <p class="text-xs text-gray-500 mt-0.5">
-              Sistem asesmen psikologi perkembangan, pemantauan kasus longitudinal, dan rekam jejak intervensi peserta didik.
-            </p>
+            <div class="inline-flex items-center gap-2 mt-1">
+              <h1 class="text-xl sm:text-2xl font-black text-gray-900 leading-tight">
+                Monitoring Bimbingan Konseling (BK)
+              </h1>
+              <InfoTooltip text="Sistem asesmen psikologi perkembangan, pemantauan kasus longitudinal, dan rekam jejak intervensi peserta didik." />
+            </div>
           </div>
         </div>
 

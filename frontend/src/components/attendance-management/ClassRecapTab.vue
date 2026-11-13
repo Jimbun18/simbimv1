@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import api from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
 import { getPhotoUrl, getInitials } from './types'
+import InfoTooltip from '../common/InfoTooltip.vue'
 
 const props = defineProps<{
   classes: any[]
@@ -446,8 +447,18 @@ defineExpose({
               <th class="py-3 px-3 text-center w-14 text-amber-700 bg-amber-50/40">Izin</th>
               <th class="py-3 px-3 text-center w-14 text-rose-700 bg-rose-50/40">Alpa</th>
               <th class="py-3 px-3 text-center w-20">Total Absen</th>
-              <th class="py-3 px-4 text-center min-w-[140px]">% Kehadiran</th>
-              <th class="py-3 px-3 text-center w-28">Predikat</th>
+              <th class="py-3 px-4 text-center min-w-[140px]">
+                <div class="inline-flex items-center justify-center gap-1">
+                  <span>% Hadir</span>
+                  <InfoTooltip size="xs" text="Persentase kehadiran = (Hadir / Total Pertemuan) × 100%." />
+                </div>
+              </th>
+              <th class="py-3 px-3 text-center w-28">
+                <div class="inline-flex items-center justify-center gap-1">
+                  <span>Predikat</span>
+                  <InfoTooltip size="xs" text="Sangat Baik (≥90%), Baik (≥80%), Cukup (≥70%), Perlu Binaan (<70%)." />
+                </div>
+              </th>
               <th class="py-3 px-4 text-center w-28">Rincian Mapel</th>
             </tr>
           </thead>

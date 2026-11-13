@@ -18,6 +18,7 @@ import CashierPaymentForm from '../components/finance/CashierPaymentForm.vue'
 import OfficialReceiptSheet from '../components/finance/OfficialReceiptSheet.vue'
 import CashTransactionForm from '../components/finance/CashTransactionForm.vue'
 import FeeTypeForm from '../components/finance/FeeTypeForm.vue'
+import InfoTooltip from '../components/common/InfoTooltip.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -484,118 +485,71 @@ onMounted(async () => {
 
     <!-- VIEW MODE 1: MAIN DASHBOARD TABS -->
     <div v-if="viewMode === 'main'" class="space-y-6">
-      <!-- Header Banner -->
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-800 p-6 sm:p-7 rounded-3xl text-white shadow-xl shadow-emerald-950/10">
-        <div class="space-y-1">
-          <div class="flex items-center gap-2">
-            <span class="px-3 py-1 bg-emerald-500/30 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider text-emerald-100 border border-emerald-300/30">
-              Sistem Keuangan Terpadu
-            </span>
-          </div>
-          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Manajemen Keuangan & SPP</h1>
-          <p class="text-sm text-emerald-100/90 max-w-2xl">
-            Kelola tagihan SPP siswa, kasir penerimaan pembayaran, penerbitan kuitansi resmi, dan buku kas operasional SDI Bina Insan Mandiri.
-          </p>
-        </div>
+      <!-- Header Minimalis & Rapi -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-xs">
         <div class="flex items-center gap-2.5">
+          <h1 class="text-lg sm:text-xl font-bold text-slate-900 leading-tight">Keuangan & SPP</h1>
+          <InfoTooltip text="Pusat pengelolaan tagihan SPP siswa, kasir penerimaan pembayaran, penerbitan kuitansi resmi, dan buku kas operasional SDI Bina Insan Mandiri." />
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
           <button 
             v-if="activeTab === 'invoices' || activeTab === 'payments'"
             @click="switchTab('batch')"
-            class="bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 active:scale-95 cursor-pointer"
+            class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow-xs transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
           >
             <span>+ Generate SPP Massal</span>
           </button>
           <button 
             v-else-if="activeTab === 'cashbook'"
             @click="openCashForm"
-            class="bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 active:scale-95 cursor-pointer"
+            class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow-xs transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
           >
             <span>+ Catat Transaksi Kas</span>
           </button>
           <button 
             v-else-if="activeTab === 'fee_types'"
             @click="openFeeTypeForm()"
-            class="bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 active:scale-95 cursor-pointer"
+            class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow-xs transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
           >
             <span>+ Tambah Jenis Biaya</span>
           </button>
         </div>
       </div>
 
-      <!-- KPI Finance Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Tagihan</span>
-          <h3 class="text-2xl font-black text-slate-800 mt-1">{{ formatRupiah(summary.total_invoiced) }}</h3>
-          <span class="text-[11px] text-slate-500 font-medium">Tahun Ajaran Berjalan</span>
+      <!-- KPI Finance Cards Minimalis -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Tagihan</span>
+            <InfoTooltip size="xs" text="Akumulasi seluruh tagihan siswa pada tahun ajaran berjalan." />
+          </div>
+          <h3 class="text-xl font-black text-slate-800 mt-1.5">{{ formatRupiah(summary.total_invoiced) }}</h3>
+          <span class="text-[10px] text-slate-400 mt-1">Tahun Ajaran Aktif</span>
         </div>
-        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Terbayar</span>
-          <h3 class="text-2xl font-black text-emerald-600 mt-1">{{ formatRupiah(summary.total_paid) }}</h3>
-          <span class="text-[11px] text-emerald-700 font-semibold">Realisasi Penerimaan Kasir</span>
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Terbayar</span>
+            <InfoTooltip size="xs" text="Realisasi penerimaan dana SPP yang sudah disahkan kasir." />
+          </div>
+          <h3 class="text-xl font-black text-emerald-600 mt-1.5">{{ formatRupiah(summary.total_paid) }}</h3>
+          <span class="text-[10px] text-emerald-600 mt-1">Penerimaan Kasir</span>
         </div>
-        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sisa Piutang</span>
-          <h3 class="text-2xl font-black text-rose-600 mt-1">{{ formatRupiah(summary.total_remaining) }}</h3>
-          <span class="text-[11px] text-rose-600 font-medium">Belum Dilunasi</span>
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sisa Piutang</span>
+            <InfoTooltip size="xs" text="Sisa tagihan siswa yang belum lunas atau menunggak." />
+          </div>
+          <h3 class="text-xl font-black text-rose-600 mt-1.5">{{ formatRupiah(summary.total_remaining) }}</h3>
+          <span class="text-[10px] text-rose-600 mt-1">Tunggakan Siswa</span>
         </div>
-        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Saldo Kas Operasional</span>
-          <h3 class="text-2xl font-black text-indigo-700 mt-1">{{ formatRupiah(cashbookSummary.saldo) }}</h3>
-          <span class="text-[11px] text-indigo-600 font-semibold">Buku Kas Umum</span>
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Saldo Kas</span>
+            <InfoTooltip size="xs" text="Saldo bersih buku kas umum (kas masuk dikurangi kas keluar)." />
+          </div>
+          <h3 class="text-xl font-black text-indigo-700 mt-1.5">{{ formatRupiah(cashbookSummary.saldo) }}</h3>
+          <span class="text-[10px] text-indigo-600 mt-1">Kas Operasional</span>
         </div>
-      </div>
-
-      <!-- Tab Navigation Switcher -->
-      <div class="flex items-center gap-2 border-b border-slate-200/80 pb-2 overflow-x-auto">
-        <button
-          @click="switchTab('invoices')"
-          :class="activeTab === 'invoices' ? 'bg-emerald-600 text-white shadow-xs font-bold' : 'bg-white text-slate-600 hover:bg-slate-100 font-semibold'"
-          class="px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap flex items-center gap-1.5"
-        >
-          <span>📋</span>
-          <span>Tagihan Siswa</span>
-        </button>
-        <button
-          @click="switchTab('payments')"
-          :class="activeTab === 'payments' ? 'bg-emerald-600 text-white shadow-xs font-bold' : 'bg-white text-slate-600 hover:bg-slate-100 font-semibold'"
-          class="px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap flex items-center gap-1.5"
-        >
-          <span>🧾</span>
-          <span>Riwayat Kuitansi</span>
-        </button>
-        <button
-          @click="switchTab('student_recap')"
-          :class="activeTab === 'student_recap' ? 'bg-emerald-600 text-white shadow-xs font-bold' : 'bg-white text-slate-600 hover:bg-slate-100 font-semibold'"
-          class="px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap flex items-center gap-1.5"
-        >
-          <span>📊</span>
-          <span>Rekap Keuangan Siswa</span>
-        </button>
-        <button
-          @click="switchTab('batch')"
-          :class="activeTab === 'batch' ? 'bg-emerald-600 text-white shadow-xs font-bold' : 'bg-white text-slate-600 hover:bg-slate-100 font-semibold'"
-          class="px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap flex items-center gap-1.5"
-        >
-          <span>⚡</span>
-          <span>Generate Massal</span>
-        </button>
-        <button
-          @click="switchTab('cashbook')"
-          :class="activeTab === 'cashbook' ? 'bg-emerald-600 text-white shadow-xs font-bold' : 'bg-white text-slate-600 hover:bg-slate-100 font-semibold'"
-          class="px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap flex items-center gap-1.5"
-        >
-          <span>💰</span>
-          <span>Buku Kas</span>
-        </button>
-        <button
-          @click="switchTab('fee_types')"
-          :class="activeTab === 'fee_types' ? 'bg-emerald-600 text-white shadow-xs font-bold' : 'bg-white text-slate-600 hover:bg-slate-100 font-semibold'"
-          class="px-4 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap flex items-center gap-1.5"
-        >
-          <span>⚙️</span>
-          <span>Tarif & Biaya</span>
-        </button>
       </div>
 
       <!-- TAB 1: INVOICES -->

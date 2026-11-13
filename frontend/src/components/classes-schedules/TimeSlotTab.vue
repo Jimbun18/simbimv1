@@ -1,10 +1,7 @@
 <template>
   <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
     <div class="p-4 border-b border-gray-100 flex items-center justify-between">
-      <div>
-        <h2 class="text-sm font-bold text-gray-900">Alokasi Waktu Sesi Pembelajaran (Time Slots)</h2>
-        <p class="text-xs text-gray-500 mt-0.5">Daftar sesi belajar dan istirahat yang berlaku pada jadwal KBM mingguan.</p>
-      </div>
+      <h2 class="text-sm font-bold text-gray-900">Alokasi Sesi Jam Pelajaran</h2>
       <button
         @click="fetchSlots"
         class="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 transition cursor-pointer"

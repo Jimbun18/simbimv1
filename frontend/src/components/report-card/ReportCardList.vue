@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
 import { showConfirm, showWarning } from '../../services/swal';
+import InfoTooltip from '../common/InfoTooltip.vue';
 
 const props = defineProps<{
   currentSubMenu?: string;
@@ -911,9 +912,24 @@ defineExpose({
               <th class="py-3 px-4 w-12 text-center">No</th>
               <th class="py-3 px-4">Nama Peserta Didik</th>
               <th class="py-3 px-4 w-32">NIS / NISN</th>
-              <th class="py-3 px-4 w-40 text-center">Kelengkapan Nilai</th>
-              <th class="py-3 px-4 w-44 text-center">Status Validasi</th>
-              <th class="py-3 px-4 w-36 text-center">Kehadiran (S/I/A)</th>
+              <th class="py-3 px-4 w-40 text-center">
+                <div class="inline-flex items-center justify-center gap-1">
+                  <span>Kelengkapan Nilai</span>
+                  <InfoTooltip size="xs" text="Jumlah mata pelajaran yang sudah terisi nilainya dibanding total mapel." />
+                </div>
+              </th>
+              <th class="py-3 px-4 w-44 text-center">
+                <div class="inline-flex items-center justify-center gap-1">
+                  <span>Status Validasi</span>
+                  <InfoTooltip size="xs" text="Draft Wali Kelas → Menunggu Validasi Kepala Sekolah → Final (Disetujui)." />
+                </div>
+              </th>
+              <th class="py-3 px-4 w-36 text-center">
+                <div class="inline-flex items-center justify-center gap-1">
+                  <span>Kehadiran</span>
+                  <InfoTooltip size="xs" text="Sakit (S), Izin (I), dan Alpa (A) yang terhubung ke lembar rapor." />
+                </div>
+              </th>
               <th class="py-3 px-4 w-56 text-right">Aksi</th>
             </tr>
           </thead>

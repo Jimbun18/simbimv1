@@ -267,3 +267,4 @@ Sistem ini tidak hanya menyelesaikan permasalahan klasik administrasi manual ber
 
 ---
 *Laporan ini disusun secara resmi untuk memenuhi persyaratan Penilaian Proyek Akhir dan Pameran Karya Digital Kreatif Tahun 2026.*
+

@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import api from '../services/api';
 import { useAuthStore } from '../stores/auth';
 import { showConfirm } from '../services/swal';
+import InfoTooltip from '../components/common/InfoTooltip.vue';
 
 const auth = useAuthStore();
 
@@ -456,33 +457,32 @@ onMounted(() => {
             <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
               Buku Nilai Siswa
             </h1>
+            <InfoTooltip :text="isWaliKelas 
+              ? 'Wali Kelas memantau seluruh nilai Ulangan Harian (UH) yang dikirim oleh Guru Mapel, serta melengkapi nilai SAS/Rapor.' 
+              : 'Guru Mata Pelajaran bertugas menginput nilai Ulangan Harian (UH 1, UH 2, dst.), lalu mengirimkannya ke Wali Kelas.'" />
             <span
               v-if="isWaliKelas"
               class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200"
             >
-              👑 Mode Wali Kelas (Lihat Seluruh Nilai Mapel)
+              👑 Mode Wali Kelas
             </span>
             <span
               v-else
               class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-sky-100 text-sky-800 border border-sky-200"
             >
-              👨‍🏫 Mode Guru Mapel (Input Nilai Ulangan Harian)
+              👨‍🏫 Mode Guru Mapel
             </span>
           </div>
-          <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
-            {{ isWaliKelas 
-              ? 'Wali Kelas memantau seluruh nilai Ulangan Harian (UH) yang dikirim oleh Guru Mapel, serta melengkapi nilai SAS/Rapor.' 
-              : 'Guru Mata Pelajaran bertugas menginput nilai Ulangan Harian (UH 1, UH 2, dst.), lalu mengirimkannya ke Wali Kelas.' }}
-          </p>
         </div>
       </div>
 
       <!-- FORMULA CALLOUT PILL -->
-      <div class="self-start lg:self-center shrink-0 bg-gradient-to-r from-indigo-50 to-emerald-50 border border-indigo-200/80 rounded-2xl px-4 py-2 text-xs flex items-center gap-2.5 shadow-2xs">
-        <span class="text-slate-600 font-bold">Rumus Nilai Rapor:</span>
-        <span class="font-mono font-black text-indigo-900 bg-white px-2.5 py-1 rounded-lg border border-indigo-200 shadow-2xs text-xs">
-          NR = (3 &times; RUH + 2 &times; PSAS) : 5
+      <div class="self-start lg:self-center shrink-0 bg-gradient-to-r from-indigo-50 to-emerald-50 border border-indigo-200/80 rounded-2xl px-4 py-2 text-xs flex items-center gap-2 shadow-2xs">
+        <span class="text-slate-600 font-bold">Rumus Nilai:</span>
+        <span class="font-mono font-black text-indigo-900 bg-white px-2 py-0.5 rounded-lg border border-indigo-200 shadow-2xs text-xs">
+          (3&times;RUH + 2&times;PSAS) : 5
         </span>
+        <InfoTooltip size="xs" text="RUH: Rata-rata Ulangan Harian (bobot 3). PSAS: Penilaian Sumatif Akhir Semester (bobot 2). Pembagi: 5." />
       </div>
     </div>
 
@@ -862,24 +862,38 @@ onMounted(() => {
               </th>
 
               <!-- RUH (RATA-RATA ULANGAN HARIAN OTOMATIS) -->
-              <th class="py-3 px-2 text-center w-20 border-r border-slate-200 bg-amber-100/80 text-amber-950 font-black" title="Rata-rata Ulangan Harian dihitung otomatis">
-                RUH
+              <th class="py-3 px-2 text-center w-20 border-r border-slate-200 bg-amber-100/80 text-amber-950 font-black">
+                <div class="inline-flex items-center justify-center gap-1">
+                  <span>RUH</span>
+                  <InfoTooltip size="xs" text="Rata-rata Ulangan Harian (dihitung otomatis)." />
+                </div>
               </th>
 
               <!-- KOLOM KHUSUS WALI KELAS: PSAS, NR, PREDIKAT -->
               <template v-if="isWaliKelas">
                 <!-- PSAS (PENILAIAN SUMATIF AKHIR SEMESTER) -->
-                <th class="py-3 px-2 text-center w-24 border-r border-slate-200 bg-sky-50 text-sky-950 font-black" title="Penilaian Sumatif Akhir Semester (Wali Kelas)">
-                  PSAS
+                <th class="py-3 px-2 text-center w-24 border-r border-slate-200 bg-sky-50 text-sky-950 font-black">
+                  <div class="inline-flex items-center justify-center gap-1">
+                    <span>PSAS</span>
+                    <InfoTooltip size="xs" text="Penilaian Sumatif Akhir Semester (diinput Wali Kelas)." />
+                  </div>
                 </th>
 
                 <!-- NR (NILAI RAPOR OTOMATIS RUMUS) -->
-                <th class="py-3 px-2 text-center w-28 border-r border-slate-200 bg-emerald-50 text-emerald-950 font-black" title="Rumus: (3 * RUH + 2 * PSAS) / 5">
-                  NR (Rapor)
+                <th class="py-3 px-2 text-center w-28 border-r border-slate-200 bg-emerald-50 text-emerald-950 font-black">
+                  <div class="inline-flex items-center justify-center gap-1">
+                    <span>NR</span>
+                    <InfoTooltip size="xs" text="Nilai Rapor resmi: (3 × RUH + 2 × PSAS) / 5." />
+                  </div>
                 </th>
 
                 <!-- PREDIKAT -->
-                <th class="py-3 px-2 text-center w-16 border-r border-slate-200">Predikat</th>
+                <th class="py-3 px-2 text-center w-16 border-r border-slate-200">
+                  <div class="inline-flex items-center justify-center gap-1">
+                    <span>Predikat</span>
+                    <InfoTooltip size="xs" text="Kategori: A (>92), B (>83), C (≥75), D (<75)." />
+                  </div>
+                </th>
               </template>
 
               <!-- CAPAIAN KOMPETENSI / CATATAN -->

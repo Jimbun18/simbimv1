@@ -242,15 +242,10 @@ defineExpose({
     <!-- Panel 1: Master Tahun Ajaran & Semester Aktif -->
     <div class="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs space-y-5">
       <div class="border-b border-slate-100 pb-4">
-        <div>
-          <h2 class="text-base font-black text-slate-900 flex items-center gap-2">
-            <span>🗓️</span>
-            <span>Tahun Ajaran & Semester Aktif</span>
-          </h2>
-          <p class="text-xs text-slate-500 mt-0.5">
-            Pengaturan manual pergantian semester kalender sekolah dan aktivasi tahun ajaran baru.
-          </p>
-        </div>
+        <h2 class="text-base font-black text-slate-900 flex items-center gap-1.5">
+          <span>🗓️</span>
+          <span>Tahun Ajaran & Semester</span>
+        </h2>
       </div>
 
       <!-- Cards List of Academic Years -->

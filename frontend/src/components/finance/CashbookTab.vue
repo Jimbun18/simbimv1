@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { CashTransaction } from './types'
 import { formatRupiah } from './types'
+import InfoTooltip from '../common/InfoTooltip.vue'
 
 const props = defineProps<{
   transactions: CashTransaction[]
@@ -68,11 +69,21 @@ const filteredTransactions = computed(() => {
           <thead>
             <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
               <th class="p-3">Tanggal</th>
-              <th class="p-3">No. Bukti / Transaksi</th>
-              <th class="p-3">Tipe</th>
+              <th class="p-3">No. Bukti</th>
+              <th class="p-3">
+                <div class="inline-flex items-center gap-1">
+                  <span>Tipe</span>
+                  <InfoTooltip size="xs" text="Arus transaksi kas: Masuk (Penerimaan) atau Keluar (Pengeluaran)." />
+                </div>
+              </th>
               <th class="p-3">Kategori</th>
               <th class="p-3">Keterangan</th>
-              <th class="p-3 text-right">Jumlah</th>
+              <th class="p-3 text-right">
+                <div class="inline-flex items-center justify-end gap-1">
+                  <span>Jumlah</span>
+                  <InfoTooltip size="xs" text="Nominal mutasi kas masuk (+) atau keluar (-)." />
+                </div>
+              </th>
               <th class="p-3">Dicatat Oleh</th>
             </tr>
           </thead>

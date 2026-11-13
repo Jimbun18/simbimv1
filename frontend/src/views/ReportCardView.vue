@@ -7,6 +7,7 @@ import type { ReportCardDetail, SchoolProfileData } from '../components/report-c
 import ReportCardList from '../components/report-card/ReportCardList.vue'
 import ReportCardEditor from '../components/report-card/ReportCardEditor.vue'
 import ReportCardPrint from '../components/report-card/ReportCardPrint.vue'
+import InfoTooltip from '../components/common/InfoTooltip.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -257,10 +258,15 @@ onMounted(() => {
             {{ activeSubMenu === 'semester_1' ? '📘' : activeSubMenu === 'semester_2' ? '📗' : activeSubMenu === 'triwulan_3' ? '🎒' : '📙' }}
           </div>
           <div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <h1 class="text-lg font-black text-slate-900 tracking-tight">
                 {{ activeSubMenu === 'semester_1' ? 'Rapor Semester 1' : activeSubMenu === 'semester_2' ? 'Rapor Semester 2' : activeSubMenu === 'triwulan_3' ? 'Rapor Triwulan 3' : 'Rapor Triwulan 1' }}
               </h1>
+              <InfoTooltip :text="(activeSubMenu === 'semester_1' || activeSubMenu === 'semester_2')
+                ? 'Laporan Hasil Belajar Kurikulum Merdeka Resmi (18 Mata Pelajaran, Kokurikuler P5, Ekstrakurikuler, dan Presensi).'
+                : activeSubMenu === 'triwulan_3' 
+                  ? 'Laporan Hasil Belajar Triwulan Tematik Terpadu BIM (5 Klaster Tema Penilaian & Ekstrakurikuler).' 
+                  : 'Laporan Perkembangan Penguatan Karakter & Life Skill (17 Butir Penilaian) pertengahan semester.'" />
               <span
                 class="px-2.5 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider"
                 :class="activeSubMenu === 'semester_1' ? 'bg-blue-100 text-blue-800' : activeSubMenu === 'semester_2' ? 'bg-teal-100 text-teal-800' : activeSubMenu === 'triwulan_3' ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800'"
@@ -268,13 +274,6 @@ onMounted(() => {
                 {{ activeSubMenu === 'semester_1' ? 'Akhir Semester 1 (Gasal)' : activeSubMenu === 'semester_2' ? 'Akhir Semester 2 (Genap)' : activeSubMenu === 'triwulan_3' ? 'Pertengahan Semester 2 (Genap)' : 'Pertengahan Semester 1 (Gasal)' }}
               </span>
             </div>
-            <p class="text-xs text-slate-500 line-clamp-1">
-              {{ (activeSubMenu === 'semester_1' || activeSubMenu === 'semester_2')
-                ? 'Laporan Hasil Belajar Kurikulum Merdeka Resmi (18 Mata Pelajaran, Kokurikuler P5, Ekstrakurikuler, dan Presensi).'
-                : activeSubMenu === 'triwulan_3' 
-                  ? 'Laporan Hasil Belajar Triwulan Tematik Terpadu BIM (5 Klaster Tema Penilaian & Ekstrakurikuler).' 
-                  : 'Laporan Perkembangan Penguatan Karakter & Life Skill (17 Butir Penilaian) pertengahan semester.' }}
-            </p>
           </div>
         </div>
 

@@ -4,6 +4,7 @@ import api from '../services/api'
 import { useAuthStore } from '../stores/auth'
 import { showSuccess, showError, showConfirm } from '../services/swal'
 import { formatDateIndo } from '../utils/date'
+import InfoTooltip from '../components/common/InfoTooltip.vue'
 
 const auth = useAuthStore()
 
@@ -102,6 +103,22 @@ const getClassName = (item: any) => {
          item.class_name ||
          item.kelas?.nama ||
          '-'
+}
+
+// Word Counter & Limiter Helpers
+const countWords = (text?: string): number => {
+  if (!text) return 0
+  const trimmed = text.trim()
+  if (!trimmed) return 0
+  return trimmed.split(/\s+/).filter(Boolean).length
+}
+
+const enforceWordLimit = (target: Record<string, any>, field: string, maxWords: number) => {
+  const text = target[field] || ''
+  const words = text.trim().split(/\s+/).filter(Boolean)
+  if (words.length > maxWords) {
+    target[field] = words.slice(0, maxWords).join(' ')
+  }
 }
 
 // Fetch Master Reference
@@ -243,6 +260,22 @@ const submitForm = async () => {
     showError('Validasi Gagal', null, 'Deskripsi perilaku yang diamati wajib diisi.')
     return
   }
+  if (countWords(form.value.situasi_sebelum) > 150) {
+    showError('Validasi Gagal', null, 'Situasi Sebelum (Antecedent) melebihi batas maksimal 150 kata.')
+    return
+  }
+  if (countWords(form.value.perilaku_diamati) > 200) {
+    showError('Validasi Gagal', null, 'Perilaku yang Diamati (Behavior) melebihi batas maksimal 200 kata.')
+    return
+  }
+  if (countWords(form.value.respons_lingkungan) > 150) {
+    showError('Validasi Gagal', null, 'Respons Lingkungan (Consequence) melebihi batas maksimal 150 kata.')
+    return
+  }
+  if (countWords(form.value.catatan_wali_kelas) > 150) {
+    showError('Validasi Gagal', null, 'Catatan Khusus Pelapor melebihi batas maksimal 150 kata.')
+    return
+  }
 
   submitting.value = true
   try {
@@ -294,6 +327,14 @@ const openFeedbackForm = (obs: any) => {
 const submitFeedback = async () => {
   if (!feedbackForm.value.rekomendasi_bk) {
     showError('Validasi Gagal', null, 'Rekomendasi dari Guru BK wajib diisi.')
+    return
+  }
+  if (countWords(feedbackForm.value.rekomendasi_bk) > 250) {
+    showError('Validasi Gagal', null, 'Rekomendasi Guru BK melebihi batas maksimal 250 kata.')
+    return
+  }
+  if (countWords(feedbackForm.value.saran_untuk_guru) > 200) {
+    showError('Validasi Gagal', null, 'Saran untuk Guru Kelas melebihi batas maksimal 200 kata.')
     return
   }
 
@@ -373,12 +414,12 @@ onMounted(() => {
                 Pencatatan Guru Kelas
               </span>
             </div>
-            <h1 class="text-xl sm:text-2xl font-black text-gray-900 leading-tight mt-1">
-              Catatan Observasi Perilaku Siswa
-            </h1>
-            <p class="text-xs text-gray-500 mt-0.5">
-              Daftar peserta didik yang memiliki rekam catatan observasi kelas. Klik <strong>"Lihat Catatan"</strong> untuk membuka seluruh rekam jejak kejadian dan tindak lanjut BK.
-            </p>
+            <div class="inline-flex items-center gap-2 mt-1">
+              <h1 class="text-xl sm:text-2xl font-black text-gray-900 leading-tight">
+                Catatan Observasi Perilaku Siswa
+              </h1>
+              <InfoTooltip text="Daftar peserta didik yang memiliki rekam catatan observasi kelas dan tindak lanjut layanan BK." />
+            </div>
           </div>
         </div>
 
@@ -1042,15 +1083,15 @@ onMounted(() => {
     <!-- VIEW 3: FORM CATAT / EDIT OBSERVASI (FULL PAGE)          -->
     <!-- ======================================================== -->
     <template v-else-if="currentView === 'form'">
-      <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
+      <div class="bg-white p-5 sm:p-6 rounded-3xl border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5">
           <button
             @click="handleReturnAfterSave"
             type="button"
-            class="w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition cursor-pointer shrink-0"
+            class="w-11 h-11 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition cursor-pointer shrink-0"
             title="Kembali"
           >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
@@ -1061,12 +1102,12 @@ onMounted(() => {
               </span>
               <span class="text-xs text-gray-400">/ Format ABC Faktual</span>
             </div>
-            <h1 class="text-xl sm:text-2xl font-black text-gray-900 leading-tight mt-1">
-              {{ isEditing ? 'Edit Laporan Catatan Observasi Siswa' : 'Catat Laporan Observasi Perilaku Siswa ke Guru BK' }}
-            </h1>
-            <p class="text-xs text-gray-500 mt-0.5">
-              Dokumentasikan apa adanya tanpa asumsi subjektif agar Guru Bimbingan Konseling (BK) dapat memberikan telaah objektif.
-            </p>
+            <div class="inline-flex items-center gap-2 mt-1">
+              <h1 class="text-lg sm:text-xl font-black text-gray-900 leading-tight">
+                {{ isEditing ? 'Edit Laporan Catatan Observasi Siswa' : 'Catat Laporan Observasi Perilaku Siswa ke Guru BK' }}
+              </h1>
+              <InfoTooltip text="Dokumentasikan kejadian apa adanya tanpa asumsi subjektif agar Guru Bimbingan Konseling (BK) dapat memberikan telaah objektif." />
+            </div>
           </div>
         </div>
 
@@ -1074,7 +1115,7 @@ onMounted(() => {
           <button
             @click="handleReturnAfterSave"
             type="button"
-            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
           >
             Batal &amp; Kembali
           </button>
@@ -1082,7 +1123,7 @@ onMounted(() => {
             @click="submitForm"
             :disabled="submitting"
             type="button"
-            class="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/20 transition disabled:opacity-50 cursor-pointer"
+            class="inline-flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/20 transition disabled:opacity-50 cursor-pointer active:scale-95"
           >
             <svg v-if="submitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -1094,16 +1135,16 @@ onMounted(() => {
       </div>
 
       <!-- Main Form Container -->
-      <form @submit.prevent="submitForm" class="space-y-6">
+      <form @submit.prevent="submitForm" class="space-y-5">
         <!-- Section 1: Siswa & Waktu -->
-        <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-5">
+        <div class="bg-white p-5 sm:p-6 rounded-3xl border border-gray-100 shadow-xs space-y-4">
           <div class="flex items-center gap-2.5 pb-3 border-b border-gray-100">
-            <span class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">
+            <span class="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs shrink-0">
               1
             </span>
-            <div>
+            <div class="inline-flex items-center gap-2">
               <h3 class="text-sm font-bold text-gray-900">Identitas Siswa &amp; Tempat Kejadian</h3>
-              <p class="text-[11px] text-gray-400">Pilih subjek pengamatan serta waktu dan area terjadinya perilaku.</p>
+              <InfoTooltip text="Pilih subjek pengamatan siswa serta waktu dan area terjadinya perilaku." />
             </div>
           </div>
 
@@ -1163,96 +1204,126 @@ onMounted(() => {
         </div>
 
         <!-- Section 2: Tiga Pilar Pendekatan ABC -->
-        <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-6">
+        <div class="bg-white p-5 sm:p-6 rounded-3xl border border-gray-100 shadow-xs space-y-4">
           <div class="flex items-center gap-2.5 pb-3 border-b border-gray-100">
-            <span class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">
+            <span class="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs shrink-0">
               2
             </span>
-            <div>
+            <div class="inline-flex items-center gap-2">
               <h3 class="text-sm font-bold text-gray-900">Uraian Faktual Observasi (Antecedent - Behavior - Consequence)</h3>
-              <p class="text-[11px] text-gray-400">Deskripsikan kejadian apa adanya tanpa praduga agar mudah ditindaklanjuti Guru BK.</p>
+              <InfoTooltip text="Deskripsikan kejadian apa adanya tanpa asumsi atau praduga agar mudah ditindaklanjuti Guru BK." />
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <!-- 1. Antecedent -->
-            <div class="p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2.5 flex flex-col justify-between">
-              <div>
+            <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 flex flex-col justify-between gap-2.5">
+              <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wide">
-                  <span class="w-6 h-6 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center text-[10px]">A</span>
-                  <span>Situasi Sebelum (Antecedent)</span>
+                  <span class="w-6 h-6 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0">A</span>
+                  <span>Situasi Sebelum</span>
                 </div>
-                <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                  Aktivitas apa yang sedang dilakukan anak atau lingkungan sebelum perilaku muncul?
-                </p>
+                <InfoTooltip size="xs" text="Aktivitas apa yang sedang dilakukan anak atau situasi lingkungan sebelum perilaku muncul." />
               </div>
-              <textarea
-                v-model="form.situasi_sebelum"
-                rows="5"
-                placeholder="Contoh: Sedang mengerjakan modul di meja kelompok, tiba-tiba pensilnya terjatuh..."
-                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-              ></textarea>
+              <div>
+                <textarea
+                  v-model="form.situasi_sebelum"
+                  @input="enforceWordLimit(form, 'situasi_sebelum', 150)"
+                  rows="5"
+                  placeholder="Contoh: Sedang mengerjakan modul di meja kelompok, tiba-tiba pensilnya terjatuh..."
+                  class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+                ></textarea>
+                <div class="flex items-center justify-between text-[10px] px-1 text-slate-400 mt-1">
+                  <span>Maks. 150 kata</span>
+                  <span :class="countWords(form.situasi_sebelum) >= 150 ? 'text-amber-600 font-bold' : countWords(form.situasi_sebelum) > 0 ? 'text-indigo-600 font-medium' : 'text-slate-400'">
+                    {{ countWords(form.situasi_sebelum) }} / 150 kata
+                  </span>
+                </div>
+              </div>
             </div>
 
             <!-- 2. Behavior -->
-            <div class="p-5 rounded-2xl bg-indigo-50/50 border border-indigo-200/80 space-y-2.5 flex flex-col justify-between">
-              <div>
+            <div class="p-4 sm:p-5 rounded-2xl bg-indigo-50/50 border border-indigo-200/80 flex flex-col justify-between gap-2.5">
+              <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2 text-xs font-bold text-indigo-900 uppercase tracking-wide">
-                  <span class="w-6 h-6 rounded-lg bg-indigo-200 text-indigo-900 flex items-center justify-center text-[10px]">B</span>
-                  <span>Perilaku yang Diamati (Behavior) *</span>
+                  <span class="w-6 h-6 rounded-lg bg-indigo-200 text-indigo-900 flex items-center justify-center text-[10px] font-black shrink-0">B</span>
+                  <span>Perilaku Diamati *</span>
                 </div>
-                <p class="text-[11px] text-indigo-600 mt-1 leading-relaxed">
-                  Tindakan atau ucapan spesifik yang dilakukan anak secara objektif.
-                </p>
+                <InfoTooltip size="xs" text="Tindakan atau ucapan spesifik yang dilakukan anak secara objektif dan faktual." />
               </div>
-              <textarea
-                v-model="form.perilaku_diamati"
-                rows="5"
-                placeholder="Contoh: Berteriak keras, bersembunyi di bawah meja, atau menolak mengikuti instruksi..."
-                class="w-full px-3.5 py-2.5 bg-white border border-indigo-300 rounded-xl text-xs text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                required
-              ></textarea>
+              <div>
+                <textarea
+                  v-model="form.perilaku_diamati"
+                  @input="enforceWordLimit(form, 'perilaku_diamati', 200)"
+                  rows="5"
+                  placeholder="Contoh: Berteriak keras, bersembunyi di bawah meja, atau menolak mengikuti instruksi..."
+                  class="w-full px-3.5 py-2.5 bg-white border border-indigo-300 rounded-xl text-xs text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+                  required
+                ></textarea>
+                <div class="flex items-center justify-between text-[10px] px-1 text-indigo-400 mt-1">
+                  <span>Maks. 200 kata</span>
+                  <span :class="countWords(form.perilaku_diamati) >= 200 ? 'text-amber-600 font-bold' : countWords(form.perilaku_diamati) > 0 ? 'text-indigo-700 font-medium' : 'text-indigo-400'">
+                    {{ countWords(form.perilaku_diamati) }} / 200 kata
+                  </span>
+                </div>
+              </div>
             </div>
 
             <!-- 3. Consequence -->
-            <div class="p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2.5 flex flex-col justify-between">
-              <div>
+            <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 flex flex-col justify-between gap-2.5">
+              <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wide">
-                  <span class="w-6 h-6 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center text-[10px]">C</span>
-                  <span>Respons Lingkungan (Consequence)</span>
+                  <span class="w-6 h-6 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center text-[10px] font-black shrink-0">C</span>
+                  <span>Respons Lingkungan</span>
                 </div>
-                <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                  Reaksi teman sekelas serta respon langsung guru yang mendampingi di kelas.
-                </p>
+                <InfoTooltip size="xs" text="Reaksi teman sekelas serta respons langsung guru yang mendampingi di kelas saat kejadian." />
               </div>
-              <textarea
-                v-model="form.respons_lingkungan"
-                rows="5"
-                placeholder="Contoh: Teman sekelas menjauh, guru mendekati dan mengajak istirahat di ruang tenang..."
-                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-              ></textarea>
+              <div>
+                <textarea
+                  v-model="form.respons_lingkungan"
+                  @input="enforceWordLimit(form, 'respons_lingkungan', 150)"
+                  rows="5"
+                  placeholder="Contoh: Teman sekelas menjauh, guru mendekati dan mengajak istirahat di ruang tenang..."
+                  class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+                ></textarea>
+                <div class="flex items-center justify-between text-[10px] px-1 text-slate-400 mt-1">
+                  <span>Maks. 150 kata</span>
+                  <span :class="countWords(form.respons_lingkungan) >= 150 ? 'text-amber-600 font-bold' : countWords(form.respons_lingkungan) > 0 ? 'text-indigo-600 font-medium' : 'text-slate-400'">
+                    {{ countWords(form.respons_lingkungan) }} / 150 kata
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Section 3: Catatan Tambahan Guru Kelas -->
-        <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-4">
+        <div class="bg-white p-5 sm:p-6 rounded-3xl border border-gray-100 shadow-xs space-y-3">
           <div class="flex items-center gap-2.5 pb-3 border-b border-gray-100">
-            <span class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">
+            <span class="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs shrink-0">
               3
             </span>
-            <div>
+            <div class="inline-flex items-center gap-2">
               <h3 class="text-sm font-bold text-gray-900">Catatan Khusus Pelapor (Opsional)</h3>
-              <p class="text-[11px] text-gray-400">Tambahkan catatan khusus atau pola yang dirasa penting bagi Guru BK.</p>
+              <InfoTooltip text="Tambahkan catatan khusus, konteks riwayat, atau pola berulang yang dirasa penting bagi Guru BK." />
             </div>
           </div>
 
-          <textarea
-            v-model="form.catatan_wali_kelas"
-            rows="3"
-            placeholder="Tuliskan catatan tambahan jika ada..."
-            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-          ></textarea>
+          <div>
+            <textarea
+              v-model="form.catatan_wali_kelas"
+              @input="enforceWordLimit(form, 'catatan_wali_kelas', 150)"
+              rows="3"
+              placeholder="Tuliskan catatan tambahan jika ada..."
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+            ></textarea>
+            <div class="flex items-center justify-between text-[10px] px-1 text-slate-400 mt-1">
+              <span>Maks. 150 kata</span>
+              <span :class="countWords(form.catatan_wali_kelas) >= 150 ? 'text-amber-600 font-bold' : countWords(form.catatan_wali_kelas) > 0 ? 'text-indigo-600 font-medium' : 'text-slate-400'">
+                {{ countWords(form.catatan_wali_kelas) }} / 150 kata
+              </span>
+            </div>
+          </div>
         </div>
 
         <!-- Actions -->
@@ -1267,7 +1338,7 @@ onMounted(() => {
           <button
             :disabled="submitting"
             type="submit"
-            class="inline-flex items-center gap-2 px-7 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/20 transition disabled:opacity-50 cursor-pointer"
+            class="inline-flex items-center gap-2 px-7 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/20 transition disabled:opacity-50 cursor-pointer active:scale-95"
           >
             <svg v-if="submitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -1299,17 +1370,20 @@ onMounted(() => {
           <div>
             <div class="flex items-center gap-2">
               <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200">
-                Menu Khusus Guru Bimbingan Konseling (BK)
+                Layanan Guru Bimbingan Konseling (BK)
               </span>
               <span class="text-xs text-gray-400">/ Tanggapan &amp; Keputusan Pemantauan</span>
             </div>
-            <h1 class="text-xl sm:text-2xl font-black text-rose-950 leading-tight mt-1">
-              Lembar Tanggapan &amp; Status Kasus BK
-            </h1>
-            <p class="text-xs text-gray-500 mt-0.5">
-              Memberikan asesmen profesional untuk siswa: <strong class="text-rose-700 font-bold">{{ feedbackObs?.student?.nama_lengkap }}</strong>
+            <div class="inline-flex items-center gap-2 mt-1">
+              <h1 class="text-lg sm:text-xl font-black text-rose-950 leading-tight">
+                Lembar Tanggapan &amp; Status Kasus BK
+              </h1>
+              <InfoTooltip text="Memberikan asesmen profesional dan analisis psikologis Guru BK untuk tindak lanjut layanan konseling." />
+            </div>
+            <div class="text-[11px] text-gray-500 mt-0.5">
+              Siswa: <strong class="text-rose-700 font-bold">{{ feedbackObs?.student?.nama_lengkap }}</strong>
               (Pelapor: {{ feedbackObs?.observer_name || feedbackObs?.observer?.nama_lengkap }})
-            </p>
+            </div>
           </div>
         </div>
 
@@ -1459,35 +1533,49 @@ onMounted(() => {
 
         <!-- Uraian Rekomendasi BK -->
         <div>
-          <label class="block text-xs font-bold text-gray-800 mb-1.5">
-            Rekomendasi / Analisis Psikologis Guru BK <span class="text-rose-500">*</span>
-          </label>
-          <p class="text-[11px] text-gray-400 mb-2">
-            Telaah objektif mengenai motif perilaku, dinamika regulasi emosi, atau pemicu respon anak.
-          </p>
+          <div class="flex items-center justify-between gap-2 mb-1.5">
+            <label class="block text-xs font-bold text-gray-800">
+              Rekomendasi / Analisis Psikologis Guru BK <span class="text-rose-500">*</span>
+            </label>
+            <InfoTooltip size="xs" text="Telaah objektif mengenai motif perilaku, dinamika regulasi emosi, atau pemicu respon anak." />
+          </div>
           <textarea
             v-model="feedbackForm.rekomendasi_bk"
+            @input="enforceWordLimit(feedbackForm, 'rekomendasi_bk', 250)"
             rows="4"
             placeholder="Tuliskan telaah profesional dan analisis Guru BK..."
-            class="w-full px-3.5 py-2.5 bg-rose-50/20 border border-rose-200 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+            class="w-full px-3.5 py-2.5 bg-rose-50/20 border border-rose-200 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition"
             required
           ></textarea>
+          <div class="flex items-center justify-between text-[10px] px-1 text-slate-400 mt-1">
+            <span>Maks. 250 kata</span>
+            <span :class="countWords(feedbackForm.rekomendasi_bk) >= 250 ? 'text-amber-600 font-bold' : countWords(feedbackForm.rekomendasi_bk) > 0 ? 'text-rose-600 font-medium' : 'text-slate-400'">
+              {{ countWords(feedbackForm.rekomendasi_bk) }} / 250 kata
+            </span>
+          </div>
         </div>
 
         <!-- Saran Guru Kelas -->
         <div>
-          <label class="block text-xs font-bold text-gray-800 mb-1.5">
-            Saran Praktis untuk Guru Kelas / Guru Pelapor
-          </label>
-          <p class="text-[11px] text-gray-400 mb-2">
-            Langkah konkret yang disarankan untuk diterapkan di kelas saat menghadapi situasi serupa.
-          </p>
+          <div class="flex items-center justify-between gap-2 mb-1.5">
+            <label class="block text-xs font-bold text-gray-800">
+              Saran Praktis untuk Guru Kelas / Guru Pelapor
+            </label>
+            <InfoTooltip size="xs" text="Langkah konkret yang disarankan untuk diterapkan di kelas saat menghadapi situasi serupa." />
+          </div>
           <textarea
             v-model="feedbackForm.saran_untuk_guru"
+            @input="enforceWordLimit(feedbackForm, 'saran_untuk_guru', 200)"
             rows="4"
             placeholder="Tuliskan arahan praktis bagi guru pendamping..."
-            class="w-full px-3.5 py-2.5 bg-amber-50/20 border border-amber-200 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+            class="w-full px-3.5 py-2.5 bg-amber-50/20 border border-amber-200 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition"
           ></textarea>
+          <div class="flex items-center justify-between text-[10px] px-1 text-slate-400 mt-1">
+            <span>Maks. 200 kata</span>
+            <span :class="countWords(feedbackForm.saran_untuk_guru) >= 200 ? 'text-amber-600 font-bold' : countWords(feedbackForm.saran_untuk_guru) > 0 ? 'text-amber-700 font-medium' : 'text-slate-400'">
+              {{ countWords(feedbackForm.saran_untuk_guru) }} / 200 kata
+            </span>
+          </div>
         </div>
 
         <!-- Actions -->

@@ -296,17 +296,22 @@ export const showConfirm = async (
   title: string,
   text?: string,
   confirmText: string = 'Ya, Lanjutkan',
-  icon: 'warning' | 'question' | 'info' | 'error' = 'warning'
+  cancelTextOrIcon: 'warning' | 'question' | 'info' | 'error' | string = 'Batal',
+  icon: 'warning' | 'question' | 'info' | 'error' = 'question'
 ) => {
+  const isIcon = ['warning', 'question', 'info', 'error'].includes(cancelTextOrIcon);
+  const resolvedIcon = isIcon ? (cancelTextOrIcon as 'warning' | 'question' | 'info' | 'error') : icon;
+  const resolvedCancelText = isIcon ? 'Batal' : cancelTextOrIcon;
+
   const result = await Swal.fire({
     title,
     text,
-    icon,
+    icon: resolvedIcon,
     showCancelButton: true,
     confirmButtonColor: '#059669',
     cancelButtonColor: '#64748b',
     confirmButtonText: confirmText,
-    cancelButtonText: 'Batal',
+    cancelButtonText: resolvedCancelText || 'Batal',
     customClass: {
       popup: 'rounded-3xl shadow-xl font-sans',
       confirmButton: 'rounded-xl px-5 py-2.5 font-bold',

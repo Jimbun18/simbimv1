@@ -15,6 +15,7 @@ import TimeSlotTab from '../components/classes-schedules/TimeSlotTab.vue';
 import RoomTab from '../components/classes-schedules/RoomTab.vue';
 import AcademicYearTab from '../components/classes-schedules/AcademicYearTab.vue';
 import CalendarTab from '../components/classes-schedules/CalendarTab.vue';
+import InfoTooltip from '../components/common/InfoTooltip.vue';
 
 const route = useRoute();
 const auth = useAuthStore();
@@ -107,9 +108,9 @@ onMounted(() => {
     <!-- ============================================================== -->
     <div v-if="viewMode === 'tabs'" class="space-y-6">
       <!-- Header Dinamis Sesuai Sub-menu Sidebar yang Aktif -->
-      <div class="bg-white p-5 sm:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 class="text-xl font-bold text-gray-900">
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="inline-flex items-center gap-2">
+          <h1 class="text-lg sm:text-xl font-bold text-gray-900 leading-tight">
             {{
               activeTab === 'classes' ? 'Rombel Kelas' :
               activeTab === 'subjects' ? 'Mata Pelajaran & Tematik' :
@@ -121,18 +122,16 @@ onMounted(() => {
               activeTab === 'calendar' ? 'Kalender Akademik & Hari Libur' : 'Kelas, Ruangan & Jadwal KBM'
             }}
           </h1>
-          <p class="text-xs text-gray-500 mt-0.5">
-            {{
-              activeTab === 'classes' ? 'Kelola data rombel kelas aktif, alokasi wali kelas, dan kapasitas siswa.' :
-              activeTab === 'subjects' ? 'Kelola kurikulum tematik terpadu, muatan pelajaran terintegrasi, dan mapel reguler.' :
-              activeTab === 'assignments' ? 'Kelola pembagian penugasan guru pengampu tema/pelajaran untuk tiap rombel kelas.' :
-              activeTab === 'schedules' ? 'Kelola dan pantau susunan jadwal kegiatan belajar mengajar (KBM) mingguan.' :
-              activeTab === 'slots' ? 'Kelola alokasi waktu sesi dan jam pelajaran kegiatan belajar mengajar.' :
-              activeTab === 'rooms' ? 'Kelola data ruangan kelas dan fasilitas pembelajaran.' :
-              activeTab === 'academic_years' ? 'Kelola status tahun ajaran aktif, pergantian semester, penutupan periode, dan kenaikan kelas siswa secara massal.' :
-              activeTab === 'calendar' ? 'Kelola jadwal kalender akademik, hari libur nasional/sekolah, dan perhitungan hari efektif belajar.' : 'Kelola rombel kelas aktif, alokasi wali kelas, jam pelajaran, dan jadwal kegiatan belajar mengajar.'
-            }}
-          </p>
+          <InfoTooltip :text="
+            activeTab === 'classes' ? 'Kelola data rombel kelas aktif, alokasi wali kelas, dan kapasitas siswa.' :
+            activeTab === 'subjects' ? 'Kelola kurikulum tematik terpadu, muatan pelajaran terintegrasi, dan mapel reguler.' :
+            activeTab === 'assignments' ? 'Kelola pembagian penugasan guru pengampu tema/pelajaran untuk tiap rombel kelas.' :
+            activeTab === 'schedules' ? 'Kelola dan pantau susunan jadwal kegiatan belajar mengajar (KBM) mingguan.' :
+            activeTab === 'slots' ? 'Kelola alokasi waktu sesi dan jam pelajaran kegiatan belajar mengajar.' :
+            activeTab === 'rooms' ? 'Kelola data ruangan kelas dan fasilitas pembelajaran.' :
+            activeTab === 'academic_years' ? 'Kelola status tahun ajaran aktif, pergantian semester, penutupan periode, dan kenaikan kelas siswa secara massal.' :
+            activeTab === 'calendar' ? 'Kelola jadwal kalender akademik, hari libur nasional/sekolah, dan perhitungan hari efektif belajar.' : 'Kelola rombel kelas aktif, alokasi wali kelas, jam pelajaran, dan jadwal kegiatan belajar mengajar.'
+          " />
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <button
@@ -172,13 +171,27 @@ onMounted(() => {
           >
             + Tambah Pelajaran / Tema
           </button>
-          <button
-            v-else-if="activeTab === 'assignments'"
-            @click="assignmentTabRef?.openCreateAssignmentModal()"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer active:scale-95"
-          >
-            + Tambah Pembagian Mengajar
-          </button>
+          <template v-else-if="activeTab === 'assignments'">
+            <button
+              @click="assignmentTabRef?.syncAssignmentsWithSchedule()"
+              :disabled="assignmentTabRef?.syncingAssignments || (assignmentTabRef?.assignmentsList && assignmentTabRef.assignmentsList.length === 0)"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-xl border border-emerald-200 transition cursor-pointer disabled:opacity-50"
+              title="Sinkronkan seluruh penugasan guru ini ke jadwal mingguan"
+            >
+              <svg v-if="assignmentTabRef?.syncingAssignments" class="w-4 h-4 animate-spin text-emerald-600" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span v-else>⚡</span>
+              <span>{{ assignmentTabRef?.syncingAssignments ? 'Menyinkronkan...' : 'Sinkronkan Jadwal' }}</span>
+            </button>
+            <button
+              @click="assignmentTabRef?.openCreateAssignmentModal()"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer active:scale-95"
+            >
+              + Tambah Penugasan
+            </button>
+          </template>
           <button
             v-else-if="activeTab === 'schedules'"
             @click="openCreateScheduleForm"

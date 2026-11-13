@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import api from '../../services/api'
 import { getPhotoUrl, getInitials } from './types'
+import InfoTooltip from '../common/InfoTooltip.vue'
 
 const props = defineProps<{
   selectedDate: string
@@ -251,18 +252,12 @@ defineExpose({
       <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-5">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
           <div>
-            <div class="flex items-center gap-2">
-              <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider rounded-full">
-                Monitoring Presensi Guru & Tendik
-              </span>
-              <span class="text-xs text-slate-400">Presensi GPS Mandiri Pendidik & Staf</span>
+            <div class="inline-flex items-center gap-2">
+              <h2 class="text-base font-black text-slate-900 leading-tight">
+                Presensi Guru & Tendik Hari Ini
+              </h2>
+              <InfoTooltip text="Pantau kepatuhan check-in, ketepatan waktu hadir, dan koordinat GPS guru & staf secara real-time." />
             </div>
-            <h2 class="text-lg font-black text-slate-900 mt-1">
-              Status Kehadiran Guru & Tenaga Kependidikan Hari Ini
-            </h2>
-            <p class="text-xs text-slate-500">
-              Pantau kepatuhan check-in, ketepatan waktu hadir, dan koordinat GPS guru & staf secara real-time.
-            </p>
           </div>
           <div class="flex items-center gap-2.5 shrink-0">
             <span
@@ -399,7 +394,12 @@ defineExpose({
                 <th class="p-3.5 text-center w-32">Status</th>
                 <th class="p-3.5 text-center w-24">Jam Masuk</th>
                 <th class="p-3.5 text-center w-24">Jam Pulang</th>
-                <th class="p-3.5 text-center w-28">Jarak GPS</th>
+                <th class="p-3.5 text-center w-28">
+                  <div class="inline-flex items-center justify-center gap-1">
+                    <span>Jarak GPS</span>
+                    <InfoTooltip size="xs" text="Jarak GPS check-in guru terhadap titik koordinat sekolah (radius toleransi ≤ 100 m)." />
+                  </div>
+                </th>
                 <th class="p-3.5 text-center w-20">Foto</th>
                 <th class="p-3.5 min-w-[180px]">Keterangan</th>
                 <th class="p-3.5 text-right w-32">Aksi / Approval</th>

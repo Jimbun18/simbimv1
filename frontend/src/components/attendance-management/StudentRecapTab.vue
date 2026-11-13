@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import api from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
 import { getPhotoUrl, getInitials, type SummaryStats, type StudentPagination } from './types'
+import InfoTooltip from '../common/InfoTooltip.vue'
 
 const props = defineProps<{
   classes: any[]
@@ -375,7 +376,12 @@ defineExpose({
               <th class="p-3.5">Siswa</th>
               <th class="p-3.5">Kelas / Rombel</th>
               <th class="p-3.5">Sesi KBM / Mata Pelajaran</th>
-              <th class="p-3.5 text-center">Status</th>
+              <th class="p-3.5 text-center">
+                <div class="inline-flex items-center justify-center gap-1">
+                  <span>Status</span>
+                  <InfoTooltip size="xs" text="Hadir, Izin, Sakit, atau Alpa (Tanpa Keterangan)." />
+                </div>
+              </th>
               <th class="p-3.5">Keterangan</th>
               <th class="p-3.5">Dicatat Oleh</th>
             </tr>

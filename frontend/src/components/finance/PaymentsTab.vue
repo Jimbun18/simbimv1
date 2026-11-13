@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { Payment } from './types'
 import { formatRupiah } from './types'
+import InfoTooltip from '../common/InfoTooltip.vue'
 
 const props = defineProps<{
   payments: Payment[]
@@ -34,9 +35,9 @@ const filteredPayments = computed(() => {
 <template>
   <div class="space-y-4">
     <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-wrap gap-4 items-center justify-between">
-      <div>
-        <h3 class="font-extrabold text-sm text-slate-900">Riwayat Pembayaran & Kuitansi Kasir</h3>
-        <p class="text-xs text-slate-500">Seluruh bukti transaksi pembayaran yang telah dicatat dan kuitansi resmi sekolah.</p>
+      <div class="inline-flex items-center gap-2">
+        <h3 class="font-extrabold text-sm text-slate-900">Riwayat Pembayaran & Kuitansi</h3>
+        <InfoTooltip size="xs" text="Seluruh bukti transaksi pembayaran yang telah dicatat di kasir dan arsip kuitansi resmi sekolah." />
       </div>
       <div class="flex items-center gap-3">
         <select 
@@ -69,7 +70,12 @@ const filteredPayments = computed(() => {
               <th class="p-3">Nama Siswa</th>
               <th class="p-3">Biaya / Tagihan</th>
               <th class="p-3 text-center">Metode</th>
-              <th class="p-3 text-right">Jumlah Dibayar</th>
+              <th class="p-3 text-right">
+                <div class="inline-flex items-center justify-end gap-1">
+                  <span>Jumlah Dibayar</span>
+                  <InfoTooltip size="xs" text="Nominal uang yang disetor dan diterima oleh petugas kasir." />
+                </div>
+              </th>
               <th class="p-3">Petugas Kasir</th>
               <th class="p-3 text-right">Aksi</th>
             </tr>
@@ -107,27 +113,25 @@ const filteredPayments = computed(() => {
               </td>
               <td class="p-3 text-xs text-slate-500 whitespace-nowrap">{{ p.recorder?.nama || 'Admin' }}</td>
               <td class="p-3 text-right whitespace-nowrap">
-                <div class="flex items-center justify-end gap-2">
+                <div class="flex items-center justify-end gap-1.5">
                   <button 
                     @click="emit('view-receipt', p.id)"
-                    class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
-                    title="Buka Lembar Kuitansi"
+                    class="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition flex items-center justify-center shadow-2xs cursor-pointer active:scale-95"
+                    title="Buka Lembar Kuitansi Resmi"
                   >
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
-                    <span>Kuitansi</span>
                   </button>
                   <button 
                     v-if="!p.is_batal"
                     @click="emit('cancel-payment', p)"
-                    class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-bold transition flex items-center gap-1 border border-rose-200 cursor-pointer"
+                    class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition flex items-center justify-center border border-rose-200 cursor-pointer"
                     title="Batalkan Pembayaran (Jurnal Pembalik)"
                   >
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                    <span>Batal</span>
                   </button>
                 </div>
               </td>

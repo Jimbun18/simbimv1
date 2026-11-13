@@ -1,45 +1,5 @@
 <template>
   <div class="space-y-5">
-    <!-- Control Header & Toolbar -->
-    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div>
-        <div class="flex items-center gap-2">
-          <span class="px-2.5 py-0.5 bg-purple-50 text-purple-700 text-[10px] font-black uppercase tracking-wider rounded-md border border-purple-200">
-            Alokasi Mengajar
-          </span>
-          <span class="text-xs text-gray-400">TP 2026/2027 (Ganjil)</span>
-        </div>
-        <h2 class="text-lg font-black text-gray-900 mt-1">
-          Pembagian Mengajar Guru (Mata Pelajaran & Tematik)
-        </h2>
-        <p class="text-xs text-gray-500">
-          Kelola data tema apa saja, siapa guru pengampunya, dan di kelas mana saja mengajar. Perubahan di sini otomatis terhubung langsung ke jadwal KBM mingguan.
-        </p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2.5 shrink-0">
-        <button
-          @click="syncAssignmentsWithSchedule"
-          :disabled="syncingAssignments || assignmentsList.length === 0"
-          class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-md shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-          title="Sinkronkan seluruh penugasan guru ini ke jadwal mingguan"
-        >
-          <svg v-if="syncingAssignments" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-          </svg>
-          <span v-else>⚡</span>
-          <span>{{ syncingAssignments ? 'Menyinkronkan...' : 'Sinkronkan ke Jadwal Mingguan' }}</span>
-        </button>
-        <button
-          @click="openCreateModal"
-          class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-md shadow-purple-600/20 flex items-center gap-1.5 cursor-pointer"
-        >
-          <span>+</span>
-          <span>Tambah Penugasan</span>
-        </button>
-      </div>
-    </div>
-
     <!-- KPI Summary Cards -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
       <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs">
@@ -577,6 +537,9 @@ defineExpose({
   fetchAssignments,
   openCreateModal,
   openCreateAssignmentModal: openCreateModal,
+  syncAssignmentsWithSchedule,
+  syncingAssignments,
+  assignmentsList,
 });
 
 onMounted(async () => {

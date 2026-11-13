@@ -8,6 +8,7 @@ import StudentRecapTab from '../components/attendance-management/StudentRecapTab
 import KbmGalleryTab from '../components/attendance-management/KbmGalleryTab.vue'
 import ManualInputTab from '../components/attendance-management/ManualInputTab.vue'
 import TeacherAttendanceTab from '../components/attendance-management/TeacherAttendanceTab.vue'
+import InfoTooltip from '../components/common/InfoTooltip.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -90,37 +91,28 @@ onMounted(async () => {
 
 <template>
   <div class="space-y-6 max-w-7xl mx-auto pb-12">
-    <!-- Header -->
-    <div class="bg-white p-6 sm:p-7 rounded-3xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
-      <div class="space-y-1">
-        <div class="flex items-center gap-2">
-          <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[11px] font-bold rounded-full uppercase tracking-wider">
-            Monitoring & Rekap
-          </span>
-          <span class="text-xs text-slate-400">
-            Terhubung langsung dengan sesi "Masuk Kelas" guru
-          </span>
-        </div>
-        <h1 class="text-2xl font-black text-slate-900 tracking-tight">
-          {{ activeTab === 'class_recap' ? 'Rekap Kelas' : (activeTab === 'teachers' ? 'Presensi Guru & Tendik' : 'Rekap Presensi & KBM') }}
+    <!-- Header Minimalis & Rapi -->
+    <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-2.5">
+        <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+          {{ activeTab === 'class_recap' ? 'Rekap Kelas' : (activeTab === 'teachers' ? 'Presensi Guru & Tendik' : (activeTab === 'student_recap' ? 'Log Presensi Harian' : (activeTab === 'kbm' ? 'Bukti KBM & Jurnal Guru' : 'Presensi Harian Siswa'))) }}
         </h1>
-        <p class="text-xs text-slate-500 max-w-2xl leading-relaxed">
-          {{ activeTab === 'class_recap' 
-            ? 'Buku rekapitulasi kehadiran siswa per rombel kelas: pantau akumulasi kehadiran, persentase kehadiran, dan rincian kehadiran siswa untuk rapor.'
+        <InfoTooltip 
+          :text="activeTab === 'class_recap' 
+            ? 'Buku rekapitulasi kehadiran siswa per rombel: pantau akumulasi hadir, sakit, izin, alpa, dan persentase kehadiran untuk rapor.'
             : (activeTab === 'teachers'
-              ? 'Pusat monitoring absensi mandiri guru dan tenaga kependidikan: pantau ketepatan waktu check-in/out, koordinat GPS, dan persentase kehadiran harian.'
-              : (auth.isAdmin ? 'Pusat pemantauan absensi terpadu: pantau kehadiran siswa dari hasil mengajar guru, verifikasi foto bukti KBM tatap muka, dan kelola presensi pendidik.' : 'Pusat pemantauan absensi terpadu: pantau kehadiran siswa dari hasil mengajar guru, verifikasi foto bukti KBM tatap muka, dan rekapitulasi presensi rombel.'))
-          }}
-        </p>
+              ? 'Monitoring absensi mandiri guru & tendik: check-in/out GPS, foto selfie, dan persentase kehadiran harian.'
+              : 'Pemantauan absensi terpadu: verifikasi foto bukti KBM tatap muka, jurnal materi mengajar, dan presensi harian siswa.')" 
+        />
       </div>
 
-      <!-- Date Filter in Top Bar (Khusus tab harian, tidak ditampilkan pada Rekap Kelas) -->
-      <div v-if="activeTab !== 'class_recap'" class="flex items-center gap-2.5 bg-slate-50 p-2 rounded-2xl border border-slate-200/80 shrink-0">
-        <label class="text-xs font-bold text-slate-600 pl-2">Tanggal:</label>
+      <!-- Date Filter in Top Bar -->
+      <div v-if="activeTab !== 'class_recap'" class="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200/80 shrink-0">
+        <label class="text-xs font-semibold text-slate-600 pl-1.5">Tanggal:</label>
         <input 
           type="date" 
           v-model="selectedDate" 
-          class="border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+          class="border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-medium bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
         />
       </div>
     </div>
@@ -160,71 +152,6 @@ onMounted(async () => {
           Sistem hanya menampilkan rekap presensi untuk kelas yang Anda ampu. Silakan hubungi bagian kurikulum atau staf admin sekolah jika jadwal Anda belum ditugaskan.
         </p>
       </div>
-    </div>
-
-    <!-- TAB NAVIGATION BAR -->
-    <div class="flex border-b border-slate-200 gap-2 overflow-x-auto scrollbar-none pb-0.5">
-      <button
-        type="button"
-        @click="handleSwitchTab('class_recap')"
-        class="px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap cursor-pointer"
-        :class="activeTab === 'class_recap'
-          ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50 rounded-t-xl'
-          : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-t-xl'"
-      >
-        <span>📊</span>
-        <span>Rekap Kelas & Rapor</span>
-      </button>
-
-      <button
-        type="button"
-        @click="handleSwitchTab('student_recap')"
-        class="px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap cursor-pointer"
-        :class="activeTab === 'student_recap'
-          ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50 rounded-t-xl'
-          : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-t-xl'"
-      >
-        <span>👥</span>
-        <span>Rekap Presensi Siswa</span>
-      </button>
-
-      <button
-        type="button"
-        @click="handleSwitchTab('kbm')"
-        class="px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap cursor-pointer"
-        :class="activeTab === 'kbm'
-          ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50 rounded-t-xl'
-          : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-t-xl'"
-      >
-        <span>📷</span>
-        <span>Bukti KBM & Jurnal</span>
-      </button>
-
-      <button
-        v-if="auth.isAdmin || auth.isWaliKelas"
-        type="button"
-        @click="handleSwitchTab('manual_input')"
-        class="px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap cursor-pointer"
-        :class="activeTab === 'manual_input'
-          ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50 rounded-t-xl'
-          : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-t-xl'"
-      >
-        <span>📝</span>
-        <span>Presensi Harian Rombel</span>
-      </button>
-
-      <button
-        v-if="auth.isAdmin"
-        type="button"
-        @click="handleSwitchTab('teachers')"
-        class="px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap cursor-pointer"
-        :class="activeTab === 'teachers'
-          ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50 rounded-t-xl'
-          : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-t-xl'"
-      >
-        <span>👨‍🏫</span>
-        <span>Presensi Guru & Tendik</span>
-      </button>
     </div>
 
     <!-- MAIN BODY BY TAB -->
