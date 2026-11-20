@@ -51,6 +51,14 @@ class AuthController extends Controller
                     'must_change_password' => $result['must_change_password'],
                     'foto_path' => $user->foto_path,
                     'profile_detail' => $user->teacher ?? $user->staff ?? $user->guardian,
+                    'structural_positions' => $user->getActiveStructuralPositions(),
+                    'permissions' => [
+                        'finance' => $user->canAccessFinance(),
+                        'kurikulum' => $user->canAccessKurikulum(),
+                        'kesiswaan' => $user->canAccessKesiswaan(),
+                        'tu' => $user->canAccessTu(),
+                        'bk' => $user->isGuruBk(),
+                    ],
                 ],
                 'token' => $result['token'],
             ],
@@ -88,6 +96,14 @@ class AuthController extends Controller
                 'must_change_password' => (bool) $user->must_change_password,
                 'foto_path' => $fotoPath,
                 'profile_detail' => $user->teacher ?? $user->staff ?? $user->guardian,
+                'structural_positions' => $user->getActiveStructuralPositions(),
+                'permissions' => [
+                    'finance' => $user->canAccessFinance(),
+                    'kurikulum' => $user->canAccessKurikulum(),
+                    'kesiswaan' => $user->canAccessKesiswaan(),
+                    'tu' => $user->canAccessTu(),
+                    'bk' => $user->isGuruBk(),
+                ],
             ],
         ]);
     }

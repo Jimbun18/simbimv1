@@ -16,13 +16,16 @@ const handlePrintBrowser = () => {
   window.print()
 }
 
-// Nama panggilan siswa untuk footer (misal: 'Kamayel')
+// Nama depan siswa untuk footer seluruh 4 jenis rapor (diambil dari kata pertama nama lengkap)
 const studentNickname = computed(() => {
-  const st = props.activeReportCard.student
+  const st = props.activeReportCard?.student
   if (!st) return 'Siswa'
-  if (st.nama_panggilan) return st.nama_panggilan
-  const parts = (st.nama_lengkap || '').trim().split(' ')
-  return parts[parts.length - 1] || parts[0] || 'Siswa'
+  const fullName = (st.nama_lengkap || '').trim()
+  if (fullName) {
+    const parts = fullName.split(/\s+/)
+    return parts[0] || 'Siswa'
+  }
+  return st.nama_panggilan || 'Siswa'
 })
 
 // Deteksi apakah rapor saat ini adalah Triwulan 1 atau Triwulan 3
@@ -630,33 +633,41 @@ const totalMerdekaPages = computed(() => {
         <div>
           <!-- KOP SURAT & IDENTITAS HANYA MUNCUL DI HALAMAN PERTAMA (LEMBAR 1) -->
           <template v-if="page.isFirstPage">
-            <!-- KOP SURAT RESMI LEMBAGA -->
-            <div class="border-b-[3px] border-black pb-1.5 mb-2.5 font-serif">
-              <div class="flex items-center gap-3">
-                <div class="w-16 h-16 shrink-0 flex items-center justify-center">
+            <!-- KOP SURAT RESMI LEMBAGA (SESUAI DOKUMEN RESMI YAYASAN & SEKOLAH) -->
+            <div class="mb-3 font-sans">
+              <div class="flex items-center justify-between">
+                <!-- Logo Sekolah Kiri -->
+                <div class="w-[82px] h-[82px] shrink-0 flex items-center justify-center">
                   <img
                     :src="props.schoolProfile?.logo_path || '/logo.png'"
                     alt="Logo SDI BIM"
                     class="w-full h-full object-contain"
                   />
                 </div>
-                <div class="flex-1 text-center text-black leading-tight">
-                  <h4 class="text-[11px] font-bold uppercase tracking-widest text-slate-800 font-sans">
+
+                <!-- Blok Teks Resmi Kop Surat (Centered) -->
+                <div class="flex-1 text-center text-black px-2">
+                  <h4 class="text-[12px] sm:text-[13.5px] font-bold uppercase tracking-wider text-black leading-tight">
                     {{ props.schoolProfile?.yayasan || 'YAYASAN BINA INSAN MANDIRI BANYUMAS' }}
                   </h4>
-                  <h1 class="text-sm sm:text-base font-black uppercase tracking-wide text-slate-900 mt-0.5 font-sans">
+                  <h1 class="text-[17px] sm:text-[19.5px] font-black uppercase tracking-tight text-black leading-tight mt-1">
                     {{ props.schoolProfile?.nama_sekolah || 'SEKOLAH DASAR ISLAM BINA INSAN MANDIRI PURWOKERTO' }}
                   </h1>
-                  <p class="text-[9.5px] font-sans mt-0.5 text-slate-800">
+                  <p class="text-[11px] sm:text-[11.5px] font-normal text-black leading-tight mt-1">
                     {{ props.schoolProfile?.alamat || 'Jalan Wadas Kelir RT 04 RW 05 Kelurahan Karangklesem' }}
                   </p>
-                  <p class="text-[9px] font-sans text-slate-700">
-                    Kec. Purwokerto Selatan Kab. Banyumas Kode Pos 53144 Telp. {{ props.schoolProfile?.telepon || '(0281) 7702469' }}
+                  <p class="text-[10.5px] sm:text-[11.5px] font-normal text-black leading-tight mt-0.5">
+                    Kec. Purwokerto Selatan Kab. Banyumas Kode Pos 53144 Telp. {{ props.schoolProfile?.telepon || '(0281) 7782469' }}
                   </p>
                 </div>
+
+                <!-- Spacer Penyeimbang Kanan agar posisi teks simetris tepat di tengah kertas -->
+                <div class="w-[82px] h-[82px] shrink-0 invisible" aria-hidden="true"></div>
               </div>
-              <!-- Garis Tipis Kop Surat -->
-              <div class="border-t border-black mt-1"></div>
+
+              <!-- Garis Ganda Kop Surat Resmi (Garis Atas Tebal, Celah Rapat, Garis Bawah Tipis) -->
+              <div class="border-b-[3.5px] border-black mt-2"></div>
+              <div class="border-b border-black mt-[2px]"></div>
             </div>
 
             <!-- Judul Dokumen -->
@@ -900,33 +911,41 @@ const totalMerdekaPages = computed(() => {
       
       <!-- ==================== LEMBAR 1 (HALAMAN 1) ==================== -->
       <div class="a4-page page-break report-paper bg-white p-8 sm:p-10 shadow-xl border border-slate-200 rounded-xl text-black font-sans print:shadow-none print:border-none print:p-0 print:m-0">
-        <!-- KOP SURAT RESMI LEMBAGA -->
-        <div class="border-b-[3px] border-black pb-1.5 mb-2.5 font-serif">
-          <div class="flex items-center gap-3">
-            <div class="w-16 h-16 shrink-0 flex items-center justify-center">
+        <!-- KOP SURAT RESMI LEMBAGA (SESUAI DOKUMEN RESMI YAYASAN & SEKOLAH) -->
+        <div class="mb-3 font-sans">
+          <div class="flex items-center justify-between">
+            <!-- Logo Sekolah Kiri -->
+            <div class="w-[82px] h-[82px] shrink-0 flex items-center justify-center">
               <img
                 :src="props.schoolProfile?.logo_path || '/logo.png'"
                 alt="Logo SDI BIM"
                 class="w-full h-full object-contain"
               />
             </div>
-            <div class="flex-1 text-center text-black leading-tight">
-              <h4 class="text-[11px] font-bold uppercase tracking-widest text-slate-800 font-sans">
+
+            <!-- Blok Teks Resmi Kop Surat (Centered) -->
+            <div class="flex-1 text-center text-black px-2">
+              <h4 class="text-[12px] sm:text-[13.5px] font-bold uppercase tracking-wider text-black leading-tight">
                 {{ props.schoolProfile?.yayasan || 'YAYASAN BINA INSAN MANDIRI BANYUMAS' }}
               </h4>
-              <h1 class="text-sm sm:text-base font-black uppercase tracking-wide text-slate-900 mt-0.5 font-sans">
+              <h1 class="text-[17px] sm:text-[19.5px] font-black uppercase tracking-tight text-black leading-tight mt-1">
                 {{ props.schoolProfile?.nama_sekolah || 'SEKOLAH DASAR ISLAM BINA INSAN MANDIRI PURWOKERTO' }}
               </h1>
-              <p class="text-[9.5px] font-sans mt-0.5 text-slate-800">
+              <p class="text-[11px] sm:text-[11.5px] font-normal text-black leading-tight mt-1">
                 {{ props.schoolProfile?.alamat || 'Jalan Wadas Kelir RT 04 RW 05 Kelurahan Karangklesem' }}
               </p>
-              <p class="text-[9px] font-sans text-slate-700">
-                Kec. Purwokerto Selatan Kab. Banyumas Kode Pos 53144 Telp. {{ props.schoolProfile?.telepon || '(0281) 7782489' }}
+              <p class="text-[10.5px] sm:text-[11.5px] font-normal text-black leading-tight mt-0.5">
+                Kec. Purwokerto Selatan Kab. Banyumas Kode Pos 53144 Telp. {{ props.schoolProfile?.telepon || '(0281) 7782469' }}
               </p>
             </div>
+
+            <!-- Spacer Penyeimbang Kanan agar posisi teks simetris tepat di tengah kertas -->
+            <div class="w-[82px] h-[82px] shrink-0 invisible" aria-hidden="true"></div>
           </div>
-          <!-- Garis Tipis Kop Surat -->
-          <div class="border-t border-black mt-1"></div>
+
+          <!-- Garis Ganda Kop Surat Resmi (Garis Atas Tebal, Celah Rapat, Garis Bawah Tipis) -->
+          <div class="border-b-[3.5px] border-black mt-2"></div>
+          <div class="border-b border-black mt-[2px]"></div>
         </div>
 
         <!-- Judul Dokumen Halaman 1 -->

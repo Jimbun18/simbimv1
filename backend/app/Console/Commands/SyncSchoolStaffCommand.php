@@ -409,28 +409,6 @@ class SyncSchoolStaffCommand extends Command
             $createdTeacherIds[] = $teacher->id;
             $this->line("   -> Pendidik: {$fullNameWithTitle} ({$data['jabatan']}) tersimpan ID: {$teacher->id}");
 
-            // C. Jika staf TU (Bayu) simpan juga ke staff table
-            if (!empty($data['is_staff'])) {
-                Staff::updateOrCreate(
-                    ['nik' => $data['nik']],
-                    [
-                        'user_id' => $user->id,
-                        'nama_lengkap' => $fullNameWithTitle,
-                        'jenis_kelamin' => $data['jenis_kelamin'],
-                        'tempat_lahir' => $data['tempat_lahir'],
-                        'tgl_lahir' => $data['tgl_lahir'],
-                        'alamat_jalan' => 'Jl. Riyanto No. 12, Sumampir',
-                        'kab_kota' => 'Banyumas',
-                        'no_hp' => $data['no_hp'],
-                        'email' => $data['email'],
-                        'jabatan' => 'Staf Tata Usaha',
-                        'status_kepegawaian' => 'GTY',
-                        'tgl_mulai_tugas' => $data['tgl_mulai_tugas'],
-                        'status' => 'aktif',
-                    ]
-                );
-            }
-
             // D. Wali Kelas
             if (!empty($data['is_wali']) && isset($data['wali_kelas_tingkat'])) {
                 $classTarget = $classesByGrade[$data['wali_kelas_tingkat']] ?? null;

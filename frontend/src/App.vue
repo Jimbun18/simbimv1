@@ -371,6 +371,22 @@ const handleLogout = async () => {
                 <span v-show="isSidebarOpen" class="truncate">Guru & Tendik</span>
               </router-link>
 
+              <!-- Struktur Organisasi Sekolah -->
+              <router-link
+                to="/organization-structure"
+                class="flex items-center rounded-xl font-medium transition-all group"
+                :class="[
+                  isSidebarOpen ? 'gap-3 px-3 py-2' : 'justify-center py-2 px-0 w-11 h-10 mx-auto',
+                  route.path === '/organization-structure' ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20' : 'text-slate-600 hover:bg-emerald-50/70 hover:text-emerald-800'
+                ]"
+                title="Bagan Struktur Organisasi & Penugasan Jabatan"
+              >
+                <svg class="w-5 h-5 shrink-0 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span v-show="isSidebarOpen" class="truncate">Struktur Organisasi</span>
+              </router-link>
+
               <!-- Wali Murid -->
               <router-link
                 v-if="auth.isAdmin"
@@ -906,14 +922,14 @@ const handleLogout = async () => {
           </div>
 
           <!-- GROUP: KEUANGAN & SARPRAS -->
-          <div v-if="auth.isAdmin">
+          <div v-if="auth.canAccessFinance || auth.canAccessTu">
             <div v-show="isSidebarOpen" class="px-3 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Keuangan & Aset
             </div>
             <div v-show="!isSidebarOpen" class="h-px bg-slate-100 my-1 mx-2"></div>
             <nav class="space-y-1">
               <!-- Keuangan & SPP (Dengan Sub-menu) -->
-              <div class="space-y-0.5">
+              <div v-if="auth.canAccessFinance" class="space-y-0.5">
                 <div class="flex items-center">
                   <router-link
                     to="/finance"
@@ -1010,6 +1026,7 @@ const handleLogout = async () => {
 
               <!-- Sarpras & Aset -->
               <router-link
+                v-if="auth.canAccessTu"
                 to="/assets"
                 class="flex items-center rounded-xl font-medium transition-all group"
                 :class="[
@@ -1427,6 +1444,18 @@ const handleLogout = async () => {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                       </svg>
                       <span>Guru & Tendik</span>
+                    </router-link>
+
+                    <router-link 
+                      to="/organization-structure" 
+                      class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-all"
+                      :class="route.path === '/organization-structure' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-700 hover:bg-slate-100'"
+                      @click="isMobileDrawerOpen = false"
+                    >
+                      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      <span>Struktur Organisasi</span>
                     </router-link>
 
                     <router-link 
@@ -1900,11 +1929,11 @@ const handleLogout = async () => {
                 </div>
 
                 <!-- Group 4: Keuangan & Aset -->
-                <div v-if="auth.isAdmin">
+                <div v-if="auth.canAccessFinance || auth.canAccessTu">
                   <div class="px-2 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Keuangan & Aset</div>
                   <div class="space-y-1">
                     <!-- Keuangan & SPP (Mobile Sub-menu) -->
-                    <div class="space-y-0.5">
+                    <div v-if="auth.canAccessFinance" class="space-y-0.5">
                       <div class="flex items-center">
                         <router-link 
                           to="/finance" 
@@ -1996,6 +2025,7 @@ const handleLogout = async () => {
                     </div>
 
                     <router-link 
+                      v-if="auth.canAccessTu"
                       to="/assets" 
                       class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-all"
                       :class="route.path === '/assets' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-700 hover:bg-slate-100'"

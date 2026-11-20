@@ -203,8 +203,11 @@ const handleExecutePromotion = async () => {
   promoting.value = true;
   try {
     const payload = {
+      from_class_id: promoteSourceClassId.value,
       source_class_id: promoteSourceClassId.value,
+      to_academic_year_id: promoteTargetYearId.value,
       target_year_id: promoteTargetYearId.value,
+      to_class_id: promoteTargetClassId.value || null,
       target_class_id: promoteTargetClassId.value || null,
       students: studentsToPromote.value.map(s => ({
         student_id: s.student_id,

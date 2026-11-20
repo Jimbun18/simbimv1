@@ -38,9 +38,14 @@ class TeacherAttendanceService
             }
         }
 
-        // 3. Ambil seluruh PTK aktif
+        // 3. Ambil seluruh PTK aktif (staf yang sudah terdaftar sebagai guru tidak diduplikasi)
         $activeTeachers = Teacher::where('status', 'aktif')->get();
-        $activeStaffs = Staff::where('status', 'aktif')->get();
+        $teacherUserIds = $activeTeachers->pluck('user_id')->filter()->unique();
+        $teacherNiks = $activeTeachers->pluck('nik')->filter()->unique();
+        $activeStaffs = Staff::where('status', 'aktif')
+            ->whereNotIn('user_id', $teacherUserIds)
+            ->whereNotIn('nik', $teacherNiks)
+            ->get();
 
         // 4. Ambil ID yang sudah tercatat hadir/izin/sakit/alpa pada tanggal ini
         $existing = TeacherAttendance::whereDate('tanggal', $targetDate)->get();

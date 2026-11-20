@@ -99,7 +99,7 @@ const fetchStudents = async (page = 1) => {
 
 const fetchClasses = async () => {
   try {
-    const res = await api.get('/classes');
+    const res = await api.get('/classes?all=true');
     if (res.data.success) {
       classes.value = res.data.data || [];
     }

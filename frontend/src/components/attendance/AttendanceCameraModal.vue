@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onUnmounted, nextTick } from 'vue'
+import InfoTooltip from '../common/InfoTooltip.vue'
 
 const props = defineProps<{
   isOpen: boolean
@@ -205,11 +206,14 @@ onUnmounted(() => {
             📸
           </div>
           <div>
-            <h3 class="text-sm font-extrabold text-slate-900">
-              {{ type === 'masuk' ? 'Foto Presensi Masuk' : 'Foto Presensi Pulang' }}
-            </h3>
-            <p class="text-[11px] text-slate-500">
-              Validasi kehadiran di lingkungan sekolah
+            <div class="flex items-center gap-1.5">
+              <h3 class="text-sm font-extrabold text-slate-900">
+                {{ type === 'masuk' ? 'Foto Presensi Masuk' : 'Foto Presensi Pulang' }}
+              </h3>
+              <InfoTooltip size="xs" text="Ambil foto wajah langsung untuk validasi kehadiran fisik resmi di lingkungan sekolah." />
+            </div>
+            <p class="text-[11px] text-slate-400">
+              Verifikasi visual kehadiran sekolah
             </p>
           </div>
         </div>

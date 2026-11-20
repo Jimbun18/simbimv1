@@ -93,6 +93,13 @@ class ClassController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if (!$request->filled('academic_year_id')) {
+            $activeYear = AcademicYear::getActive();
+            if ($activeYear) {
+                $request->merge(['academic_year_id' => $activeYear->id]);
+            }
+        }
+
         $validated = $request->validate([
             'academic_year_id' => ['required', 'exists:academic_years,id'],
             'kode' => ['required', 'string', 'max:10'],
@@ -264,6 +271,13 @@ class ClassController extends Controller
      */
     public function promoteStudents(Request $request): JsonResponse
     {
+        // Support alias format dari frontend (source_class_id / target_class_id / target_year_id)
+        $request->merge([
+            'from_class_id' => $request->input('from_class_id') ?? $request->input('source_class_id'),
+            'to_class_id' => $request->input('to_class_id') ?? $request->input('target_class_id'),
+            'to_academic_year_id' => $request->input('to_academic_year_id') ?? $request->input('target_year_id'),
+        ]);
+
         $validated = $request->validate([
             'from_class_id' => ['required', 'exists:classes,id'],
             'to_class_id' => ['nullable', 'exists:classes,id'],
@@ -368,6 +382,86 @@ class ClassController extends Controller
                 'success' => false,
                 'message' => 'Gagal memproses kenaikan kelas: ' . $e->getMessage(),
             ], 422);
+        }
+    }
+
+    /**
+     * Otomatis membuat rombel standar Kelas 1 s/d 6 (Paralel A) untuk tahun ajaran aktif jika belum ada.
+     */
+    public function generateDefaults(Request $request): JsonResponse
+    {
+        $academicYearId = $request->input('academic_year_id');
+        if (!$academicYearId) {
+            $activeYear = AcademicYear::getActive();
+            $academicYearId = $activeYear?->id;
+        }
+
+        if (!$academicYearId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tahun ajaran aktif tidak ditemukan.',
+            ], 422);
+        }
+
+        $created = [];
+        $existing = [];
+
+        DB::beginTransaction();
+        try {
+            for ($tingkat = 1; $tingkat <= 6; $tingkat++) {
+                // Cek apakah sudah ada kelas di tingkat ini untuk tahun ajaran ini
+                $exists = SchoolClass::where('academic_year_id', $academicYearId)
+                    ->where('tingkat', $tingkat)
+                    ->exists();
+
+                if (!$exists) {
+                    $kode = "{$tingkat}-A";
+                    if (SchoolClass::where('academic_year_id', $academicYearId)->where('kode', $kode)->exists()) {
+                        $kode = "{$tingkat}A";
+                    }
+
+                    $class = SchoolClass::create([
+                        'academic_year_id' => $academicYearId,
+                        'kode' => $kode,
+                        'nama' => "Kelas {$tingkat}-A",
+                        'tingkat' => $tingkat,
+                        'paralel' => 'A',
+                        'kapasitas' => 28,
+                        'status' => 'aktif',
+                        'created_by' => auth()->id(),
+                    ]);
+                    $created[] = $class;
+                } else {
+                    $existing[] = "Kelas {$tingkat}";
+                }
+            }
+
+            DB::commit();
+
+            ActivityLogService::log(
+                aksi: 'create',
+                modul: 'classes',
+                targetType: SchoolClass::class,
+                keterangan: 'Membuat rombel standar Kelas 1-6 (Paralel A) otomatis. Jumlah dibuat: ' . count($created)
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => count($created) > 0 
+                    ? 'Berhasil membuat ' . count($created) . ' rombel standar Kelas 1 s/d 6.' 
+                    : 'Seluruh Kelas 1 s/d 6 sudah memiliki rombel.',
+                'data' => [
+                    'created_count' => count($created),
+                    'created' => $created,
+                    'existing' => $existing,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat rombel standar: ' . $e->getMessage(),
+            ], 500);
         }
     }
 }

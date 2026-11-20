@@ -29,20 +29,26 @@ const academicYears = ref<any[]>([])
 const selectedClassId = ref<string | number>('')
 const selectedSemester = ref<'Gasal' | 'Genap'>('Gasal')
 const selectedAcademicYearId = ref<string | number>('')
-// Default jenis rapor untuk Triwulan 1 adalah Karakter & Life Skill (17 Butir) sesuai template resmi SDI BIM
+// Rapor Triwulan memiliki 2 format (Karakter & Tematik) untuk Triwulan 1 maupun Triwulan 3
+const triwulanJenisRapor = ref<'karakter_lifeskill' | 'triwulan_tematik'>('karakter_lifeskill')
 const selectedJenisRapor = ref<'karakter_lifeskill' | 'triwulan_tematik' | 'kurikulum_merdeka'>('karakter_lifeskill')
 const selectedPeriode = ref<string>('Triwulan I')
+
+const switchTriwulanJenisRapor = (jenis: 'karakter_lifeskill' | 'triwulan_tematik') => {
+  triwulanJenisRapor.value = jenis
+  selectedJenisRapor.value = jenis
+}
 
 // Editor & Print states
 const activeReportCard = ref<ReportCardDetail | null>(null)
 const schoolProfile = ref<SchoolProfileData>({
-  nama_sekolah: 'SDI Bina Insan Mandiri Purwokerto',
-  yayasan: 'Yayasan Bina Insan Mandiri',
-  alamat: 'Jl. Wadas Kelir RT.04 RW.05 Kel. Karangklesem, Kec. Purwokerto Selatan, Kab. Banyumas 53144',
+  nama_sekolah: 'SEKOLAH DASAR ISLAM BINA INSAN MANDIRI PURWOKERTO',
+  yayasan: 'YAYASAN BINA INSAN MANDIRI BANYUMAS',
+  alamat: 'Jalan Wadas Kelir RT 04 RW 05 Kelurahan Karangklesem',
   npsn: '70036695',
   nss: '102030405060',
   akreditasi: '',
-  telepon: '0281-635812',
+  telepon: '(0281) 7782469',
   email: 'sdibim.pwt@gmail.com',
   website: 'https://sdibim.sch.id',
   logo_path: '/logo.png',
@@ -65,7 +71,7 @@ watch(
     if (newSubMenu === 'triwulan_1') {
       selectedSemester.value = 'Gasal'
       selectedPeriode.value = 'Triwulan I'
-      selectedJenisRapor.value = 'karakter_lifeskill'
+      selectedJenisRapor.value = triwulanJenisRapor.value
     } else if (newSubMenu === 'semester_1') {
       selectedSemester.value = 'Gasal'
       selectedPeriode.value = 'Semester Gasal'
@@ -73,7 +79,7 @@ watch(
     } else if (newSubMenu === 'triwulan_3') {
       selectedSemester.value = 'Genap'
       selectedPeriode.value = 'Triwulan III'
-      selectedJenisRapor.value = 'triwulan_tematik'
+      selectedJenisRapor.value = triwulanJenisRapor.value
     } else if (newSubMenu === 'semester_2') {
       selectedSemester.value = 'Genap'
       selectedPeriode.value = 'Semester Genap'
@@ -290,20 +296,59 @@ onMounted(() => {
           </button>
         </div>
 
-        <!-- FORMAT BADGE INFO -->
+        <!-- FORMAT BADGE / SWITCHER -->
         <div v-else class="flex items-center gap-2 shrink-0">
+          <!-- Switcher Jenis Rapor Triwulan: Karakter & Life Skill vs Tematik Terpadu -->
           <div
+            v-if="activeSubMenu === 'triwulan_1' || activeSubMenu === 'triwulan_3'"
+            class="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner"
+          >
+            <button
+              type="button"
+              @click="switchTriwulanJenisRapor('karakter_lifeskill')"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              :class="selectedJenisRapor === 'karakter_lifeskill'
+                ? 'bg-white text-emerald-800 shadow-xs border border-emerald-300 font-black ring-1 ring-emerald-400/20'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'"
+            >
+              <span>🌱</span>
+              <span>1. Rapor Karakter & Life Skill</span>
+              <span
+                class="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                :class="selectedJenisRapor === 'karakter_lifeskill' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'"
+              >
+                17 Butir
+              </span>
+            </button>
+            <button
+              type="button"
+              @click="switchTriwulanJenisRapor('triwulan_tematik')"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              :class="selectedJenisRapor === 'triwulan_tematik'
+                ? 'bg-white text-purple-800 shadow-xs border border-purple-300 font-black ring-1 ring-purple-400/20'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'"
+            >
+              <span>📚</span>
+              <span>2. Rapor Tematik Terpadu</span>
+              <span
+                class="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                :class="selectedJenisRapor === 'triwulan_tematik' ? 'bg-purple-100 text-purple-800' : 'bg-slate-200 text-slate-600'"
+              >
+                5 Klaster
+              </span>
+            </button>
+          </div>
+
+          <!-- Format Badge untuk Semester 1 & 2 -->
+          <div
+            v-else
             class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xs border"
             :class="activeSubMenu === 'semester_1'
               ? 'bg-blue-50 text-blue-800 border-blue-200/80'
-              : activeSubMenu === 'semester_2'
-                ? 'bg-teal-50 text-teal-800 border-teal-200/80'
-                : activeSubMenu === 'triwulan_3' 
-                  ? 'bg-purple-50 text-purple-800 border-purple-200/80' 
-                  : 'bg-emerald-50 text-emerald-800 border-emerald-200/80'"
+              : 'bg-teal-50 text-teal-800 border-teal-200/80'"
           >
-            <span>{{ activeSubMenu === 'semester_1' ? '📘' : activeSubMenu === 'semester_2' ? '📗' : activeSubMenu === 'triwulan_3' ? '🎒' : '📙' }}</span>
-            <span>{{ (activeSubMenu === 'semester_1' || activeSubMenu === 'semester_2') ? 'Kurikulum Merdeka (18 Mapel)' : activeSubMenu === 'triwulan_3' ? 'Tematik Terpadu BIM (5 Klaster Tema)' : 'Penguatan Karakter & Life Skill (17 Butir)' }}</span>
+            <span>{{ activeSubMenu === 'semester_1' ? '📘' : '📗' }}</span>
+            <span>Kurikulum Merdeka (18 Mapel Standar)</span>
           </div>
         </div>
       </div>

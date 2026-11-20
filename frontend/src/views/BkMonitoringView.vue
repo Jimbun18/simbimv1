@@ -539,7 +539,7 @@ onMounted(async () => {
     api.get('/students?per_page=500').then((res) => {
       if (res.data.success) students.value = res.data.data || []
     }),
-    api.get('/classes').then((res) => {
+    api.get('/classes?all=true').then((res) => {
       if (res.data.success) classes.value = res.data.data || []
     }),
   ])

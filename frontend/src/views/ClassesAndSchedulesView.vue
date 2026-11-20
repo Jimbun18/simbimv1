@@ -2,6 +2,7 @@
 import { ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import api from '../services/api';
 
 // Modular Child Components
 import ClassTab from '../components/classes-schedules/ClassTab.vue';
@@ -28,6 +29,19 @@ const activeTab = ref<string>('classes');
 const selectedClass = ref<any | null>(null);
 const selectedSubject = ref<any | null>(null);
 const selectedSchedule = ref<any | null>(null);
+const activeYearId = ref<number | null>(null);
+
+const fetchActiveYear = async () => {
+  try {
+    const res = await api.get('/academic-years');
+    if (res.data?.success && Array.isArray(res.data.data)) {
+      const active = res.data.data.find((y: any) => y.is_aktif || y.status === 'aktif');
+      activeYearId.value = active ? active.id : (res.data.data[0]?.id || null);
+    }
+  } catch (err) {
+    console.error('Gagal mengambil tahun ajaran aktif:', err);
+  }
+};
 
 // Component Refs for header actions
 const classTabRef = ref<InstanceType<typeof ClassTab> | null>(null);
@@ -37,12 +51,19 @@ const academicYearTabRef = ref<InstanceType<typeof AcademicYearTab> | null>(null
 const calendarTabRef = ref<InstanceType<typeof CalendarTab> | null>(null);
 
 // Class Handlers
-const openCreateClassForm = () => {
+const prefilledTingkat = ref<number | null>(null);
+const prefilledParalel = ref<string | null>(null);
+
+const openCreateClassForm = (payload?: { tingkat?: number; suggestedParalel?: string }) => {
   selectedClass.value = null;
+  prefilledTingkat.value = payload?.tingkat || null;
+  prefilledParalel.value = payload?.suggestedParalel || null;
   viewMode.value = 'form-class';
 };
 const openEditClassForm = (item: any) => {
   selectedClass.value = item;
+  prefilledTingkat.value = item?.tingkat || null;
+  prefilledParalel.value = item?.paralel || null;
   viewMode.value = 'form-class';
 };
 const handleClassSaved = () => {
@@ -93,6 +114,7 @@ watch(
 );
 
 onMounted(() => {
+  fetchActiveYear();
   if (!auth.isAdmin) {
     activeTab.value = 'calendar';
   } else if (route.query.tab && typeof route.query.tab === 'string') {
@@ -159,10 +181,10 @@ onMounted(() => {
 
           <button
             v-if="activeTab === 'classes'"
-            @click="openCreateClassForm"
+            @click="openCreateClassForm()"
             class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer active:scale-95"
           >
-            + Tambah Rombel Kelas
+            + Tambah Paralel Rombel
           </button>
           <button
             v-else-if="activeTab === 'subjects'"
@@ -292,6 +314,9 @@ onMounted(() => {
       v-else-if="viewMode === 'form-class'"
       :initial-data="selectedClass"
       :class-item="selectedClass"
+      :active-year-id="activeYearId"
+      :default-tingkat="prefilledTingkat"
+      :suggested-paralel="prefilledParalel"
       @cancel="viewMode = 'tabs'"
       @saved="handleClassSaved"
     />

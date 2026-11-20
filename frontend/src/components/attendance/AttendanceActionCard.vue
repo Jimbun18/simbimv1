@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { formatSpacedTime } from './types'
+import InfoTooltip from '../common/InfoTooltip.vue'
 
 defineProps<{
   todayAttendance: any
@@ -19,9 +20,9 @@ const emit = defineEmits<{
 
 <template>
   <div class="bg-white rounded-2xl border border-slate-100 shadow-xs p-6 space-y-4">
-    <div>
-      <h3 class="text-base font-bold text-slate-900">Pencatatan Jam Kehadiran</h3>
-      <p class="text-[11px] text-slate-400">Rekapitulasi jam presensi harian pendidik</p>
+    <div class="flex items-center gap-1.5">
+      <h3 class="text-base font-bold text-slate-900">Pencatatan Kehadiran</h3>
+      <InfoTooltip text="Pencatatan jam presensi harian pendidik (masuk dan pulang) berbasis verifikasi GPS dan swafoto." />
     </div>
 
     <!-- Grid Jam Masuk & Jam Pulang -->
@@ -29,7 +30,10 @@ const emit = defineEmits<{
       <!-- JAM MASUK -->
       <div class="border border-slate-200/80 rounded-xl p-4 bg-white space-y-2">
         <div class="flex items-center justify-between">
-          <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">JAM MASUK</span>
+          <div class="flex items-center gap-1">
+            <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">JAM MASUK</span>
+            <InfoTooltip size="xs" text="Waktu check-in presensi masuk guru." />
+          </div>
           <span 
             v-if="todayAttendance?.jam_masuk"
             class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase"
@@ -53,7 +57,10 @@ const emit = defineEmits<{
       <!-- JAM PULANG -->
       <div class="border border-slate-200/80 rounded-xl p-4 bg-white space-y-2">
         <div class="flex items-center justify-between">
-          <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">JAM PULANG</span>
+          <div class="flex items-center gap-1">
+            <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">JAM PULANG</span>
+            <InfoTooltip size="xs" text="Waktu check-out kepulangan guru." />
+          </div>
           <span 
             v-if="todayAttendance?.jam_keluar"
             class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-teal-100 text-teal-800"
@@ -78,19 +85,22 @@ const emit = defineEmits<{
     </div>
 
     <!-- Info Foto Selfie Terpadu -->
-    <div class="p-3.5 border border-emerald-100 rounded-xl flex items-center gap-3 bg-emerald-50/50">
-      <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
+    <div class="p-3 border border-emerald-100 rounded-xl flex items-center justify-between gap-3 bg-emerald-50/50">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+        <div class="flex items-center gap-1.5 min-w-0">
+          <h4 class="font-bold text-xs text-slate-800">Verifikasi Swafoto</h4>
+          <InfoTooltip size="xs" text="Kamera swafoto terbuka otomatis untuk bukti kehadiran setelah menekan tombol absen." />
+        </div>
       </div>
-      <div>
-        <h4 class="font-bold text-xs text-slate-800">Verifikasi Swafoto (Selfie)</h4>
-        <p class="text-[10px] text-slate-500 leading-tight">
-          Kamera swafoto akan terbuka otomatis untuk mengambil foto bukti kehadiran setelah Anda menekan tombol absen di bawah.
-        </p>
-      </div>
+      <span class="text-[10px] font-semibold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded shrink-0">
+        Otomatis
+      </span>
     </div>
 
     <!-- Tombol Utama Presensi -->
@@ -148,9 +158,9 @@ const emit = defineEmits<{
       </button>
 
       <!-- 3. Selesai Hari Ini Banner -->
-      <div v-else class="text-center p-3.5 bg-emerald-50 rounded-xl border border-emerald-200 text-xs font-semibold text-emerald-900 flex items-center justify-center gap-2">
+      <div v-else class="text-center p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs font-semibold text-emerald-900 flex items-center justify-center gap-2">
         <span class="text-base">🎉</span>
-        <span>Alhamdulillah, presensi hari ini telah lengkap. Terima kasih atas dedikasi Anda mendidik siswa!</span>
+        <span>Alhamdulillah, presensi hari ini lengkap. Terima kasih atas dedikasinya!</span>
       </div>
 
       <!-- Tombol Pengajuan Izin / Cuti -->

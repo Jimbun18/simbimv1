@@ -205,13 +205,19 @@ const routes: RouteRecordRaw[] = [
     path: '/finance',
     name: 'finance',
     component: () => import('../views/FinanceView.vue'),
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
+    meta: { requiresAuth: true, checkPermission: 'finance', role: ['kepala_sekolah', 'staf_admin', 'guru'] },
   },
   {
     path: '/assets',
     name: 'assets',
     component: () => import('../views/AssetsView.vue'),
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
+    meta: { requiresAuth: true, checkPermission: 'tu', role: ['kepala_sekolah', 'staf_admin', 'guru'] },
+  },
+  {
+    path: '/organization-structure',
+    name: 'organization-structure',
+    component: () => import('../views/OrganizationStructureView.vue'),
+    meta: { requiresAuth: true },
   },
   {
     path: '/users-settings',
@@ -282,6 +288,18 @@ router.beforeEach((to, _from, next) => {
   if (to.meta.requiresGuruBk && !auth.isGuruBk) {
     if (auth.isAdmin) return next({ name: 'dashboard' });
     if (auth.isGuru) return next({ name: 'observations' });
+    return next({ name: 'dashboard' });
+  }
+
+  if (to.meta.checkPermission === 'finance' && !auth.canAccessFinance) {
+    if (auth.isGuru) return next({ name: 'presensi' });
+    if (auth.isWali) return next({ name: 'portal-wali' });
+    return next({ name: 'dashboard' });
+  }
+
+  if (to.meta.checkPermission === 'tu' && !auth.canAccessTu) {
+    if (auth.isGuru) return next({ name: 'presensi' });
+    if (auth.isWali) return next({ name: 'portal-wali' });
     return next({ name: 'dashboard' });
   }
 

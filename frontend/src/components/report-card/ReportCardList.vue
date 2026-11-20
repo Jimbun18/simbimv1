@@ -292,7 +292,9 @@ const handleInitializeClass = async (overwrite = false) => {
   const labelJenis =
     props.jenisRapor === 'karakter_lifeskill'
       ? 'Laporan Karakter & Life Skill (17 Butir Penilaian)'
-      : 'Rapor Kurikulum Merdeka (18 Mapel Standar)';
+      : props.jenisRapor === 'triwulan_tematik'
+        ? 'Rapor Tematik Terpadu BIM (5 Klaster Tema)'
+        : 'Rapor Kurikulum Merdeka (18 Mapel Standar)';
 
   const confirmedInit = await showConfirm(
     'Inisialisasi Rapor Kelas',

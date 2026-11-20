@@ -192,7 +192,7 @@ class TeacherAttendanceController extends Controller
 
         $data = [
             'teacher_id' => $teacher?->id,
-            'staff_id' => $staff?->id,
+            'staff_id' => $teacher ? null : $staff?->id,
             'tanggal' => $today,
             'jam_masuk' => $serverTime,
             'status' => $isTerlambat ? 'terlambat' : 'hadir',
@@ -396,7 +396,7 @@ class TeacherAttendanceController extends Controller
                     $record = TeacherAttendance::updateOrCreate(
                         [
                             'teacher_id' => $teacher?->id,
-                            'staff_id' => $staff?->id,
+                            'staff_id' => $teacher ? null : $staff?->id,
                             'tanggal' => $dateStr,
                         ],
                         [
@@ -549,8 +549,9 @@ class TeacherAttendanceController extends Controller
         $summaryQuery = clone $query;
         $allRecords = $summaryQuery->get();
 
+        $teacherUserIds = \App\Models\Teacher::pluck('user_id')->filter()->unique();
         $totalTeachers = \App\Models\Teacher::count();
-        $totalStaff = \App\Models\Staff::count();
+        $totalStaff = \App\Models\Staff::whereNotIn('user_id', $teacherUserIds)->count();
         $totalPtk = $totalTeachers + $totalStaff;
 
         $totalRecord = $allRecords->count();
@@ -597,8 +598,15 @@ class TeacherAttendanceController extends Controller
         // Mode Monitoring Seluruh PTK (Pendidik & Tendik yang sudah maupun belum check-in)
         if ($request->boolean('with_all_ptk') && $isAdmin && $request->filled('tanggal')) {
             $tanggal = $request->query('tanggal');
-            $teachers = \App\Models\Teacher::select('id', 'nip', 'nik', 'nama_lengkap', 'jenis_ptk', 'foto_path')->get();
-            $staffs = \App\Models\Staff::select('id', 'nik', 'nama_lengkap', 'jabatan', 'foto_path')->get();
+            $teachers = \App\Models\Teacher::select('id', 'nip', 'nik', 'nama_lengkap', 'jenis_ptk', 'foto_path', 'user_id')->get();
+            $teacherUserIds = $teachers->pluck('user_id')->filter()->unique();
+            $teacherNiks = $teachers->pluck('nik')->filter()->unique();
+
+            // Hanya ambil staf yang BELUM terdaftar sebagai Teacher agar tidak terjadi double PTK
+            $staffs = \App\Models\Staff::select('id', 'nik', 'nama_lengkap', 'jabatan', 'foto_path', 'user_id')
+                ->whereNotIn('user_id', $teacherUserIds)
+                ->whereNotIn('nik', $teacherNiks)
+                ->get();
 
             $existingAttendances = TeacherAttendance::with(['teacher:id,nip,nik,nama_lengkap,jenis_ptk,foto_path', 'staff:id,nik,nama_lengkap,jabatan,foto_path'])
                 ->whereDate('tanggal', $tanggal)
@@ -873,7 +881,13 @@ class TeacherAttendanceController extends Controller
         }
 
         $teachers = ($kategori === 'tendik') ? collect() : $teachersQuery->get();
-        $staffs = ($kategori === 'guru') ? collect() : $staffsQuery->get();
+        $teacherUserIds = \App\Models\Teacher::pluck('user_id')->filter()->unique();
+        $teacherNiks = \App\Models\Teacher::pluck('nik')->filter()->unique();
+
+        $staffs = ($kategori === 'guru') ? collect() : $staffsQuery
+            ->whereNotIn('user_id', $teacherUserIds)
+            ->whereNotIn('nik', $teacherNiks)
+            ->get();
 
         $attendances = TeacherAttendance::whereBetween('tanggal', [$startDate, $endDate])
             ->orderBy('tanggal', 'asc')

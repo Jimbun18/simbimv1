@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { showWarning } from '../../services/swal'
 import type { LeaveForm } from './types'
+import InfoTooltip from '../common/InfoTooltip.vue'
 
 defineProps<{
   isOpen: boolean
@@ -13,6 +14,8 @@ const emit = defineEmits<{
   (e: 'submit', formData: FormData): void
 }>()
 
+const MAX_KATA_KETERANGAN = 60
+
 const leaveForm = ref<LeaveForm>({
   status: 'izin',
   tanggal_mulai: new Date().toISOString().split('T')[0],
@@ -20,6 +23,22 @@ const leaveForm = ref<LeaveForm>({
   keterangan: '',
 })
 const leaveAttachment = ref<File | null>(null)
+
+// Word counter and limiter helpers
+const countWords = (text?: string): number => {
+  if (!text) return 0
+  const trimmed = text.trim()
+  if (!trimmed) return 0
+  return trimmed.split(/\s+/).filter(Boolean).length
+}
+
+const enforceWordLimit = (target: Record<string, any>, field: string, maxWords: number) => {
+  const text = target[field] || ''
+  const words = text.trim().split(/\s+/).filter(Boolean)
+  if (words.length > maxWords) {
+    target[field] = words.slice(0, maxWords).join(' ')
+  }
+}
 
 const onLeaveFileChange = (e: Event) => {
   const target = e.target as HTMLInputElement
@@ -31,6 +50,11 @@ const onLeaveFileChange = (e: Event) => {
 const handleSubmit = () => {
   if (!leaveForm.value.keterangan.trim()) {
     showWarning('Alasan Wajib Diisi', 'Silakan tuliskan alasan permohonan izin/sakit.')
+    return
+  }
+
+  if (countWords(leaveForm.value.keterangan) > MAX_KATA_KETERANGAN) {
+    showWarning('Batas Kata Terlampaui', `Alasan permohonan izin melebihi batas maksimal ${MAX_KATA_KETERANGAN} kata.`)
     return
   }
 
@@ -55,9 +79,9 @@ const handleSubmit = () => {
   >
     <div class="max-w-md w-full bg-white rounded-3xl p-6 shadow-2xl space-y-4" @click.stop>
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <div>
+        <div class="flex items-center gap-1.5">
           <h3 class="font-black text-slate-900 text-base">Pengajuan Izin / Cuti</h3>
-          <p class="text-xs text-slate-400">Kirim permohonan ke Kepala Sekolah</p>
+          <InfoTooltip text="Formulir permohonan izin ketidakhadiran pendidik kepada Kepala Sekolah." />
         </div>
         <button @click="emit('close')" class="text-slate-400 hover:text-slate-700 text-2xl font-bold p-1 cursor-pointer">&times;</button>
       </div>
@@ -65,7 +89,10 @@ const handleSubmit = () => {
       <form @submit.prevent="handleSubmit" class="space-y-4 text-xs">
         <!-- Jenis Izin -->
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Jenis Ketidakhadiran</label>
+          <div class="flex items-center gap-1 mb-1">
+            <label class="block font-bold text-slate-700">Jenis Ketidakhadiran</label>
+            <InfoTooltip size="xs" text="Pilih jenis izin pribadi, sakit, atau penugasan dinas luar." />
+          </div>
           <select
             v-model="leaveForm.status"
             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500"
@@ -98,21 +125,34 @@ const handleSubmit = () => {
           </div>
         </div>
 
-        <!-- Keterangan -->
+        <!-- Keterangan dengan Aturan Max Kata -->
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Alasan / Keterangan</label>
+          <div class="flex items-center gap-1 mb-1">
+            <label class="block font-bold text-slate-700">Alasan / Keterangan</label>
+            <InfoTooltip size="xs" text="Tuliskan keterangan permohonan secara faktual dan ringkas (maks. 60 kata)." />
+          </div>
           <textarea
             v-model="leaveForm.keterangan"
+            @input="enforceWordLimit(leaveForm, 'keterangan', MAX_KATA_KETERANGAN)"
             required
             rows="3"
             placeholder="Jelaskan alasan izin / sakit..."
             class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500"
           ></textarea>
+          <div class="flex items-center justify-between text-[10px] px-1 text-slate-400 mt-1">
+            <span>Maks. {{ MAX_KATA_KETERANGAN }} kata</span>
+            <span :class="countWords(leaveForm.keterangan) >= MAX_KATA_KETERANGAN ? 'text-amber-600 font-bold' : countWords(leaveForm.keterangan) > 0 ? 'text-emerald-600 font-medium' : 'text-slate-400'">
+              {{ countWords(leaveForm.keterangan) }} / {{ MAX_KATA_KETERANGAN }} kata
+            </span>
+          </div>
         </div>
 
         <!-- Lampiran File -->
         <div>
-          <label class="block font-bold text-slate-700 mb-1">Lampiran Dokumen / Surat Dokter (Opsional)</label>
+          <div class="flex items-center gap-1 mb-1">
+            <label class="block font-bold text-slate-700">Lampiran Dokumen / Surat Dokter (Opsional)</label>
+            <InfoTooltip size="xs" text="Bukti fisik pendukung izin berupa file PDF, JPG, atau PNG." />
+          </div>
           <input
             type="file"
             accept=".pdf,.jpg,.jpeg,.png"

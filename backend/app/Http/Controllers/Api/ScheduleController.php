@@ -178,25 +178,56 @@ class ScheduleController extends Controller
         // Validate schedule conflicts (FR-DATA-13)
         $this->conflictService->validateNoConflict($validated);
 
-        $validated['tipe_kegiatan'] = $validated['tipe_kegiatan'] ?? (!empty($validated['subject_id']) ? 'kbm' : 'pembiasaan');
-        $validated['status'] = $validated['status'] ?? 'aktif';
-        $validated['created_by'] = auth()->id();
-        $schedule = Schedule::create($validated);
+        try {
+            $existing = Schedule::withTrashed()
+                ->where('academic_year_id', $validated['academic_year_id'])
+                ->where('class_id', $validated['class_id'])
+                ->where('hari', $validated['hari'])
+                ->where('time_slot_id', $validated['time_slot_id'])
+                ->first();
 
-        ActivityLogService::log(
-            aksi: 'create',
-            modul: 'schedules',
-            targetType: Schedule::class,
-            targetId: $schedule->id,
-            dataSesudah: $schedule->toArray(),
-            keterangan: "Menambahkan jadwal pelajaran baru ID: {$schedule->id} ({$schedule->hari})."
-        );
+            $validated['tipe_kegiatan'] = $validated['tipe_kegiatan'] ?? (!empty($validated['subject_id']) ? 'kbm' : 'pembiasaan');
+            $validated['status'] = $validated['status'] ?? 'aktif';
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Jadwal pelajaran berhasil ditambahkan.',
-            'data' => $schedule->load(['academicYear', 'schoolClass', 'subject', 'teacher', 'room', 'timeSlot']),
-        ], 201);
+            // Auto-assign semester_id if empty
+            if (empty($validated['semester_id'])) {
+                $activeSemester = \App\Models\Semester::where('academic_year_id', $validated['academic_year_id'])
+                    ->where('status', 'aktif')->first() ?? \App\Models\Semester::where('status', 'aktif')->first();
+                $validated['semester_id'] = $activeSemester?->id;
+            }
+
+            if ($existing) {
+                if ($existing->trashed()) {
+                    $existing->restore();
+                }
+                $validated['updated_by'] = auth()->id();
+                $existing->update($validated);
+                $schedule = $existing;
+            } else {
+                $validated['created_by'] = auth()->id();
+                $schedule = Schedule::create($validated);
+            }
+
+            ActivityLogService::log(
+                aksi: 'create',
+                modul: 'schedules',
+                targetType: Schedule::class,
+                targetId: $schedule->id,
+                dataSesudah: $schedule->toArray(),
+                keterangan: "Menambahkan/memperbarui jadwal pelajaran ID: {$schedule->id} ({$schedule->hari})."
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Jadwal pelajaran berhasil ditambahkan.',
+                'data' => $schedule->load(['academicYear', 'schoolClass', 'subject', 'teacher', 'room', 'timeSlot']),
+            ], 201);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan jadwal: ' . $e->getMessage(),
+            ], 422);
+        }
     }
 
     public function show(Schedule $schedule): JsonResponse
@@ -258,7 +289,7 @@ class ScheduleController extends Controller
         }
 
         $oldData = $schedule->toArray();
-        $schedule->delete();
+        $schedule->forceDelete();
 
         ActivityLogService::log(
             aksi: 'delete',
@@ -278,189 +309,221 @@ class ScheduleController extends Controller
 
     public function quickSet(Request $request): JsonResponse
     {
-        if (!$request->filled('academic_year_id')) {
-            $activeYear = AcademicYear::getActive();
-            if ($activeYear) {
-                $request->merge(['academic_year_id' => $activeYear->id]);
-            } elseif ($request->filled('class_id')) {
-                $cls = SchoolClass::find($request->input('class_id'));
-                if ($cls && $cls->academic_year_id) {
-                    $request->merge(['academic_year_id' => $cls->academic_year_id]);
+        try {
+            if (!$request->filled('academic_year_id')) {
+                $activeYear = AcademicYear::getActive();
+                if ($activeYear) {
+                    $request->merge(['academic_year_id' => $activeYear->id]);
+                } elseif ($request->filled('class_id')) {
+                    $cls = SchoolClass::find($request->input('class_id'));
+                    if ($cls && $cls->academic_year_id) {
+                        $request->merge(['academic_year_id' => $cls->academic_year_id]);
+                    }
                 }
             }
-        }
 
-        $validated = $request->validate([
-            'academic_year_id' => ['required', 'exists:academic_years,id'],
-            'class_id' => ['required', 'exists:classes,id'],
-            'hari' => ['required', 'in:senin,selasa,rabu,kamis,jumat,sabtu'],
-            'time_slot_id' => ['required', 'exists:time_slots,id'],
-            'action' => ['required', 'in:save,set,delete'],
-            'subject_id' => ['nullable', 'exists:subjects,id'],
-            'teacher_id' => ['nullable', 'exists:teachers,id'],
-            'room_id' => ['nullable', 'exists:rooms,id'],
-            'judul_kegiatan' => ['nullable', 'string', 'max:100'],
-            'tipe_kegiatan' => ['nullable', 'in:kbm,pembiasaan,istirahat,ekskul'],
-            'catatan' => ['nullable', 'string', 'max:255'],
-            'jam_mulai' => ['nullable', 'string'],
-            'jam_selesai' => ['nullable', 'string'],
-            'force' => ['nullable', 'boolean'],
-        ]);
-
-        $existing = Schedule::where('academic_year_id', $validated['academic_year_id'])
-            ->where('class_id', $validated['class_id'])
-            ->where('hari', $validated['hari'])
-            ->where('time_slot_id', $validated['time_slot_id'])
-            ->first();
-
-        if ($validated['action'] === 'delete') {
-            if ($existing) {
-                $existing->delete();
-            }
-            return response()->json([
-                'success' => true,
-                'message' => 'Slot jadwal berhasil dikosongkan.',
+            $validated = $request->validate([
+                'academic_year_id' => ['required', 'exists:academic_years,id'],
+                'class_id' => ['required', 'exists:classes,id'],
+                'hari' => ['required', 'in:senin,selasa,rabu,kamis,jumat,sabtu'],
+                'time_slot_id' => ['required', 'exists:time_slots,id'],
+                'action' => ['required', 'in:save,set,delete'],
+                'subject_id' => ['nullable', 'exists:subjects,id'],
+                'teacher_id' => ['nullable', 'exists:teachers,id'],
+                'room_id' => ['nullable', 'exists:rooms,id'],
+                'judul_kegiatan' => ['nullable', 'string', 'max:100'],
+                'tipe_kegiatan' => ['nullable', 'in:kbm,pembiasaan,istirahat,ekskul'],
+                'catatan' => ['nullable', 'string', 'max:255'],
+                'jam_mulai' => ['nullable', 'string'],
+                'jam_selesai' => ['nullable', 'string'],
+                'force' => ['nullable', 'boolean'],
             ]);
-        }
 
-        // Optional: Update time slot jam if changed
-        if (!empty($validated['jam_mulai']) && !empty($validated['jam_selesai'])) {
-            $slot = \App\Models\TimeSlot::find($validated['time_slot_id']);
-            if ($slot) {
-                $slot->update([
-                    'jam_mulai' => $validated['jam_mulai'],
-                    'jam_selesai' => $validated['jam_selesai'],
+            $existing = Schedule::withTrashed()
+                ->where('academic_year_id', $validated['academic_year_id'])
+                ->where('class_id', $validated['class_id'])
+                ->where('hari', $validated['hari'])
+                ->where('time_slot_id', $validated['time_slot_id'])
+                ->first();
+
+            if ($validated['action'] === 'delete') {
+                if ($existing) {
+                    $existing->forceDelete();
+                }
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Slot jadwal berhasil dikosongkan.',
                 ]);
             }
+
+            // Optional: Update time slot jam if changed
+            if (!empty($validated['jam_mulai']) && !empty($validated['jam_selesai'])) {
+                $slot = \App\Models\TimeSlot::find($validated['time_slot_id']);
+                if ($slot) {
+                    $slot->update([
+                        'jam_mulai' => $validated['jam_mulai'],
+                        'jam_selesai' => $validated['jam_selesai'],
+                    ]);
+                }
+            }
+
+            // Validate conflicts if KBM unless forced
+            if (!$request->boolean('force')) {
+                $this->conflictService->validateNoConflict($validated, $existing?->id);
+            }
+
+            $activeSemester = \App\Models\Semester::where('academic_year_id', $validated['academic_year_id'])
+                ->where('status', 'aktif')->first() ?? \App\Models\Semester::where('status', 'aktif')->first();
+
+            $payload = [
+                'academic_year_id' => $validated['academic_year_id'],
+                'semester_id' => $activeSemester?->id,
+                'class_id' => $validated['class_id'],
+                'hari' => $validated['hari'],
+                'time_slot_id' => $validated['time_slot_id'],
+                'subject_id' => $validated['subject_id'] ?? null,
+                'teacher_id' => $validated['teacher_id'] ?? null,
+                'room_id' => $validated['room_id'] ?? null,
+                'judul_kegiatan' => $validated['judul_kegiatan'] ?? null,
+                'tipe_kegiatan' => $validated['tipe_kegiatan'] ?? (!empty($validated['subject_id']) ? 'kbm' : 'pembiasaan'),
+                'catatan' => $validated['catatan'] ?? null,
+                'status' => 'aktif',
+                'updated_by' => auth()->id(),
+            ];
+
+            if ($existing) {
+                if ($existing->trashed()) {
+                    $existing->restore();
+                }
+                $existing->update($payload);
+                $schedule = $existing;
+            } else {
+                $payload['created_by'] = auth()->id();
+                $schedule = Schedule::create($payload);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Jadwal berhasil disimpan.',
+                'data' => $schedule->load(['academicYear', 'schoolClass', 'subject', 'teacher', 'room', 'timeSlot']),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan jadwal: ' . $e->getMessage(),
+            ], 422);
         }
-
-        // Validate conflicts if KBM unless forced
-        if (!$request->boolean('force')) {
-            $this->conflictService->validateNoConflict($validated, $existing?->id);
-        }
-
-        $payload = [
-            'academic_year_id' => $validated['academic_year_id'],
-            'class_id' => $validated['class_id'],
-            'hari' => $validated['hari'],
-            'time_slot_id' => $validated['time_slot_id'],
-            'subject_id' => $validated['subject_id'] ?? null,
-            'teacher_id' => $validated['teacher_id'] ?? null,
-            'room_id' => $validated['room_id'] ?? null,
-            'judul_kegiatan' => $validated['judul_kegiatan'] ?? null,
-            'tipe_kegiatan' => $validated['tipe_kegiatan'] ?? (!empty($validated['subject_id']) ? 'kbm' : 'pembiasaan'),
-            'catatan' => $validated['catatan'] ?? null,
-            'status' => 'aktif',
-            'updated_by' => auth()->id(),
-        ];
-
-        if ($existing) {
-            $existing->update($payload);
-            $schedule = $existing;
-        } else {
-            $payload['created_by'] = auth()->id();
-            $schedule = Schedule::create($payload);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Jadwal berhasil disimpan.',
-            'data' => $schedule->load(['academicYear', 'schoolClass', 'subject', 'teacher', 'room', 'timeSlot']),
-        ]);
     }
 
     public function clearClassSchedules(Request $request): JsonResponse
     {
-        if (!$request->filled('academic_year_id')) {
-            $activeYear = AcademicYear::getActive();
-            if ($activeYear) {
-                $request->merge(['academic_year_id' => $activeYear->id]);
-            } elseif ($request->filled('class_id')) {
-                $cls = SchoolClass::find($request->input('class_id'));
-                if ($cls && $cls->academic_year_id) {
-                    $request->merge(['academic_year_id' => $cls->academic_year_id]);
+        try {
+            if (!$request->filled('academic_year_id')) {
+                $activeYear = AcademicYear::getActive();
+                if ($activeYear) {
+                    $request->merge(['academic_year_id' => $activeYear->id]);
+                } elseif ($request->filled('class_id')) {
+                    $cls = SchoolClass::find($request->input('class_id'));
+                    if ($cls && $cls->academic_year_id) {
+                        $request->merge(['academic_year_id' => $cls->academic_year_id]);
+                    }
                 }
             }
+
+            $validated = $request->validate([
+                'class_id' => ['required', 'exists:classes,id'],
+                'academic_year_id' => ['required', 'exists:academic_years,id'],
+            ]);
+
+            Schedule::withTrashed()
+                ->where('class_id', $validated['class_id'])
+                ->where('academic_year_id', $validated['academic_year_id'])
+                ->forceDelete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Seluruh jadwal untuk kelas ini berhasil dibersihkan.',
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membersihkan jadwal: ' . $e->getMessage(),
+            ], 422);
         }
-
-        $validated = $request->validate([
-            'class_id' => ['required', 'exists:classes,id'],
-            'academic_year_id' => ['required', 'exists:academic_years,id'],
-        ]);
-
-        Schedule::where('class_id', $validated['class_id'])
-            ->where('academic_year_id', $validated['academic_year_id'])
-            ->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Seluruh jadwal untuk kelas ini berhasil dibersihkan.',
-        ]);
     }
 
     public function applyOfficialTemplate(Request $request): JsonResponse
     {
-        if (!$request->filled('academic_year_id')) {
-            $activeYear = AcademicYear::getActive();
-            if ($activeYear) {
-                $request->merge(['academic_year_id' => $activeYear->id]);
-            } elseif ($request->filled('class_id')) {
-                $cls = SchoolClass::find($request->input('class_id'));
-                if ($cls && $cls->academic_year_id) {
-                    $request->merge(['academic_year_id' => $cls->academic_year_id]);
+        try {
+            if (!$request->filled('academic_year_id')) {
+                $activeYear = AcademicYear::getActive();
+                if ($activeYear) {
+                    $request->merge(['academic_year_id' => $activeYear->id]);
+                } elseif ($request->filled('class_id')) {
+                    $cls = SchoolClass::find($request->input('class_id'));
+                    if ($cls && $cls->academic_year_id) {
+                        $request->merge(['academic_year_id' => $cls->academic_year_id]);
+                    }
                 }
             }
-        }
 
-        $validated = $request->validate([
-            'class_id' => ['required', 'exists:classes,id'],
-            'academic_year_id' => ['required', 'exists:academic_years,id'],
-        ]);
+            $validated = $request->validate([
+                'class_id' => ['required', 'exists:classes,id'],
+                'academic_year_id' => ['required', 'exists:academic_years,id'],
+            ]);
 
-        $targetClassId = (int)$validated['class_id'];
-        $ayId = (int)$validated['academic_year_id'];
+            $targetClassId = (int)$validated['class_id'];
+            $ayId = (int)$validated['academic_year_id'];
 
-        // Get template schedules from class 3
-        $templates = Schedule::where('class_id', 3)
-            ->where('academic_year_id', $ayId)
-            ->get();
+            // Get template schedules from class 3
+            $templates = Schedule::where('class_id', 3)
+                ->where('academic_year_id', $ayId)
+                ->get();
 
-        if ($templates->isEmpty()) {
+            if ($templates->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Template jadwal resmi kelas 3 tidak ditemukan di database.',
+                ], 404);
+            }
+
+            // Target class
+            $targetClass = \App\Models\SchoolClass::find($targetClassId);
+
+            // Delete existing schedules for this target class (forceDelete so no unique index collision)
+            Schedule::withTrashed()
+                ->where('class_id', $targetClassId)
+                ->where('academic_year_id', $ayId)
+                ->forceDelete();
+
+            // Replicate records
+            foreach ($templates as $t) {
+                Schedule::create([
+                    'academic_year_id' => $ayId,
+                    'semester_id' => $t->semester_id,
+                    'class_id' => $targetClassId,
+                    'hari' => $t->hari,
+                    'time_slot_id' => $t->time_slot_id,
+                    'subject_id' => $t->subject_id,
+                    'teacher_id' => $t->teacher_id,
+                    'room_id' => $targetClass?->room_id ?? $t->room_id,
+                    'judul_kegiatan' => $t->judul_kegiatan,
+                    'tipe_kegiatan' => $t->tipe_kegiatan,
+                    'catatan' => $t->catatan,
+                    'status' => 'aktif',
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Jadwal resmi berhasil diterapkan untuk {$targetClass->nama}.",
+            ]);
+        } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Template jadwal resmi kelas 3 tidak ditemukan di database.',
-            ], 404);
+                'message' => 'Gagal menerapkan template jadwal: ' . $e->getMessage(),
+            ], 422);
         }
-
-        // Target class
-        $targetClass = \App\Models\SchoolClass::find($targetClassId);
-
-        // Delete existing schedules for this target class
-        Schedule::where('class_id', $targetClassId)
-            ->where('academic_year_id', $ayId)
-            ->delete();
-
-        // Replicate records
-        foreach ($templates as $t) {
-            Schedule::create([
-                'academic_year_id' => $ayId,
-                'class_id' => $targetClassId,
-                'hari' => $t->hari,
-                'time_slot_id' => $t->time_slot_id,
-                'subject_id' => $t->subject_id,
-                'teacher_id' => $t->teacher_id,
-                'room_id' => $targetClass?->room_id ?? $t->room_id,
-                'judul_kegiatan' => $t->judul_kegiatan,
-                'tipe_kegiatan' => $t->tipe_kegiatan,
-                'catatan' => $t->catatan,
-                'status' => 'aktif',
-                'created_by' => auth()->id(),
-            ]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => "Jadwal resmi berhasil diterapkan untuk {$targetClass->nama}.",
-        ]);
     }
 }

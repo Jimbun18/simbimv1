@@ -118,7 +118,7 @@ const calculateStudentGrade = (st: any) => {
 const fetchMasterData = async () => {
   try {
     const [clsRes, ayRes, subRes] = await Promise.all([
-      api.get('/classes'),
+      api.get('/classes?all=true'),
       api.get('/academic-years'),
       api.get('/report-cards/default-subjects'),
     ]);

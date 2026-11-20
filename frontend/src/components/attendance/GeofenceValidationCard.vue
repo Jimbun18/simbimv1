@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { GOOGLE_MAPS_URL } from './types'
+import InfoTooltip from '../common/InfoTooltip.vue'
 
 defineProps<{
   schoolLat: number
@@ -22,9 +23,9 @@ const emit = defineEmits<{
   <div class="bg-white rounded-2xl border border-slate-100 shadow-xs p-6 space-y-4">
     <!-- Header -->
     <div class="flex items-center justify-between gap-2">
-      <div>
-        <h3 class="text-sm sm:text-base font-bold text-slate-900 leading-tight">Validasi Geofence Radius</h3>
-        <p class="text-[11px] text-slate-400">Pusat SDI Bina Insan Mandiri Purwokerto</p>
+      <div class="flex items-center gap-1.5">
+        <h3 class="text-sm sm:text-base font-bold text-slate-900 leading-tight">Validasi Geofence</h3>
+        <InfoTooltip text="Pusat SDI Bina Insan Mandiri Purwokerto. Memvalidasi lokasi GPS perangkat terhadap radius resmi sekolah." />
       </div>
       <a
         :href="GOOGLE_MAPS_URL"
@@ -54,7 +55,7 @@ const emit = defineEmits<{
         </span>
       </div>
       <p class="text-[11px] leading-relaxed text-rose-700">
-        {{ gpsError || 'Layanan lokasi (GPS) pada perangkat Anda belum aktif atau izin browser belum diberikan. Silakan aktifkan GPS dan klik "Refresh GPS" di bawah ini.' }}
+        {{ gpsError || 'GPS perangkat belum aktif atau izin ditolak. Silakan aktifkan lokasi lalu klik Refresh GPS.' }}
       </p>
     </div>
 
@@ -78,8 +79,8 @@ const emit = defineEmits<{
       </div>
       <p class="text-[11px] leading-relaxed" :class="inGeofence ? 'text-emerald-700' : 'text-amber-700'">
         {{ inGeofence 
-          ? 'Lokasi Anda berada di dalam radius presensi (maksimum ' + schoolRadius + 'm). Presensi masuk/pulang dapat dilakukan.' 
-          : 'Posisi saat ini terdeteksi ' + (distanceMeter !== null ? distanceMeter.toLocaleString('id-ID') : '-') + 'm dari pusat geofence. Presensi masuk membutuhkan jarak maksimum ' + schoolRadius + 'm.' 
+          ? 'Lokasi valid (maks. ' + schoolRadius + 'm). Presensi masuk/pulang dapat dilakukan.' 
+          : 'Di luar radius presensi (' + (distanceMeter !== null ? distanceMeter.toLocaleString('id-ID') : '-') + 'm). Maksimal radius ' + schoolRadius + 'm.' 
         }}
       </p>
     </div>

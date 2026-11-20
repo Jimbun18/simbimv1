@@ -14,6 +14,14 @@ export interface UserProfile {
   teacher?: any;
   staff?: any;
   profile_detail?: any;
+  structural_positions?: string[];
+  permissions?: {
+    finance?: boolean;
+    kurikulum?: boolean;
+    kesiswaan?: boolean;
+    tu?: boolean;
+    bk?: boolean;
+  };
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -34,12 +42,91 @@ export const useAuthStore = defineStore('auth', {
     isGuru: (state) => state.user?.role === 'guru',
     isWali: (state) => state.user?.role === 'wali',
     isGuruBk: (state) => {
+      if (state.user?.permissions?.bk === true) return true;
+      if (Array.isArray(state.user?.structural_positions) && state.user.structural_positions.includes('bk')) return true;
+
       if (state.user?.role === 'guru') {
         const jabatan = (state.user?.profile_detail?.jabatan || '').toLowerCase();
         const tugas = (state.user?.profile_detail?.tugas_tambahan || '').toLowerCase();
         return jabatan.includes('bk') || jabatan.includes('bimbingan') || tugas.includes('bk') || tugas.includes('bimbingan');
       }
       return false;
+    },
+    structuralPositions: (state): string[] => {
+      const positions = state.user?.structural_positions;
+      if (Array.isArray(positions)) return positions;
+
+      const fallback: string[] = [];
+      const combined = ((state.user?.profile_detail?.jabatan || '') + ' ' + (state.user?.profile_detail?.tugas_tambahan || '')).toLowerCase();
+      if (combined.includes('bendahara') || combined.includes('keuangan')) fallback.push('bendahara');
+      if (combined.includes('bk') || combined.includes('bimbingan')) fallback.push('bk');
+      if (combined.includes('kurikulum')) fallback.push('waka_kurikulum');
+      if (combined.includes('kesiswaan')) fallback.push('waka_kesiswaan');
+      if (combined.includes('tu') || combined.includes('tata usaha')) fallback.push('kepala_tu');
+      return fallback;
+    },
+    isBendahara: (state) => {
+      if (state.user?.permissions?.finance === true) return true;
+      if (Array.isArray(state.user?.structural_positions) && state.user.structural_positions.includes('bendahara')) return true;
+      const combined = ((state.user?.profile_detail?.jabatan || '') + ' ' + (state.user?.profile_detail?.tugas_tambahan || '')).toLowerCase();
+      return combined.includes('bendahara');
+    },
+    isWakaKurikulum: (state) => {
+      if (state.user?.permissions?.kurikulum === true) return true;
+      if (Array.isArray(state.user?.structural_positions) && state.user.structural_positions.includes('waka_kurikulum')) return true;
+      const combined = ((state.user?.profile_detail?.jabatan || '') + ' ' + (state.user?.profile_detail?.tugas_tambahan || '')).toLowerCase();
+      return combined.includes('kurikulum');
+    },
+    isWakaKesiswaan: (state) => {
+      if (state.user?.permissions?.kesiswaan === true) return true;
+      if (Array.isArray(state.user?.structural_positions) && state.user.structural_positions.includes('waka_kesiswaan')) return true;
+      const combined = ((state.user?.profile_detail?.jabatan || '') + ' ' + (state.user?.profile_detail?.tugas_tambahan || '')).toLowerCase();
+      return combined.includes('kesiswaan');
+    },
+    isKepalaTu: (state) => {
+      if (state.user?.permissions?.tu === true) return true;
+      if (Array.isArray(state.user?.structural_positions) && state.user.structural_positions.includes('kepala_tu')) return true;
+      const combined = ((state.user?.profile_detail?.jabatan || '') + ' ' + (state.user?.profile_detail?.tugas_tambahan || '')).toLowerCase();
+      return combined.includes('tata usaha') || combined.includes('kepala tu');
+    },
+    canAccessFinance(state): boolean {
+      return (
+        state.user?.role === 'kepala_sekolah' ||
+        state.user?.role === 'staf_admin' ||
+        state.user?.permissions?.finance === true ||
+        (Array.isArray(state.user?.structural_positions) && state.user.structural_positions.includes('bendahara')) ||
+        ((state.user?.profile_detail?.jabatan || '') + ' ' + (state.user?.profile_detail?.tugas_tambahan || '')).toLowerCase().includes('bendahara')
+      );
+    },
+    canAccessKurikulum(state): boolean {
+      return (
+        state.user?.role === 'kepala_sekolah' ||
+        state.user?.role === 'staf_admin' ||
+        state.user?.permissions?.kurikulum === true ||
+        (Array.isArray(state.user?.structural_positions) && state.user.structural_positions.includes('waka_kurikulum')) ||
+        ((state.user?.profile_detail?.jabatan || '') + ' ' + (state.user?.profile_detail?.tugas_tambahan || '')).toLowerCase().includes('kurikulum')
+      );
+    },
+    canAccessKesiswaan(state): boolean {
+      return (
+        state.user?.role === 'kepala_sekolah' ||
+        state.user?.role === 'staf_admin' ||
+        state.user?.permissions?.kesiswaan === true ||
+        (Array.isArray(state.user?.structural_positions) && (
+          state.user.structural_positions.includes('waka_kesiswaan') ||
+          state.user.structural_positions.includes('bina_kesiswaan')
+        )) ||
+        ((state.user?.profile_detail?.jabatan || '') + ' ' + (state.user?.profile_detail?.tugas_tambahan || '')).toLowerCase().includes('kesiswaan')
+      );
+    },
+    canAccessTu(state): boolean {
+      return (
+        state.user?.role === 'kepala_sekolah' ||
+        state.user?.role === 'staf_admin' ||
+        state.user?.permissions?.tu === true ||
+        (Array.isArray(state.user?.structural_positions) && state.user.structural_positions.includes('kepala_tu')) ||
+        ((state.user?.profile_detail?.jabatan || '') + ' ' + (state.user?.profile_detail?.tugas_tambahan || '')).toLowerCase().includes('tata usaha')
+      );
     },
     canAccessBkMonitoring: (state) => {
       if (state.user?.role === 'guru') {

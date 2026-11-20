@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { formatTimeDisplay, formatDateDisplay, formatKeteranganDisplay } from './types'
+import InfoTooltip from '../common/InfoTooltip.vue'
 
 defineProps<{
   historyList: any[]
@@ -17,9 +18,9 @@ const router = useRouter()
 <template>
   <div class="bg-white rounded-2xl border border-slate-100 shadow-xs p-6 space-y-4">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div>
-        <h3 class="font-bold text-slate-900 text-base">Riwayat Presensi Terbaru</h3>
-        <p class="text-[11px] text-slate-400">Catatan kehadiran beberapa hari kerja terakhir</p>
+      <div class="flex items-center gap-1.5">
+        <h3 class="font-bold text-slate-900 text-base">Riwayat Presensi</h3>
+        <InfoTooltip text="Catatan kehadiran beberapa hari kerja terakhir guru beserta jam masuk dan kepulangan." />
       </div>
       <div class="flex items-center gap-2">
         <button 
@@ -61,8 +62,18 @@ const router = useRouter()
             <th class="py-3 px-4">TANGGAL</th>
             <th class="py-3 px-4">JAM MASUK</th>
             <th class="py-3 px-4">JAM PULANG</th>
-            <th class="py-3 px-4">STATUS</th>
-            <th class="py-3 px-4">KETERANGAN</th>
+            <th class="py-3 px-4">
+              <div class="flex items-center gap-1">
+                <span>STATUS</span>
+                <InfoTooltip size="xs" text="Status kehadiran: Hadir tepat waktu, Terlambat, Izin, Sakit, atau Alpa." />
+              </div>
+            </th>
+            <th class="py-3 px-4">
+              <div class="flex items-center gap-1">
+                <span>KETERANGAN</span>
+                <InfoTooltip size="xs" text="Catatan sistem mengenai status keterlambatan atau alasan ketidakhadiran." />
+              </div>
+            </th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">

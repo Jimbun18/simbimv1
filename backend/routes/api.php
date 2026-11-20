@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\ImportController;
 use App\Http\Controllers\Api\InAppNotificationController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\LearningProgressController;
+use App\Http\Controllers\Api\OrganizationStructureController;
 use App\Http\Controllers\Api\ParentPortalController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ReferenceController;
@@ -192,8 +193,28 @@ Route::prefix('v1')->group(function () {
         Route::get('/calendar', [SchoolCalendarController::class, 'index']);
         Route::get('/calendar/check-date', [SchoolCalendarController::class, 'checkDate']);
 
+        // Struktur Organisasi Sekolah (Bisa dilihat semua pengguna login)
+        Route::get('/organization-structure', [OrganizationStructureController::class, 'index']);
+
+        // Finance Management (FR-KEU-01 s/d FR-KEU-06, FR-KEU-08: Admin & Bendahara)
+        Route::middleware('permission:finance')->group(function () {
+            Route::apiResource('fee-types', FeeTypeController::class);
+            Route::post('/invoices', [InvoiceController::class, 'store']);
+            Route::post('/invoices/generate-batch', [InvoiceController::class, 'generateBatch']);
+            Route::put('/invoices/{id}', [InvoiceController::class, 'update']);
+            Route::delete('/invoices/{id}', [InvoiceController::class, 'destroy']);
+            Route::post('/payments', [PaymentController::class, 'store']);
+            Route::post('/payments/{id}/cancel', [PaymentController::class, 'cancel']);
+            Route::get('/finance-transactions', [FinanceTransactionController::class, 'index']);
+            Route::post('/finance-transactions', [FinanceTransactionController::class, 'store']);
+            Route::get('/reports/finance', [FinanceTransactionController::class, 'report']);
+        });
+
         // Admin Only (Kepala Sekolah & Staf Administrasi)
         Route::middleware('role:kepala_sekolah,staf_admin')->group(function () {
+            // Struktur Organisasi Sekolah (Penetapan Pejabat)
+            Route::post('/organization-structure/assign', [OrganizationStructureController::class, 'assign']);
+            Route::delete('/organization-structure/assign/{id}', [OrganizationStructureController::class, 'unassign']);
             // School Calendar Management (Admin)
             Route::post('/calendar', [SchoolCalendarController::class, 'store']);
             Route::put('/calendar/{id}', [SchoolCalendarController::class, 'update']);
@@ -234,6 +255,7 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('staff', StaffController::class);
 
             // Classes (Write)
+            Route::post('/classes/generate-defaults', [ClassController::class, 'generateDefaults']);
             Route::post('/classes', [ClassController::class, 'store']);
             Route::put('/classes/{class}', [ClassController::class, 'update']);
             Route::delete('/classes/{class}', [ClassController::class, 'destroy']);
@@ -292,18 +314,6 @@ Route::prefix('v1')->group(function () {
             Route::post('/announcements', [AnnouncementController::class, 'store']);
             Route::put('/announcements/{id}', [AnnouncementController::class, 'update']);
             Route::delete('/announcements/{id}', [AnnouncementController::class, 'destroy']);
-
-            // Finance Management (FR-KEU-01 s/d FR-KEU-06, FR-KEU-08)
-            Route::apiResource('fee-types', FeeTypeController::class);
-            Route::post('/invoices', [InvoiceController::class, 'store']);
-            Route::post('/invoices/generate-batch', [InvoiceController::class, 'generateBatch']);
-            Route::put('/invoices/{id}', [InvoiceController::class, 'update']);
-            Route::delete('/invoices/{id}', [InvoiceController::class, 'destroy']);
-            Route::post('/payments', [PaymentController::class, 'store']);
-            Route::post('/payments/{id}/cancel', [PaymentController::class, 'cancel']);
-            Route::get('/finance-transactions', [FinanceTransactionController::class, 'index']);
-            Route::post('/finance-transactions', [FinanceTransactionController::class, 'store']);
-            Route::get('/reports/finance', [FinanceTransactionController::class, 'report']);
 
             // Sarpras & Assets (FR-SAR-01 s/d FR-SAR-06)
             Route::apiResource('assets', AssetController::class);

@@ -11,6 +11,7 @@ import AttendanceActionCard from '../components/attendance/AttendanceActionCard.
 import AttendanceHistoryTable from '../components/attendance/AttendanceHistoryTable.vue'
 import AttendanceCameraModal from '../components/attendance/AttendanceCameraModal.vue'
 import LeaveRequestModal from '../components/attendance/LeaveRequestModal.vue'
+import InfoTooltip from '../components/common/InfoTooltip.vue'
 
 const auth = useAuthStore()
 
@@ -350,10 +351,10 @@ onUnmounted(() => {
               Rombel: <strong class="text-white">{{ auth.primaryHomeroomClass?.nama }}</strong>
             </span>
           </div>
-          <h3 class="text-sm sm:text-base font-bold text-white mt-1">Presensi Harian Siswa</h3>
-          <p class="text-xs text-emerald-200/90 mt-0.5">
-            Lakukan pencatatan kehadiran siswa rombel binaan Anda sekali sehari (Hadir, Izin, Sakit, Alpa).
-          </p>
+          <div class="flex items-center gap-1.5 mt-1">
+            <h3 class="text-sm sm:text-base font-bold text-white">Presensi Harian Siswa</h3>
+            <InfoTooltip size="xs" text="Lakukan pencatatan kehadiran siswa rombel binaan Anda sekali sehari (Hadir, Izin, Sakit, Alpa)." />
+          </div>
         </div>
       </div>
       <router-link
@@ -369,8 +370,9 @@ onUnmounted(() => {
     <div class="bg-gradient-to-r from-[#03362a] via-[#044737] to-[#032e23] text-white rounded-2xl p-6 sm:p-7 shadow-xs border border-emerald-900/40 flex flex-col md:flex-row md:items-center justify-between gap-6">
       <!-- Left side: Digital Clock & Date -->
       <div>
-        <div class="text-[11px] font-black tracking-wider text-emerald-400 uppercase">
-          WAKTU SERVER PRESENSI
+        <div class="flex items-center gap-1.5 text-[11px] font-black tracking-wider text-emerald-400 uppercase">
+          <span>WAKTU SERVER PRESENSI</span>
+          <InfoTooltip size="xs" text="Sinkronisasi jam server resmi sekolah secara real-time untuk penentuan jam kehadiran dan batas keterlambatan." />
         </div>
         <div class="text-3xl sm:text-4xl lg:text-5xl font-mono font-black tracking-tight text-white mt-1 flex items-baseline gap-1.5">
           <span>{{ currentTime || '00:00:00' }}</span>
@@ -388,7 +390,10 @@ onUnmounted(() => {
       <div class="flex flex-wrap items-center gap-3">
         <!-- Status Kehadiran Hari Ini -->
         <div class="bg-black/25 border border-emerald-700/60 rounded-xl px-4 py-2.5 min-w-[170px] backdrop-blur-2xs">
-          <div class="text-[10px] text-emerald-200/80 font-medium">Status Kehadiran Hari Ini</div>
+          <div class="flex items-center justify-between text-[10px] text-emerald-200/80 font-medium">
+            <span>Status Kehadiran Hari Ini</span>
+            <InfoTooltip size="xs" text="Status presensi hari ini berdasarkan pencatatan jam masuk dan jam kepulangan." />
+          </div>
           <div class="text-xs sm:text-sm font-bold text-white mt-1 flex items-center gap-1.5">
             <span 
               class="w-2 h-2 rounded-full shrink-0" 
@@ -402,7 +407,10 @@ onUnmounted(() => {
 
         <!-- Toleransi Kedatangan -->
         <div class="bg-black/25 border border-emerald-700/60 rounded-xl px-4 py-2.5 min-w-[130px] backdrop-blur-2xs">
-          <div class="text-[10px] text-emerald-200/80 font-medium">Toleransi Kedatangan</div>
+          <div class="flex items-center justify-between text-[10px] text-emerald-200/80 font-medium">
+            <span>Toleransi Kedatangan</span>
+            <InfoTooltip size="xs" text="Batas jam masuk standar sebelum ditandai terlambat." />
+          </div>
           <div class="text-xs sm:text-sm font-bold text-white mt-1">
             {{ (schoolConfig?.jam_masuk_default || '07:00').substring(0, 5) }} WIB
           </div>
@@ -421,18 +429,18 @@ onUnmounted(() => {
       <div>
         <div class="flex items-center gap-2">
           <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-900 border border-amber-300">
-            {{ todayData?.holiday_info?.is_sunday ? 'Hari Minggu' : 'Hari Libur Kalender' }}
+            {{ todayData?.holiday_info?.is_sunday ? 'Hari Minggu' : 'Hari Libur' }}
           </span>
           <span class="text-xs text-amber-800 font-bold">
             Presensi & KBM Ditutup
           </span>
         </div>
-        <h3 class="text-sm sm:text-base font-bold text-amber-950 mt-1">
-          {{ todayData?.holiday_reason || 'Hari ini adalah hari libur sekolah.' }}
-        </h3>
-        <p class="text-xs text-amber-800/90 mt-0.5">
-          Pada hari libur atau akhir pekan, pendidik tidak diwajibkan melakukan presensi datang/pulang dan tidak dikenakan pemotongan kehadiran / alpa.
-        </p>
+        <div class="flex items-center gap-1.5 mt-1">
+          <h3 class="text-sm sm:text-base font-bold text-amber-950">
+            {{ todayData?.holiday_reason || 'Hari libur sekolah' }}
+          </h3>
+          <InfoTooltip size="xs" text="Pada hari libur atau akhir pekan, pendidik tidak diwajibkan presensi dan tidak dikenakan alpa." />
+        </div>
       </div>
     </div>
 
