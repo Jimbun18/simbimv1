@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import api from '../../services/api'
 import { getPhotoUrl, getInitials } from './types'
 import InfoTooltip from '../common/InfoTooltip.vue'
+import { showSuccess, showError, showConfirm } from '../../services/swal'
 
 const props = defineProps<{
   selectedDate: string
@@ -191,13 +192,37 @@ const exportTeacherRecapExcel = async () => {
   }
 }
 
-const approveLeave = async (id: number, status: 'disetujui' | 'ditolak') => {
+const processingLeaveId = ref<number | null>(null)
+
+const approveLeave = async (att: any, status: 'disetujui' | 'ditolak') => {
+  if (!att || !att.id) return
+
+  const ptkName = att.teacher?.nama_lengkap || att.staff?.nama_lengkap || 'PTK Terkait'
+  const actionText = status === 'disetujui' ? 'menyetujui' : 'menolak'
+  const actionTitle = status === 'disetujui' ? 'Setujui Pengajuan Izin/Cuti?' : 'Tolak Pengajuan Izin/Cuti?'
+
+  const confirmed = await showConfirm(
+    actionTitle,
+    `Apakah Anda yakin ingin ${actionText} permohonan ${att.status ? att.status.toUpperCase() : 'IZIN'} untuk ${ptkName}?`,
+    status === 'disetujui' ? 'Ya, Setujui' : 'Ya, Tolak',
+    status === 'disetujui' ? 'question' : 'warning'
+  )
+  if (!confirmed) return
+
+  processingLeaveId.value = att.id
   try {
-    await api.post(`/attendance/teachers/${id}/approve-leave`, { status_approval: status })
-    emit('notify', `Pengajuan cuti/izin berhasil di-${status}`)
-    fetchTeacherAttendances()
+    const res = await api.post(`/attendance/teachers/${att.id}/approve-leave`, {
+      status_persetujuan: status,
+      status_approval: status,
+      alasan: null,
+    })
+    showSuccess('Berhasil!', res.data?.message || `Pengajuan izin ${ptkName} berhasil di-${status}.`)
+    emit('notify', `Pengajuan izin ${ptkName} berhasil di-${status}`)
+    await fetchTeacherAttendances()
   } catch (err: any) {
-    emit('notify', err.response?.data?.message || 'Gagal mengubah status izin', 'error')
+    showError('Gagal Memproses Permohonan', err, 'Terjadi kendala saat mengubah status permohonan izin.')
+  } finally {
+    processingLeaveId.value = null
   }
 }
 
@@ -501,22 +526,32 @@ defineExpose({
                   {{ att.keterangan || att.catatan || att.alasan_izin || '-' }}
                 </td>
                 <td class="p-3.5 text-right">
-                  <div v-if="(att.status === 'izin' || att.status === 'sakit') && att.id" class="flex justify-end gap-1.5">
+                  <!-- Permohonan Izin / Sakit yang Masih Menunggu Persetujuan (Pending / Diajukan) -->
+                  <div
+                    v-if="(att.status === 'izin' || att.status === 'sakit') && (att.status_persetujuan === 'diajukan' || att.status_persetujuan === 'pending' || !att.status_persetujuan) && att.id"
+                    class="flex justify-end gap-1.5"
+                  >
                     <button 
                       type="button"
-                      @click="approveLeave(att.id, 'disetujui')"
-                      class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1 rounded-lg font-semibold shadow-xs cursor-pointer transition"
+                      :disabled="processingLeaveId === att.id"
+                      @click="approveLeave(att, 'disetujui')"
+                      class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow-xs cursor-pointer transition active:scale-95"
                       title="Setujui Izin / Cuti"
                     >
-                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg v-if="processingLeaveId === att.id" class="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                      </svg>
+                      <svg v-else class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                       </svg>
                       <span>Setujui</span>
                     </button>
                     <button 
                       type="button"
-                      @click="approveLeave(att.id, 'ditolak')"
-                      class="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs px-2.5 py-1 rounded-lg font-semibold cursor-pointer transition"
+                      :disabled="processingLeaveId === att.id"
+                      @click="approveLeave(att, 'ditolak')"
+                      class="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 border border-rose-200 text-xs px-2.5 py-1.5 rounded-lg font-semibold cursor-pointer transition active:scale-95"
                       title="Tolak Izin / Cuti"
                     >
                       <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -525,6 +560,25 @@ defineExpose({
                       <span>Tolak</span>
                     </button>
                   </div>
+
+                  <!-- Izin / Sakit yang Sudah Disetujui -->
+                  <span
+                    v-else-if="(att.status === 'izin' || att.status === 'sakit') && att.status_persetujuan === 'disetujui'"
+                    class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold shadow-2xs"
+                  >
+                    <span>✓</span>
+                    <span>Disetujui</span>
+                  </span>
+
+                  <!-- Izin / Sakit yang Ditolak -->
+                  <span
+                    v-else-if="(att.status === 'izin' || att.status === 'sakit') && att.status_persetujuan === 'ditolak'"
+                    class="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-800 border border-rose-200 rounded-lg text-xs font-bold shadow-2xs"
+                  >
+                    <span>✕</span>
+                    <span>Ditolak</span>
+                  </span>
+
                   <span v-else-if="att.status === 'belum_absen'" class="text-[11px] text-slate-400 font-medium">
                     Belum Check-In
                   </span>

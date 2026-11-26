@@ -441,17 +441,31 @@ class TeacherAttendanceController extends Controller
     {
         $attendance = TeacherAttendance::findOrFail($id);
 
+        // Dukung alias status_approval maupun status_persetujuan
+        if (!$request->has('status_persetujuan') && $request->has('status_approval')) {
+            $request->merge(['status_persetujuan' => $request->input('status_approval')]);
+        }
+
         $validated = $request->validate([
             'status_persetujuan' => ['required', 'in:disetujui,ditolak'],
             'alasan' => ['nullable', 'string', 'max:255'],
         ]);
 
+        $alasan = $validated['alasan'] ?? $request->input('alasan');
+
         $oldData = $attendance->toArray();
+
+        $keteranganBaru = $attendance->keterangan;
+        if (!empty($alasan)) {
+            $keteranganBaru = $attendance->keterangan 
+                ? ($attendance->keterangan . " | Catatan persetujuan: " . $alasan) 
+                : $alasan;
+        }
 
         $attendance->update([
             'status_persetujuan' => $validated['status_persetujuan'],
             'disetujui_oleh' => $request->user()->id,
-            'keterangan' => $validated['alasan'] ? ($attendance->keterangan . " | Catatan persetujuan: " . $validated['alasan']) : $attendance->keterangan,
+            'keterangan' => $keteranganBaru,
             'updated_by' => $request->user()->id,
         ]);
 
@@ -469,20 +483,24 @@ class TeacherAttendanceController extends Controller
         if ($attendance->teacher_id) {
             $statusText = $validated['status_persetujuan'] === 'disetujui' ? 'DISETUJUI' : 'DITOLAK';
             $tglStr = $attendance->tanggal instanceof Carbon ? $attendance->tanggal->format('d/m/Y') : Carbon::parse($attendance->tanggal)->format('d/m/Y');
-            NotificationService::notifyTeacher(
-                teacher: $attendance->teacher_id,
-                title: "Pengajuan Izin {$statusText}",
-                message: "Permohonan izin Anda untuk tanggal {$tglStr} telah {$statusText} oleh Kepala Sekolah." . ($validated['alasan'] ? " Catatan: {$validated['alasan']}" : ""),
-                type: $validated['status_persetujuan'] === 'disetujui' ? 'success' : 'danger',
-                targetUrl: '/my-attendance-history',
-                sendEmail: true,
-                extraDetails: [
-                    'Tanggal Izin' => $tglStr,
-                    'Jenis Permohonan' => strtoupper($attendance->status),
-                    'Keputusan' => $statusText,
-                    'Catatan Pimpinan' => $validated['alasan'] ?? 'Tidak ada catatan khusus',
-                ]
-            );
+            try {
+                NotificationService::notifyTeacher(
+                    teacher: $attendance->teacher_id,
+                    title: "Pengajuan Izin {$statusText}",
+                    message: "Permohonan izin Anda untuk tanggal {$tglStr} telah {$statusText} oleh Kepala Sekolah." . (!empty($alasan) ? " Catatan: {$alasan}" : ""),
+                    type: $validated['status_persetujuan'] === 'disetujui' ? 'success' : 'danger',
+                    targetUrl: '/my-attendance-history',
+                    sendEmail: true,
+                    extraDetails: [
+                        'Tanggal Izin' => $tglStr,
+                        'Jenis Permohonan' => strtoupper($attendance->status),
+                        'Keputusan' => $statusText,
+                        'Catatan Pimpinan' => !empty($alasan) ? $alasan : 'Tidak ada catatan khusus',
+                    ]
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("Gagal kirim notifikasi izin ke guru ID {$attendance->teacher_id}: " . $e->getMessage());
+            }
         }
 
         return response()->json([
