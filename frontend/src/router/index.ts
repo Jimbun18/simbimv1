@@ -75,7 +75,7 @@ const routes: RouteRecordRaw[] = [
     path: '/ppdb-management',
     name: 'ppdb-management',
     component: () => import('../views/PpdbManagementView.vue'),
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'pengawas'] },
   },
   {
     path: '/ppdb-admin',
@@ -95,31 +95,31 @@ const routes: RouteRecordRaw[] = [
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('../views/DashboardView.vue'),
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'pengawas'] },
   },
   {
     path: '/students',
     name: 'students',
     component: () => import('../views/StudentsView.vue'),
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru'] },
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru', 'pengawas'] },
   },
   {
     path: '/teachers',
     name: 'teachers',
     component: () => import('../views/TeachersView.vue'),
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'pengawas'] },
   },
   {
     path: '/guardians',
     name: 'guardians',
     component: () => import('../views/GuardiansView.vue'),
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'pengawas'] },
   },
   {
     path: '/classes-schedules',
     name: 'classes-schedules',
     component: () => import('../views/ClassesAndSchedulesView.vue'),
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru', 'wali'] },
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru', 'wali', 'pengawas'] },
   },
   {
     path: '/calendar',
@@ -157,7 +157,7 @@ const routes: RouteRecordRaw[] = [
     path: '/attendance-management',
     name: 'attendance-management',
     component: () => import('../views/AttendanceManagementView.vue'),
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin'] },
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'pengawas'] },
   },
   {
     path: '/my-attendance-history',
@@ -169,31 +169,31 @@ const routes: RouteRecordRaw[] = [
     path: '/announcements',
     name: 'announcements',
     component: () => import('../views/AnnouncementsView.vue'),
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru', 'wali'] },
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru', 'wali', 'pengawas'] },
   },
   {
     path: '/progress-activities',
     name: 'progress-activities',
     component: () => import('../views/ProgressAndActivitiesView.vue'),
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru'] },
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru', 'pengawas'] },
   },
   {
     path: '/buku-nilai',
     name: 'buku-nilai',
     component: () => import('../views/GradeBookView.vue'),
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru'] },
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru', 'pengawas'] },
   },
   {
     path: '/rapor',
     name: 'rapor',
     component: () => import('../views/ReportCardView.vue'),
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru'] },
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru', 'pengawas'] },
   },
   {
     path: '/observations',
     name: 'observations',
     component: () => import('../views/ObservationNotesView.vue'),
-    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru'] },
+    meta: { requiresAuth: true, role: ['kepala_sekolah', 'staf_admin', 'guru', 'pengawas'] },
   },
   {
     path: '/bk-monitoring',
@@ -205,13 +205,13 @@ const routes: RouteRecordRaw[] = [
     path: '/finance',
     name: 'finance',
     component: () => import('../views/FinanceView.vue'),
-    meta: { requiresAuth: true, checkPermission: 'finance', role: ['kepala_sekolah', 'staf_admin', 'guru'] },
+    meta: { requiresAuth: true, checkPermission: 'finance', role: ['kepala_sekolah', 'staf_admin', 'guru', 'pengawas'] },
   },
   {
     path: '/assets',
     name: 'assets',
     component: () => import('../views/AssetsView.vue'),
-    meta: { requiresAuth: true, checkPermission: 'tu', role: ['kepala_sekolah', 'staf_admin', 'guru'] },
+    meta: { requiresAuth: true, checkPermission: 'tu', role: ['kepala_sekolah', 'staf_admin', 'guru', 'pengawas'] },
   },
   {
     path: '/organization-structure',
@@ -260,7 +260,7 @@ router.beforeEach((to, _from, next) => {
   // Khusus aplikasi mobile APK (Capacitor): lewati landing page publik dan langsung arahkan ke login atau dashboard
   if (Capacitor.isNativePlatform() && to.path === '/') {
     if (auth.isAuthenticated) {
-      if (auth.isAdmin) return next({ name: 'dashboard' });
+      if (auth.isAdmin || auth.isPengawas) return next({ name: 'dashboard' });
       if (auth.isGuru) return next({ name: 'presensi' });
       if (auth.isWali) return next({ name: 'portal-wali' });
       return next({ name: 'dashboard' });
@@ -273,7 +273,7 @@ router.beforeEach((to, _from, next) => {
   }
 
   if (to.meta.guest && auth.isAuthenticated) {
-    if (auth.isAdmin) return next({ name: 'dashboard' });
+    if (auth.isAdmin || auth.isPengawas) return next({ name: 'dashboard' });
     if (auth.isGuru) return next({ name: 'presensi' });
     if (auth.isWali) return next({ name: 'portal-wali' });
     return next({ name: 'dashboard' });

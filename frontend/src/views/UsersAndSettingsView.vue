@@ -5,6 +5,7 @@ import api from '../services/api'
 import { useAuthStore } from '../stores/auth'
 import { showConfirm, showSuccess, showError, confirmDeleteWithKeyword } from '../services/swal'
 import { formatDateTimeIndo } from '../utils/date'
+import { subscribeWebPush, sendTestPush } from '../services/pushNotification'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -54,9 +55,32 @@ const settings = ref<any>({
   geofence_radius_meters: 100,
   jam_masuk_guru: '07:00',
   jam_pulang_guru: '14:30',
-  toleransi_terlambat_menit: 15
+  toleransi_terlambat_menit: 15,
+  notif_checkin_enabled: true,
+  notif_checkin_time: '07:15',
+  notif_checkout_enabled: true,
+  notif_checkout_time: '14:35',
+  notif_channel_in_app: true,
+  notif_channel_web_push: true,
+  notif_channel_email: false,
 })
 const savingSettings = ref(false)
+const testingPush = ref(false)
+
+const handleTestPush = async () => {
+  testingPush.value = true
+  try {
+    const subRes = await subscribeWebPush()
+    if (!subRes.ok) {
+      showMessage(subRes.message, 'error')
+      return
+    }
+    const testRes = await sendTestPush()
+    showMessage(testRes.message, testRes.ok ? 'success' : 'error')
+  } finally {
+    testingPush.value = false
+  }
+}
 
 const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
   message.value = { type, text }
@@ -227,7 +251,21 @@ const getModuleBadgeClass = (modul: string | undefined) => {
 const fetchSettingsAndProfile = async () => {
   loading.value = true
   try {
-    const resProf = await api.get('/school-profile')
+    const [resProf, resSet] = await Promise.all([
+      api.get('/school-profile'),
+      api.get('/settings').catch(() => null),
+    ])
+
+    const flatSettings: Record<string, any> = {}
+    const groups = resSet?.data?.data || {}
+    for (const group of Object.values(groups) as Array<Record<string, any>>) {
+      if (group && typeof group === 'object') {
+        for (const [k, v] of Object.entries(group)) {
+          flatSettings[k] = v && typeof v === 'object' && 'value' in v ? v.value : v
+        }
+      }
+    }
+
     if (resProf.data?.data) {
       const prof = resProf.data.data
       schoolProfile.value = prof
@@ -239,6 +277,13 @@ const fetchSettingsAndProfile = async () => {
         jam_masuk_guru: prof.jam_masuk_default ? prof.jam_masuk_default.substring(0, 5) : '07:00',
         jam_pulang_guru: prof.jam_pulang_default ? prof.jam_pulang_default.substring(0, 5) : '14:30',
         toleransi_terlambat_menit: prof.toleransi_terlambat_menit ?? 15,
+        notif_checkin_enabled: String(flatSettings['notification.checkin_reminder.enabled'] ?? '1') !== '0',
+        notif_checkin_time: String(flatSettings['notification.checkin_reminder.time'] || '07:15').substring(0, 5),
+        notif_checkout_enabled: String(flatSettings['notification.checkout_reminder.enabled'] ?? '1') !== '0',
+        notif_checkout_time: String(flatSettings['notification.checkout_reminder.time'] || '14:35').substring(0, 5),
+        notif_channel_in_app: String(flatSettings['notification.channels.in_app'] ?? '1') !== '0',
+        notif_channel_web_push: String(flatSettings['notification.channels.web_push'] ?? '1') !== '0',
+        notif_channel_email: String(flatSettings['notification.channels.email'] ?? '0') === '1',
       }
     }
   } catch (err) {
@@ -269,6 +314,13 @@ const saveSettings = async () => {
       { key: 'attendance.geofence.radius_meters', value: String(settings.value.geofence_radius_meters) },
       { key: 'attendance.work_hours.start', value: settings.value.jam_masuk_guru },
       { key: 'attendance.work_hours.end', value: settings.value.jam_pulang_guru },
+      { key: 'notification.checkin_reminder.enabled', value: settings.value.notif_checkin_enabled ? '1' : '0' },
+      { key: 'notification.checkin_reminder.time', value: settings.value.notif_checkin_time },
+      { key: 'notification.checkout_reminder.enabled', value: settings.value.notif_checkout_enabled ? '1' : '0' },
+      { key: 'notification.checkout_reminder.time', value: settings.value.notif_checkout_time },
+      { key: 'notification.channels.in_app', value: settings.value.notif_channel_in_app ? '1' : '0' },
+      { key: 'notification.channels.web_push', value: settings.value.notif_channel_web_push ? '1' : '0' },
+      { key: 'notification.channels.email', value: settings.value.notif_channel_email ? '1' : '0' },
     ]
     try {
       await api.put('/settings', { settings: settingsPayload })
@@ -355,6 +407,7 @@ onMounted(() => {
               <option value="kepala_sekolah">Kepala Sekolah</option>
               <option value="staf_admin">Staf Admin</option>
               <option value="guru">Guru</option>
+              <option value="pengawas">Pengawas (Read-Only)</option>
               <option value="wali_murid">Wali Murid</option>
             </select>
           </div>
@@ -398,7 +451,8 @@ onMounted(() => {
                       :class="{
                         'bg-emerald-100 text-emerald-800': u.role?.nama === 'kepala_sekolah' || u.role?.nama === 'staf_admin',
                         'bg-blue-100 text-blue-800': u.role?.nama === 'guru',
-                        'bg-purple-100 text-purple-800': u.role?.nama === 'wali_murid'
+                        'bg-amber-100 text-amber-800': u.role?.nama === 'pengawas',
+                        'bg-purple-100 text-purple-800': u.role?.nama === 'wali_murid' || u.role?.nama === 'wali'
                       }"
                     >
                       {{ u.role?.nama?.replace('_', ' ') }}
@@ -599,6 +653,7 @@ onMounted(() => {
                     <option value="guru">Guru Pengampu</option>
                     <option value="staf_admin">Staf Administrasi</option>
                     <option value="kepala_sekolah">Kepala Sekolah</option>
+                    <option value="pengawas">Pengawas (Read-Only)</option>
                     <option value="wali_murid">Wali Murid</option>
                   </select>
                 </div>
@@ -966,6 +1021,66 @@ onMounted(() => {
             <div>
               <label class="block font-semibold text-xs text-gray-700 mb-1">Toleransi Terlambat (Menit)</label>
               <input v-model.number="settings.toleransi_terlambat_menit" type="number" min="0" required class="w-full border rounded-xl p-2.5 text-xs font-mono" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Pengaturan Notifikasi Rutin & Pengingat Presensi -->
+        <div class="border-t pt-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h4 class="font-bold text-gray-800 text-sm">Notifikasi Rutin &amp; Pengingat Presensi</h4>
+              <p class="text-xs text-gray-500">Kirim pengingat otomatis pada hari efektif sekolah bagi guru/tendik yang belum check-in atau check-out.</p>
+            </div>
+            <button
+              type="button"
+              @click="handleTestPush"
+              :disabled="testingPush"
+              class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition cursor-pointer disabled:opacity-50 shrink-0"
+            >
+              {{ testingPush ? 'Mengirim...' : 'Uji Notifikasi Perangkat Ini' }}
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-3">
+              <label class="flex items-center justify-between cursor-pointer">
+                <span class="text-xs font-bold text-slate-800">Pengingat Check-In Pagi</span>
+                <input v-model="settings.notif_checkin_enabled" type="checkbox" class="w-4 h-4 accent-emerald-600 rounded" />
+              </label>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Jam Kirim Pengingat Pagi</label>
+                <input v-model="settings.notif_checkin_time" type="time" :disabled="!settings.notif_checkin_enabled" class="w-full border rounded-xl p-2 text-xs font-mono bg-white disabled:opacity-50" />
+              </div>
+            </div>
+
+            <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-3">
+              <label class="flex items-center justify-between cursor-pointer">
+                <span class="text-xs font-bold text-slate-800">Pengingat Check-Out Sore</span>
+                <input v-model="settings.notif_checkout_enabled" type="checkbox" class="w-4 h-4 accent-emerald-600 rounded" />
+              </label>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Jam Kirim Pengingat Sore</label>
+                <input v-model="settings.notif_checkout_time" type="time" :disabled="!settings.notif_checkout_enabled" class="w-full border rounded-xl p-2 text-xs font-mono bg-white disabled:opacity-50" />
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl border border-slate-200 bg-white space-y-2">
+            <div class="text-xs font-bold text-slate-800">Kanal Pengiriman Aktif</div>
+            <div class="flex flex-wrap gap-4 pt-1">
+              <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
+                <input v-model="settings.notif_channel_in_app" type="checkbox" class="w-4 h-4 accent-emerald-600 rounded" />
+                <span>In-App (Lonceng SIM-BIM)</span>
+              </label>
+              <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
+                <input v-model="settings.notif_channel_web_push" type="checkbox" class="w-4 h-4 accent-emerald-600 rounded" />
+                <span>Web Push / Android (PWA &amp; APK)</span>
+              </label>
+              <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
+                <input v-model="settings.notif_channel_email" type="checkbox" class="w-4 h-4 accent-emerald-600 rounded" />
+                <span>Email SMTP</span>
+              </label>
             </div>
           </div>
         </div>

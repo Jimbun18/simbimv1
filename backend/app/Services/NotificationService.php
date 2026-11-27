@@ -48,7 +48,8 @@ class NotificationService
         string $type = 'info',
         ?string $targetUrl = null,
         bool $sendEmail = true,
-        array $extraDetails = []
+        array $extraDetails = [],
+        bool $sendPush = false
     ): void {
         if (is_int($teacher)) {
             $teacher = Teacher::with('user')->find($teacher);
@@ -71,6 +72,10 @@ class NotificationService
                 );
             } catch (\Throwable $e) {
                 Log::warning("Gagal menyimpan in-app notification guru ID {$teacher->id}: " . $e->getMessage());
+            }
+
+            if ($sendPush) {
+                WebPushService::sendToUser($teacher->user_id, $title, $message, $targetUrl);
             }
         }
 

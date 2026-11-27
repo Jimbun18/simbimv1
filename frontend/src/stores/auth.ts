@@ -7,7 +7,7 @@ export interface UserProfile {
   username: string;
   email: string | null;
   no_hp: string | null;
-  role: 'kepala_sekolah' | 'staf_admin' | 'guru' | 'wali';
+  role: 'kepala_sekolah' | 'staf_admin' | 'guru' | 'wali' | 'pengawas';
   status: string;
   must_change_password: boolean;
   foto_path: string | null;
@@ -41,6 +41,12 @@ export const useAuthStore = defineStore('auth', {
     isKepalaSekolah: (state) => state.user?.role === 'kepala_sekolah',
     isGuru: (state) => state.user?.role === 'guru',
     isWali: (state) => state.user?.role === 'wali',
+    isPengawas: (state) => state.user?.role === 'pengawas',
+    isReadOnly: (state) => state.user?.role === 'pengawas',
+    canMonitor: (state) =>
+      state.user?.role === 'kepala_sekolah' ||
+      state.user?.role === 'staf_admin' ||
+      state.user?.role === 'pengawas',
     isGuruBk: (state) => {
       if (state.user?.permissions?.bk === true) return true;
       if (Array.isArray(state.user?.structural_positions) && state.user.structural_positions.includes('bk')) return true;
@@ -93,6 +99,7 @@ export const useAuthStore = defineStore('auth', {
       return (
         state.user?.role === 'kepala_sekolah' ||
         state.user?.role === 'staf_admin' ||
+        state.user?.role === 'pengawas' ||
         state.user?.permissions?.finance === true ||
         (Array.isArray(state.user?.structural_positions) && state.user.structural_positions.includes('bendahara')) ||
         ((state.user?.profile_detail?.jabatan || '') + ' ' + (state.user?.profile_detail?.tugas_tambahan || '')).toLowerCase().includes('bendahara')
@@ -123,6 +130,7 @@ export const useAuthStore = defineStore('auth', {
       return (
         state.user?.role === 'kepala_sekolah' ||
         state.user?.role === 'staf_admin' ||
+        state.user?.role === 'pengawas' ||
         state.user?.permissions?.tu === true ||
         (Array.isArray(state.user?.structural_positions) && state.user.structural_positions.includes('kepala_tu')) ||
         ((state.user?.profile_detail?.jabatan || '') + ' ' + (state.user?.profile_detail?.tugas_tambahan || '')).toLowerCase().includes('tata usaha')

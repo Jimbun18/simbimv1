@@ -14,6 +14,7 @@ class RoleSeeder extends Seeder
             Role::STAF_ADMIN => 'web',
             Role::GURU => 'web',
             Role::WALI => 'web',
+            Role::PENGAWAS => 'web',
         ];
 
         foreach ($roles as $name => $guard) {

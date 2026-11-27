@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('app:backup-run --type=otomatis')->dailyAt('01:00');
 Schedule::command('attendance:auto-alpha-teachers')->dailyAt('16:30');
+Schedule::command('attendance:send-reminders')->everyMinute();
 
 Artisan::command('app:import-dapodik-students {--file=}', function () {
     return $this->call(\App\Console\Commands\ImportDapodikStudentsCommand::class, [

@@ -12,6 +12,7 @@ node_modules/
 
 # Production & Build Outputs
 dist/
+dev-dist/
 dist-ssr/
 .vite/
 *.tsbuildinfo

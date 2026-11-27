@@ -14,6 +14,7 @@ class Role extends Model
     public const STAF_ADMIN = 'staf_admin';
     public const GURU = 'guru';
     public const WALI = 'wali';
+    public const PENGAWAS = 'pengawas';
 
     protected $fillable = [
         'nama',

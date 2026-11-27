@@ -58,6 +58,23 @@
           </button>
         </div>
 
+        <!-- Banner Aktifkan Push Notification Perangkat -->
+        <div
+          v-if="pushPermission === 'default'"
+          class="px-4 py-2.5 bg-amber-50 border-b border-amber-100 flex items-center justify-between gap-2"
+        >
+          <span class="text-[11px] font-medium text-amber-900">
+            Aktifkan notifikasi perangkat agar pengingat presensi tetap masuk.
+          </span>
+          <button
+            @click="enableDevicePush"
+            :disabled="enablingPush"
+            class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold rounded-lg shrink-0 cursor-pointer disabled:opacity-50"
+          >
+            {{ enablingPush ? '...' : 'Aktifkan' }}
+          </button>
+        </div>
+
         <!-- Daftar Notifikasi -->
         <div class="max-h-[360px] overflow-y-auto divide-y divide-slate-100">
           <div v-if="loading && notifications.length === 0" class="py-8 text-center text-slate-400 text-xs">
@@ -157,6 +174,11 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../services/api'
+import {
+  getNotificationPermissionState,
+  subscribeWebPush,
+  syncCapacitorLocalReminders,
+} from '../services/pushNotification'
 
 interface NotificationItem {
   id: number
@@ -174,6 +196,21 @@ const loading = ref(false)
 const unreadCount = ref(0)
 const notifications = ref<NotificationItem[]>([])
 const bellContainer = ref<HTMLElement | null>(null)
+const pushPermission = ref(getNotificationPermissionState())
+const enablingPush = ref(false)
+
+const enableDevicePush = async () => {
+  enablingPush.value = true
+  try {
+    const res = await subscribeWebPush()
+    pushPermission.value = getNotificationPermissionState()
+    if (!res.ok) {
+      console.warn('Push permission:', res.message)
+    }
+  } finally {
+    enablingPush.value = false
+  }
+}
 
 let pollTimer: number | null = null
 
@@ -269,6 +306,11 @@ const handleClickOutside = (e: MouseEvent) => {
 
 onMounted(() => {
   fetchNotifications()
+  if (pushPermission.value === 'granted') {
+    subscribeWebPush().catch(() => {})
+  } else if (pushPermission.value === 'native') {
+    syncCapacitorLocalReminders().catch(() => {})
+  }
   document.addEventListener('click', handleClickOutside)
   // Polling data notifikasi setiap 45 detik
   pollTimer = window.setInterval(fetchNotifications, 45000)

@@ -213,7 +213,7 @@ const handleLogout = async () => {
             <nav class="space-y-1">
               <!-- Dashboard Eksekutif -->
               <router-link
-                v-if="auth.isAdmin"
+                v-if="auth.canMonitor"
                 to="/dashboard"
                 class="flex items-center rounded-xl font-medium transition-all group"
                 :class="[
@@ -332,7 +332,7 @@ const handleLogout = async () => {
           </div>
 
           <!-- GROUP: MASTER DATA & AKADEMIK -->
-          <div v-if="auth.isAdmin || auth.isGuru">
+          <div v-if="auth.canMonitor || auth.isGuru">
             <div v-show="isSidebarOpen" class="px-3 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Data & Akademik
             </div>
@@ -356,7 +356,7 @@ const handleLogout = async () => {
 
               <!-- Guru & Tendik -->
               <router-link
-                v-if="auth.isAdmin"
+                v-if="auth.canMonitor"
                 to="/teachers"
                 class="flex items-center rounded-xl font-medium transition-all group"
                 :class="[
@@ -389,7 +389,7 @@ const handleLogout = async () => {
 
               <!-- Wali Murid -->
               <router-link
-                v-if="auth.isAdmin"
+                v-if="auth.canMonitor"
                 to="/guardians"
                 class="flex items-center rounded-xl font-medium transition-all group"
                 :class="[
@@ -406,7 +406,7 @@ const handleLogout = async () => {
 
               <!-- PPDB Online (Penerimaan Siswa Baru) -->
               <router-link
-                v-if="auth.isAdmin"
+                v-if="auth.canMonitor"
                 to="/ppdb-management"
                 class="flex items-center rounded-xl font-medium transition-all group"
                 :class="[
@@ -425,7 +425,7 @@ const handleLogout = async () => {
               </router-link>
 
               <!-- Kelas & Jadwal KBM (Dengan Sub-menu) -->
-              <div v-if="auth.isAdmin" class="space-y-0.5">
+              <div v-if="auth.canMonitor" class="space-y-0.5">
                 <div class="flex items-center">
                   <router-link
                     to="/classes-schedules"
@@ -612,8 +612,8 @@ const handleLogout = async () => {
                 <span v-show="isSidebarOpen" class="truncate">Presensi Siswa (Wali Kelas)</span>
               </router-link>
 
-              <!-- Rekap Presensi & KBM (Dengan Sub-menu untuk Admin) -->
-              <div v-if="auth.isAdmin" class="space-y-0.5">
+              <!-- Rekap Presensi & KBM (Dengan Sub-menu untuk Admin & Pengawas) -->
+              <div v-if="auth.canMonitor" class="space-y-0.5">
                 <div class="flex items-center">
                   <router-link
                     to="/attendance-management"
@@ -783,7 +783,7 @@ const handleLogout = async () => {
 
               <!-- Buku Nilai (Di atas Rapor Siswa) -->
               <router-link
-                v-if="auth.isAdmin || auth.isGuru"
+                v-if="auth.canMonitor || auth.isGuru"
                 to="/buku-nilai"
                 class="flex items-center gap-3 rounded-xl font-medium transition-all group mb-0.5"
                 :class="[
@@ -799,7 +799,7 @@ const handleLogout = async () => {
               </router-link>
 
               <!-- Rapor Siswa (Dengan Sub-menu) -->
-              <div v-if="auth.isAdmin || auth.isWaliKelas" class="space-y-0.5">
+              <div v-if="auth.canMonitor || auth.isWaliKelas" class="space-y-0.5">
                 <div class="flex items-center">
                   <router-link
                     to="/rapor?periode=triwulan_1"
@@ -1232,6 +1232,16 @@ const handleLogout = async () => {
 
           <!-- Right: Notification Bell, User Profile & Logout -->
           <div class="flex items-center gap-2 sm:gap-3.5">
+            <!-- Badge Mode Pengawas (Read-Only) -->
+            <span
+              v-if="auth.isPengawas"
+              class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200"
+              title="Akun Pengawas memiliki akses pantau seluruh modul secara Read-Only"
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              <span>Mode Pengawas (Read-Only)</span>
+            </span>
+
             <!-- Lonceng Notifikasi Sistem -->
             <NotificationBell />
 
@@ -1325,7 +1335,7 @@ const handleLogout = async () => {
                   <div class="px-2 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Menu Utama</div>
                   <div class="space-y-1">
                     <router-link 
-                      v-if="auth.isAdmin" 
+                      v-if="auth.canMonitor" 
                       to="/dashboard" 
                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all"
                       :class="route.path === '/dashboard' ? 'bg-emerald-600 text-white font-bold shadow-sm' : 'text-slate-700 hover:bg-slate-100'"
@@ -1418,7 +1428,7 @@ const handleLogout = async () => {
                 </div>
 
                 <!-- Group 2: Data & Akademik -->
-                <div v-if="auth.isAdmin || auth.isGuru">
+                <div v-if="auth.canMonitor || auth.isGuru">
                   <div class="px-2 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Data & Akademik</div>
                   <div class="space-y-1">
                     <router-link 
@@ -1434,7 +1444,7 @@ const handleLogout = async () => {
                     </router-link>
 
                     <router-link 
-                      v-if="auth.isAdmin"
+                      v-if="auth.canMonitor"
                       to="/teachers" 
                       class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-all"
                       :class="route.path === '/teachers' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-700 hover:bg-slate-100'"
@@ -1459,7 +1469,7 @@ const handleLogout = async () => {
                     </router-link>
 
                     <router-link 
-                      v-if="auth.isAdmin"
+                      v-if="auth.canMonitor"
                       to="/guardians" 
                       class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-all"
                       :class="route.path === '/guardians' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-700 hover:bg-slate-100'"
@@ -1473,7 +1483,7 @@ const handleLogout = async () => {
 
                     <!-- PPDB Online (Mobile) -->
                     <router-link 
-                      v-if="auth.isAdmin"
+                      v-if="auth.canMonitor"
                       to="/ppdb-management" 
                       class="flex items-center justify-between px-3 py-2 rounded-xl font-medium transition-all"
                       :class="route.path === '/ppdb-management' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-700 hover:bg-slate-100'"
@@ -1489,7 +1499,7 @@ const handleLogout = async () => {
                     </router-link>
 
                     <!-- Kelas & Jadwal KBM (Mobile Sub-menu) -->
-                    <div v-if="auth.isAdmin" class="space-y-0.5">
+                    <div v-if="auth.canMonitor" class="space-y-0.5">
                       <div class="flex items-center">
                         <router-link 
                           to="/classes-schedules" 
@@ -1614,7 +1624,7 @@ const handleLogout = async () => {
                 </div>
 
                 <!-- Group 3: KBM & Progres -->
-                <div v-if="auth.isAdmin || auth.isGuru">
+                <div v-if="auth.canMonitor || auth.isGuru">
                   <div class="px-2 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">KBM & Progres</div>
                   <div class="space-y-1">
                     <router-link 
@@ -1656,7 +1666,7 @@ const handleLogout = async () => {
                     </router-link>
 
                     <!-- Rekap Presensi & KBM (Mobile Sub-menu) -->
-                    <div v-if="auth.isAdmin" class="space-y-0.5">
+                    <div v-if="auth.canMonitor" class="space-y-0.5">
                       <div class="flex items-center">
                         <router-link 
                           to="/attendance-management" 
@@ -1822,7 +1832,7 @@ const handleLogout = async () => {
                     </router-link>
 
                     <!-- Rapor Siswa (Mobile Sub-menu) -->
-                    <div v-if="auth.isAdmin || auth.isWaliKelas" class="space-y-0.5">
+                    <div v-if="auth.canMonitor || auth.isWaliKelas" class="space-y-0.5">
                       <div class="flex items-center justify-between px-3 py-2 rounded-xl font-medium transition-all"
                         :class="route.path === '/rapor' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-700 hover:bg-slate-100'"
                       >
@@ -2164,7 +2174,7 @@ const handleLogout = async () => {
         >
           <!-- Dashboard button -->
           <router-link
-            v-if="auth.isAdmin"
+            v-if="auth.canMonitor"
             to="/dashboard"
             class="flex flex-col items-center py-1.5 px-2 rounded-xl transition min-w-[52px]"
             :class="route.path === '/dashboard' ? 'text-emerald-700 font-bold' : 'text-slate-500 hover:text-slate-800 font-medium'"
@@ -2204,7 +2214,7 @@ const handleLogout = async () => {
 
           <!-- Keuangan button (for admin) or KBM -->
           <router-link
-            v-if="auth.isAdmin"
+            v-if="auth.canMonitor"
             to="/finance"
             class="flex flex-col items-center py-1.5 px-2 rounded-xl transition min-w-[52px]"
             :class="route.path === '/finance' ? 'text-emerald-700 font-bold' : 'text-slate-500 hover:text-slate-800 font-medium'"

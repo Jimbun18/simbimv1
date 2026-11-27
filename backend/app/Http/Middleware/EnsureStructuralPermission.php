@@ -28,6 +28,11 @@ class EnsureStructuralPermission
             return $next($request);
         }
 
+        // Pengawas memiliki akses baca (Read-Only) untuk modul keuangan & sarpras/TU
+        if ($user->isSupervisor() && $request->isMethodSafe() && in_array($module, ['finance', 'keuangan', 'tu', 'sarpras'], true)) {
+            return $next($request);
+        }
+
         $hasAccess = match ($module) {
             'finance', 'keuangan' => $user->canAccessFinance(),
             'kurikulum' => $user->canAccessKurikulum(),

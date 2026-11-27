@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\LearningProgressController;
 use App\Http\Controllers\Api\OrganizationStructureController;
 use App\Http\Controllers\Api\ParentPortalController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PushSubscriptionController;
 use App\Http\Controllers\Api\ReferenceController;
 use App\Http\Controllers\Api\ReportCardController;
 use App\Http\Controllers\Api\RoomController;
@@ -54,8 +55,8 @@ Route::prefix('v1')->group(function () {
     Route::post('/public/ppdb/register', [PpdbController::class, 'submit'])->middleware('throttle:10,1');
     Route::get('/public/ppdb/status/{nomor}', [PpdbController::class, 'checkStatus'])->middleware('throttle:30,1');
 
-    // Protected routes (Sanctum)
-    Route::middleware('auth:sanctum')->group(function () {
+    // Protected routes (Sanctum + Read-Only guard for pengawas)
+    Route::middleware(['auth:sanctum', 'readonly.pengawas'])->group(function () {
         // Auth & Profile
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
@@ -173,6 +174,14 @@ Route::prefix('v1')->group(function () {
         Route::post('/notifications/{id}/read', [InAppNotificationController::class, 'markAsRead']);
         Route::post('/notifications/read-all', [InAppNotificationController::class, 'markAllAsRead']);
 
+        // Web Push Subscriptions
+        Route::prefix('push')->group(function () {
+            Route::get('/vapid-public-key', [PushSubscriptionController::class, 'vapidPublicKey']);
+            Route::post('/subscribe', [PushSubscriptionController::class, 'subscribe']);
+            Route::post('/unsubscribe', [PushSubscriptionController::class, 'unsubscribe']);
+            Route::post('/test', [PushSubscriptionController::class, 'test']);
+        });
+
         // Guardian Portal (FR-PRG-04, FR-PRG-05, FR-ABS-11, FR-RAPOR)
         Route::get('/parent/children', [ParentPortalController::class, 'children']);
         Route::get('/parent/children/{id}/summary', [ParentPortalController::class, 'childSummary']);
@@ -208,6 +217,22 @@ Route::prefix('v1')->group(function () {
             Route::get('/finance-transactions', [FinanceTransactionController::class, 'index']);
             Route::post('/finance-transactions', [FinanceTransactionController::class, 'store']);
             Route::get('/reports/finance', [FinanceTransactionController::class, 'report']);
+        });
+
+        // Read-Only Monitoring Routes (Admin & Pengawas)
+        Route::middleware('role:kepala_sekolah,staf_admin,pengawas')->group(function () {
+            Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+            Route::get('/staff', [StaffController::class, 'index']);
+            Route::get('/staff/{staff}', [StaffController::class, 'show']);
+            Route::get('/guardians', [GuardianController::class, 'index']);
+            Route::get('/guardians/{guardian}', [GuardianController::class, 'show']);
+            Route::get('/assets', [AssetController::class, 'index']);
+            Route::get('/assets/{asset}', [AssetController::class, 'show']);
+            Route::prefix('ppdb')->group(function () {
+                Route::get('/', [PpdbController::class, 'index']);
+                Route::get('/export', [PpdbController::class, 'exportExcel']);
+                Route::get('/{id}', [PpdbController::class, 'show']);
+            });
         });
 
         // Admin Only (Kepala Sekolah & Staf Administrasi)
@@ -252,7 +277,7 @@ Route::prefix('v1')->group(function () {
             Route::delete('/teachers/{teacher}/photo', [TeacherController::class, 'deletePhoto']);
             Route::post('/teachers/{teacher}/documents', [TeacherController::class, 'uploadDocument']);
             Route::delete('/teachers/{teacher}/documents/{document}', [TeacherController::class, 'deleteDocument']);
-            Route::apiResource('staff', StaffController::class);
+            Route::apiResource('staff', StaffController::class)->except(['index', 'show']);
 
             // Classes (Write)
             Route::post('/classes/generate-defaults', [ClassController::class, 'generateDefaults']);
@@ -262,7 +287,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/classes/promote-students', [ClassController::class, 'promoteStudents']);
 
             // Guardians & Students (Write)
-            Route::apiResource('guardians', GuardianController::class);
+            Route::apiResource('guardians', GuardianController::class)->except(['index', 'show']);
             Route::post('/guardians/{guardian}/sync-students', [GuardianController::class, 'syncStudents']);
             Route::post('/guardians/{guardian}/create-account', [GuardianController::class, 'createAccount']);
             Route::post('/students', [StudentController::class, 'store']);
@@ -300,7 +325,7 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('users', UserController::class);
             Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword']);
 
-            // Activity Logs (Read-only)
+            // Activity Logs (Read-only, Admin only)
             Route::get('/activity-logs', [ActivityLogController::class, 'index']);
 
             // System Settings (Update)
@@ -315,14 +340,13 @@ Route::prefix('v1')->group(function () {
             Route::put('/announcements/{id}', [AnnouncementController::class, 'update']);
             Route::delete('/announcements/{id}', [AnnouncementController::class, 'destroy']);
 
-            // Sarpras & Assets (FR-SAR-01 s/d FR-SAR-06)
-            Route::apiResource('assets', AssetController::class);
+            // Sarpras & Assets (Write - FR-SAR-01 s/d FR-SAR-06)
+            Route::apiResource('assets', AssetController::class)->except(['index', 'show']);
             Route::post('/assets/{id}/maintenance', [AssetController::class, 'storeMaintenance']);
             Route::post('/assets/{id}/borrow', [AssetController::class, 'borrow']);
             Route::post('/assets/loans/{id}/return', [AssetController::class, 'returnLoan']);
 
-            // Executive Dashboard Summary (Kepala Sekolah & Admin)
-            Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+            // Executive Dashboard Summary dipindah ke grup Read-Only Monitoring (Admin & Pengawas)
 
             // Backup & Restore System (FR-BCK-01 s/d FR-BCK-05)
             Route::prefix('backups')->group(function () {
@@ -352,18 +376,15 @@ Route::prefix('v1')->group(function () {
                 Route::delete('/teachers/{id}/photo', [CmsController::class, 'deleteTeacherPhoto']);
             });
 
-            // PPDB Online (Penerimaan Peserta Didik Baru Terpadu KB, TK, SD)
+            // PPDB Online (Write - Penerimaan Peserta Didik Baru Terpadu KB, TK, SD)
             Route::prefix('ppdb')->group(function () {
-                Route::get('/', [PpdbController::class, 'index']);
-                Route::get('/export', [PpdbController::class, 'exportExcel']);
-                Route::get('/{id}', [PpdbController::class, 'show']);
                 Route::put('/{id}/status', [PpdbController::class, 'updateStatus']);
                 Route::delete('/{id}', [PpdbController::class, 'destroy']);
             });
         });
 
-        // Rapor Siswa Multi-Format & Validasi (Wali Kelas, Kepala Sekolah & Admin)
-        Route::middleware('role:kepala_sekolah,staf_admin,guru')->prefix('report-cards')->group(function () {
+        // Rapor Siswa Multi-Format & Validasi (Wali Kelas, Kepala Sekolah, Admin & Pengawas Read-Only)
+        Route::middleware('role:kepala_sekolah,staf_admin,guru,pengawas')->prefix('report-cards')->group(function () {
             Route::get('/', [ReportCardController::class, 'index']);
             Route::get('/default-subjects', [ReportCardController::class, 'defaultSubjects']);
             Route::get('/default-templates', [ReportCardController::class, 'defaultTemplates']);

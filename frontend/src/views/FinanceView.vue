@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../services/api'
+import { useAuthStore } from '../stores/auth'
 import { showConfirm, showSuccess, showError, confirmDeleteWithKeyword } from '../services/swal'
 import Swal from 'sweetalert2'
 
@@ -22,6 +23,7 @@ import InfoTooltip from '../components/common/InfoTooltip.vue'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 
 // Sub-view modes: 'main' (tabs) | 'pay' | 'receipt' | 'cash_form' | 'fee_form'
 const viewMode = ref<'main' | 'pay' | 'receipt' | 'cash_form' | 'fee_form'>('main')
@@ -491,7 +493,7 @@ onMounted(async () => {
           <h1 class="text-lg sm:text-xl font-bold text-slate-900 leading-tight">Keuangan & SPP</h1>
           <InfoTooltip text="Pusat pengelolaan tagihan SPP siswa, kasir penerimaan pembayaran, penerbitan kuitansi resmi, dan buku kas operasional SDI Bina Insan Mandiri." />
         </div>
-        <div class="flex flex-wrap items-center gap-2">
+        <div v-if="!auth.isReadOnly" class="flex flex-wrap items-center gap-2">
           <button 
             v-if="activeTab === 'invoices' || activeTab === 'payments'"
             @click="switchTab('batch')"

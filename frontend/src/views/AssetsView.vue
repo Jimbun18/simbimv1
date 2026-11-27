@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import api from '../services/api'
+import { useAuthStore } from '../stores/auth'
 
+const auth = useAuthStore()
 const loading = ref(false)
 const message = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -339,7 +341,7 @@ onMounted(async () => {
                   </span>
                 </td>
                 <td class="p-3 text-right whitespace-nowrap">
-                  <div class="flex justify-end gap-1.5">
+                  <div v-if="!auth.isReadOnly" class="flex justify-end gap-1.5">
                     <button 
                       @click="openEditForm(item)"
                       class="inline-flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-lg font-semibold border border-amber-200 cursor-pointer transition"

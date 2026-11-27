@@ -54,8 +54,21 @@ class UserController extends Controller
         ]);
     }
 
+    private function mergeRoleIdFromRoleName(Request $request): void
+    {
+        if (!$request->filled('role_id') && $request->filled('role')) {
+            $roleName = $request->input('role') === 'wali_murid' ? Role::WALI : $request->input('role');
+            $roleId = Role::where('nama', $roleName)->value('id');
+            if ($roleId) {
+                $request->merge(['role_id' => $roleId]);
+            }
+        }
+    }
+
     public function store(Request $request): JsonResponse
     {
+        $this->mergeRoleIdFromRoleName($request);
+
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:150'],
             'username' => ['required', 'string', 'max:50', 'alpha_dash', 'unique:users,username'],
@@ -101,6 +114,8 @@ class UserController extends Controller
 
     public function update(Request $request, User $user): JsonResponse
     {
+        $this->mergeRoleIdFromRoleName($request);
+
         $validated = $request->validate([
             'nama' => ['sometimes', 'required', 'string', 'max:150'],
             'username' => ['sometimes', 'required', 'string', 'max:50', 'alpha_dash', Rule::unique('users', 'username')->ignore($user->id)],

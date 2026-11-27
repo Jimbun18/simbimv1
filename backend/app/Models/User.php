@@ -279,6 +279,16 @@ class User extends Authenticatable
         return $this->hasRole(Role::WALI);
     }
 
+    public function isSupervisor(): bool
+    {
+        return $this->hasRole(Role::PENGAWAS);
+    }
+
+    public function canMonitor(): bool
+    {
+        return $this->isAdmin() || $this->isSupervisor();
+    }
+
     public function isLocked(): bool
     {
         return $this->locked_until !== null && $this->locked_until->isFuture();
