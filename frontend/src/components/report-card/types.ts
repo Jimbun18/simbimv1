@@ -6,6 +6,7 @@ export interface SubjectGrade {
   aspek?: string | null;
   sub_aspek?: string | null;
   nilai_uh?: (number | null | string)[] | null;
+  nilai_psts?: number | null | string;
   rata_uh?: number | null | string;
   nilai_sas?: number | null | string;
   nilai_akhir?: number | null | string;

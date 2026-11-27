@@ -1047,6 +1047,7 @@ class ReportCardController extends Controller
             'grades.*.aspek' => ['nullable', 'string', 'max:150'],
             'grades.*.sub_aspek' => ['nullable', 'string', 'max:150'],
             'grades.*.nilai_uh' => ['nullable', 'array'],
+            'grades.*.nilai_psts' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'grades.*.rata_uh' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'grades.*.nilai_sas' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'grades.*.nilai_akhir' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -1124,7 +1125,12 @@ class ReportCardController extends Controller
                 foreach ($validated['grades'] as $gIndex => $gData) {
                     $rawUh = isset($gData['nilai_uh']) ? (array) $gData['nilai_uh'] : null;
                     $validUh = $rawUh !== null ? array_values(array_filter($rawUh, fn($v) => is_numeric($v) && $v !== '')) : null;
-                    $rataUh = (isset($gData['rata_uh']) && $gData['rata_uh'] !== '') ? (float) $gData['rata_uh'] : ($validUh && count($validUh) > 0 ? round(array_sum($validUh) / count($validUh), 1) : null);
+                    $nilaiPsts = (isset($gData['nilai_psts']) && $gData['nilai_psts'] !== '') ? (float) $gData['nilai_psts'] : null;
+                    $ruhScores = $validUh ?? [];
+                    if ($nilaiPsts !== null) {
+                        $ruhScores[] = $nilaiPsts;
+                    }
+                    $rataUh = (isset($gData['rata_uh']) && $gData['rata_uh'] !== '') ? (float) $gData['rata_uh'] : (count($ruhScores) > 0 ? round(array_sum($ruhScores) / count($ruhScores), 1) : null);
                     $nilaiSas = (isset($gData['nilai_sas']) && $gData['nilai_sas'] !== '') ? (float) $gData['nilai_sas'] : null;
 
                     // Utamakan nilai akhir eksplisit dari form, fallback ke hitung rumus NR jika tidak disediakan
@@ -1140,6 +1146,7 @@ class ReportCardController extends Controller
                         'aspek' => $gData['aspek'] ?? null,
                         'sub_aspek' => $gData['sub_aspek'] ?? null,
                         'nilai_uh' => $validUh,
+                        'nilai_psts' => $nilaiPsts,
                         'rata_uh' => $rataUh,
                         'nilai_sas' => $nilaiSas,
                         'nilai_akhir' => $nilaiAkhir,
@@ -2186,6 +2193,7 @@ class ReportCardController extends Controller
                     'nama_mapel' => $g->nama_mapel,
                     'kelompok' => $g->kelompok,
                     'nilai_uh' => $g->nilai_uh ?? [],
+                    'nilai_psts' => $g->nilai_psts,
                     'rata_uh' => $g->rata_uh,
                     'nilai_sas' => $g->nilai_sas,
                     'nilai_akhir' => $g->nilai_akhir,
@@ -2312,6 +2320,7 @@ class ReportCardController extends Controller
             'grades' => ['required', 'array'],
             'grades.*.student_id' => ['required', 'exists:students,id'],
             'grades.*.nilai_uh' => ['nullable', 'array'],
+            'grades.*.nilai_psts' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'grades.*.rata_uh' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'grades.*.nilai_sas' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'grades.*.nilai_akhir' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -2398,9 +2407,15 @@ class ReportCardController extends Controller
                 $this->ensureCompleteReportCardGradesAndEkstra($rc, $g['nama_lengkap'] ?? 'Ananda');
 
                 // Hitung nilai akhir dengan rumus resmi: NR = (3 * RUH + 2 * PSAS) / 5
+                // RUH adalah rata-rata dari seluruh nilai UH + PSTS (jika diisi)
                 $rawUh = isset($g['nilai_uh']) ? (array) $g['nilai_uh'] : [];
                 $validUh = array_values(array_filter($rawUh, fn($v) => is_numeric($v) && $v !== ''));
-                $rataUh = count($validUh) > 0 ? round(array_sum($validUh) / count($validUh), 1) : (isset($g['rata_uh']) && is_numeric($g['rata_uh']) ? (float) $g['rata_uh'] : null);
+                $nilaiPsts = isset($g['nilai_psts']) && is_numeric($g['nilai_psts']) ? (float) $g['nilai_psts'] : null;
+                $ruhScores = $validUh;
+                if ($nilaiPsts !== null) {
+                    $ruhScores[] = $nilaiPsts;
+                }
+                $rataUh = count($ruhScores) > 0 ? round(array_sum($ruhScores) / count($ruhScores), 1) : (isset($g['rata_uh']) && is_numeric($g['rata_uh']) ? (float) $g['rata_uh'] : null);
                 $nilaiSas = isset($g['nilai_sas']) && is_numeric($g['nilai_sas']) ? (float) $g['nilai_sas'] : null;
 
                 $nr = ReportCardGrade::calculateNR($rataUh, $nilaiSas);
@@ -2423,6 +2438,7 @@ class ReportCardController extends Controller
                 $grade->kelompok = $kelompok;
                 $grade->urutan = $grade->urutan ?: $urutan;
                 $grade->nilai_uh = $validUh;
+                $grade->nilai_psts = $nilaiPsts;
                 $grade->rata_uh = $rataUh;
                 $grade->nilai_sas = $nilaiSas;
                 $grade->nilai_akhir = $nilaiAkhir;

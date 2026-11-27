@@ -4,6 +4,7 @@ import api from '../services/api';
 import { useAuthStore } from '../stores/auth';
 import { showConfirm } from '../services/swal';
 import InfoTooltip from '../components/common/InfoTooltip.vue';
+import { generateCapaianKompetensi } from '../data/capaianKompetensiTemplates';
 
 const auth = useAuthStore();
 
@@ -83,15 +84,36 @@ const calculatePredicate = (score?: number | null): string => {
   return 'D';
 };
 
+// Ambil tingkat kelas (1-6) dari kelas yang sedang dipilih
+const getCurrentClassTingkat = (): number | null => {
+  const cls = currentClass.value;
+  if (cls?.tingkat !== undefined && cls?.tingkat !== null && !isNaN(Number(cls.tingkat))) {
+    return Number(cls.tingkat);
+  }
+  const match = (currentClassName.value || '').match(/\b([1-6])\b/);
+  return match ? Number(match[1]) : null;
+};
+
 // Formula NR = (3 * RUH + 2 * PSAS) / 5
-const calculateStudentGrade = (st: any) => {
+const calculateStudentGrade = (st: any, autoFillCapaian = true) => {
   const validUH = (st.nilai_uh || [])
     .map((v: any) => (v !== null && v !== undefined && v !== '' ? Number(v) : null))
     .filter((v: any) => v !== null && !isNaN(v) && v >= 0);
 
+  const psts =
+    st.nilai_psts !== null && st.nilai_psts !== undefined && st.nilai_psts !== ''
+      ? Number(st.nilai_psts)
+      : null;
+  st.nilai_psts = psts;
+
+  const ruhScores = [...validUH];
+  if (psts !== null && !isNaN(psts) && psts >= 0) {
+    ruhScores.push(psts);
+  }
+
   const ruh =
-    validUH.length > 0
-      ? Math.round((validUH.reduce((a: number, b: number) => a + b, 0) / validUH.length) * 10) / 10
+    ruhScores.length > 0
+      ? Math.round((ruhScores.reduce((a: number, b: number) => a + b, 0) / ruhScores.length) * 10) / 10
       : null;
   st.rata_uh = ruh;
 
@@ -112,6 +134,23 @@ const calculateStudentGrade = (st: any) => {
   }
 
   st.predikat = st.nilai_akhir !== null ? calculatePredicate(st.nilai_akhir) : '-';
+
+  if (autoFillCapaian) {
+    const autoText = generateCapaianKompetensi(
+      getCurrentClassTingkat(),
+      selectedSubjectName.value,
+      st.predikat
+    );
+    if (autoText) {
+      st.capaian_kompetensi = autoText;
+    } else if (
+      st.predikat === '-' &&
+      typeof st.capaian_kompetensi === 'string' &&
+      st.capaian_kompetensi.startsWith('Mencapai kompetensi ')
+    ) {
+      st.capaian_kompetensi = '';
+    }
+  }
 };
 
 // Fetch initial master data
@@ -167,6 +206,7 @@ const syncCurrentSubjectToRaw = (subjName?: string) => {
       if (!rawSt.grades) rawSt.grades = {};
       rawSt.grades[targetSubj] = {
         nilai_uh: Array.isArray(st.nilai_uh) ? [...st.nilai_uh] : [],
+        nilai_psts: st.nilai_psts,
         rata_uh: st.rata_uh,
         nilai_sas: st.nilai_sas,
         nilai_akhir: st.nilai_akhir,
@@ -213,6 +253,7 @@ const renderActiveSubjectGrades = () => {
       nisn: st.nisn,
       report_card_id: st.report_card_id,
       nilai_uh: uhList,
+      nilai_psts: existingGrade.nilai_psts ?? null,
       rata_uh: existingGrade.rata_uh ?? null,
       nilai_sas: existingGrade.nilai_sas ?? null,
       nilai_akhir: existingGrade.nilai_akhir ?? null,
@@ -220,7 +261,8 @@ const renderActiveSubjectGrades = () => {
       capaian_kompetensi: existingGrade.capaian_kompetensi ?? '',
     };
 
-    calculateStudentGrade(row);
+    const shouldAutoFill = !row.capaian_kompetensi || !String(row.capaian_kompetensi).trim();
+    calculateStudentGrade(row, shouldAutoFill);
     return row;
   });
 };
@@ -331,6 +373,7 @@ const saveGradeBook = async (action: 'save_draft' | 'submit_to_homeroom' | 'reop
       grades: students.value.map((st) => ({
         student_id: st.student_id,
         nilai_uh: st.nilai_uh.filter((v: any) => v !== null && v !== undefined && v !== ''),
+        nilai_psts: st.nilai_psts,
         rata_uh: st.rata_uh,
         nilai_sas: st.nilai_sas,
         nilai_akhir: st.nilai_akhir,
@@ -861,11 +904,19 @@ onMounted(() => {
                 UH {{ uIdx }}
               </th>
 
+              <!-- PSTS (SETARA UH, IKUT DIHITUNG DALAM RUH) -->
+              <th class="py-3 px-2 text-center w-20 border-r border-slate-200 bg-amber-50/90 text-amber-950 font-black">
+                <div class="inline-flex items-center justify-center gap-1">
+                  <span>PSTS</span>
+                  <InfoTooltip size="xs" text="Penilaian Sumatif Tengah Semester (setara UH, ikut dihitung dalam RUH)." />
+                </div>
+              </th>
+
               <!-- RUH (RATA-RATA ULANGAN HARIAN OTOMATIS) -->
               <th class="py-3 px-2 text-center w-20 border-r border-slate-200 bg-amber-100/80 text-amber-950 font-black">
                 <div class="inline-flex items-center justify-center gap-1">
                   <span>RUH</span>
-                  <InfoTooltip size="xs" text="Rata-rata Ulangan Harian (dihitung otomatis)." />
+                  <InfoTooltip size="xs" text="Rata-rata Ulangan Harian & PSTS (dihitung otomatis)." />
                 </div>
               </th>
 
@@ -896,8 +947,8 @@ onMounted(() => {
                 </th>
               </template>
 
-              <!-- CAPAIAN KOMPETENSI / CATATAN -->
-              <th class="py-3 px-3">Catatan / Capaian Pembelajaran</th>
+              <!-- CAPAIAN KOMPETENSI -->
+              <th class="py-3 px-3">Capaian Kompetensi</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-200">
@@ -934,6 +985,25 @@ onMounted(() => {
                   :class="[
                     isLockedForCurrentTeacher 
                       ? 'bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed' 
+                      : 'bg-white border border-slate-300 hover:border-amber-400 focus:border-amber-500 text-slate-900'
+                  ]"
+                  placeholder="-"
+                />
+              </td>
+
+              <!-- Kolom PSTS (Setara UH) -->
+              <td class="py-2 px-1 text-center border-r border-slate-200 bg-amber-50/30">
+                <input
+                  v-model.number="st.nilai_psts"
+                  @input="calculateStudentGrade(st)"
+                  type="number"
+                  min="0"
+                  max="100"
+                  :disabled="isLockedForCurrentTeacher"
+                  class="w-14 text-center font-bold text-xs rounded-lg py-1 focus:outline-none shadow-2xs transition-colors"
+                  :class="[
+                    isLockedForCurrentTeacher
+                      ? 'bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed'
                       : 'bg-white border border-slate-300 hover:border-amber-400 focus:border-amber-500 text-slate-900'
                   ]"
                   placeholder="-"

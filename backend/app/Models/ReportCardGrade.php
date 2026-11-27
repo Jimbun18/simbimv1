@@ -21,6 +21,7 @@ class ReportCardGrade extends Model
         'aspek',
         'sub_aspek',
         'nilai_uh',
+        'nilai_psts',
         'rata_uh',
         'nilai_sas',
         'nilai_akhir',
@@ -33,6 +34,7 @@ class ReportCardGrade extends Model
     {
         return [
             'nilai_uh' => 'array',
+            'nilai_psts' => 'float',
             'rata_uh' => 'float',
             'nilai_sas' => 'float',
             'nilai_akhir' => 'float',
